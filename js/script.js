@@ -53,27 +53,42 @@ function renderSitePackages() {
     grid.innerHTML = visible.map(pkg => {
         const isTest = pkg.id === 'test' || pkg.price <= 1;
         return `
-        <div class="package-card" data-name="${pkg.id}" style="cursor:pointer;" onclick="window.location.href='package.html?id=${pkg.id}'">
-            <div class="card-image" style="background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.3)),url('${pkg.image}');background-size:cover;background-position:center;position:relative;">
+        <div class="package-card" data-name="${pkg.id}" data-pkgid="${pkg.id}" style="cursor:pointer;">
+            <div class="card-image" data-nav="${pkg.id}" style="background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.3)),url('${pkg.image}');background-size:cover;background-position:center;position:relative;cursor:pointer;">
                 <div style="position:absolute;bottom:10px;right:10px;background:rgba(26,188,156,0.9);color:#fff;padding:0.25rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:700;display:flex;align-items:center;gap:0.3rem;">
                     <i class="fas fa-eye"></i> View Details
                 </div>
             </div>
             <div class="card-content">
                 <div class="rating">${Number(pkg.rating).toFixed(1)} <i class="fas fa-star"></i></div>
-                <h3 class="package-title">${pkg.name}</h3>
+                <h3 class="package-title" data-nav="${pkg.id}" style="cursor:pointer;">${pkg.name}</h3>
                 <p class="package-desc">${pkg.desc || ''}</p>
                 <div class="price">₹${Number(pkg.price).toLocaleString()} <span>${isTest ? '/test' : '/person'}</span></div>
                 <div class="inclusions">
                     ${(pkg.inclusions || []).map(inc => `<span class="inclusion-badge"><i class="fas ${getInclIcon(inc)}"></i> ${inc}</span>`).join('')}
                 </div>
                 <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-                    ${!isTest ? `<button class="btn-outline" style="flex:1;" onclick="event.stopPropagation();openCustomize('${pkg.id}')">Customize</button>` : ''}
-                    <button class="btn-primary" style="flex:1;" onclick="event.stopPropagation();bookPackage('${pkg.id}')">${isTest ? 'Pay ₹1 Now' : 'Book Now'}</button>
+                    ${!isTest ? `<button class="btn-outline" style="flex:1;" data-action="customize" data-pkg="${pkg.id}">Customize</button>` : ''}
+                    <button class="btn-primary" style="flex:1;" data-action="book" data-pkg="${pkg.id}">${isTest ? 'Pay ₹1 Now' : 'Book Now'}</button>
                 </div>
             </div>
         </div>`;
     }).join('');
+
+    // Event delegation — one listener on the grid, handles all cards
+    grid.addEventListener('click', function handler(e) {
+        // Book Now
+        const bookBtn = e.target.closest('[data-action="book"]');
+        if (bookBtn) { e.stopPropagation(); window.bookPackage(bookBtn.dataset.pkg); return; }
+
+        // Customize
+        const custBtn = e.target.closest('[data-action="customize"]');
+        if (custBtn) { e.stopPropagation(); window.openCustomize(custBtn.dataset.pkg); return; }
+
+        // Card image or title — navigate to details
+        const navEl = e.target.closest('[data-nav]');
+        if (navEl) { window.location.href = 'package.html?id=' + navEl.dataset.nav; return; }
+    });
 }
 
 function getPkgPrice(pkgId) {
@@ -330,13 +345,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }));
     }
 
-    // Add event listener for Sign Up button
-    const signUpLink = document.querySelector('a[onclick*="openRegister"]');
-    if (signUpLink) {
-        signUpLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.openRegister();
-        });
+    // Sign Up nav link
+    const signUpNavLink = document.getElementById('signUpNavLink');
+    if (signUpNavLink) {
+        signUpNavLink.addEventListener('click', (e) => { e.preventDefault(); window.openRegister(); });
     }
 
     // Add event listener for Login/Profile button
@@ -375,33 +387,26 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Add event listeners for close buttons
-    const closeButtons = document.querySelectorAll('.close');
-    closeButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const modal = btn.closest('.modal');
-            if (modal) {
-                modal.style.display = 'none';
+    // Close buttons — handle both old .close class and new data-close attribute
+    document.querySelectorAll('.close, [data-close]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modalId = btn.dataset.close;
+            if (modalId) {
+                const m = document.getElementById(modalId);
+                if (m) m.style.display = 'none';
+            } else {
+                const modal = btn.closest('.modal');
+                if (modal) modal.style.display = 'none';
             }
         });
     });
 
-    // Add event listeners for modal links
-    const registerLinks = document.querySelectorAll('a[onclick*="openRegister"]');
-    registerLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.openRegister();
-        });
-    });
+    // In-form navigation links
+    const goToRegister = document.getElementById('goToRegister');
+    if (goToRegister) goToRegister.addEventListener('click', (e) => { e.preventDefault(); window.closeLogin && window.closeLogin(); window.openRegister(); });
 
-    const loginLinks = document.querySelectorAll('a[onclick*="openLogin"]');
-    loginLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.openLogin();
-        });
-    });
+    const goToLogin = document.getElementById('goToLogin');
+    if (goToLogin) goToLogin.addEventListener('click', (e) => { e.preventDefault(); window.closeRegister && window.closeRegister(); window.openLogin(); });
 
     // Smooth scrolling
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -472,31 +477,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const checkboxes = document.querySelectorAll('#customForm input[type="checkbox"]');
     checkboxes.forEach(cb => cb.addEventListener('change', updateTotal));
 
-    // Add event listeners for Book Now buttons
-    document.querySelectorAll('.btn-primary').forEach(btn => {
-        const parent = btn.closest('.card-content') || btn.closest('.package-card');
-        if (parent && btn.textContent.includes('Book Now')) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const packageName = parent.closest('.package-card').getAttribute('data-name');
-                window.bookPackage(packageName);
-            });
-        }
-    });
+    // Find Packages button
+    const findPkgsBtn = document.getElementById('findPkgsBtn');
+    if (findPkgsBtn) findPkgsBtn.addEventListener('click', window.quickSearch);
 
-    // Add event listeners for Customize buttons
-    document.querySelectorAll('.btn-outline').forEach(btn => {
-        const parent = btn.closest('.card-content') || btn.closest('.package-card');
-        if (parent && btn.textContent.includes('Customize')) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const packageName = parent.closest('.package-card').getAttribute('data-name');
-                window.openCustomize(packageName);
-            });
-        }
-    });
+    // Proceed to Payment button (in customize modal)
+    const proceedPaymentBtn = document.getElementById('proceedPaymentBtn');
+    if (proceedPaymentBtn) proceedPaymentBtn.addEventListener('click', window.proceedToPayment);
+
+    // Confirm Booking / Pay Now button (in payment modal)
+    const confirmBookingBtn = document.getElementById('confirmBookingBtn');
+    if (confirmBookingBtn) confirmBookingBtn.addEventListener('click', window.confirmBooking);
+
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => window.logout && window.logout());
 
     // Close modals on outside click
     window.onclick = function(event) {

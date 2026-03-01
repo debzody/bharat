@@ -36,21 +36,21 @@
     <!-- Payment Modal -->
     <div id="paymentModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <span class="close" onclick="document.getElementById('paymentModal').style.display='none'">&times;</span>
+            <span class="close" data-close="paymentModal">&times;</span>
             <h2><i class="fas fa-credit-card"></i> Secure Payment</h2>
             <p><strong>Final Amount:</strong> <span id="finalAmount">₹0</span></p>
             <p id="bookingDetails"></p>
             <div style="background:#e8f8f5;padding:1rem;border-radius:5px;margin:1rem 0;color:#16a085;">
                 <i class="fas fa-lock"></i> Secured by Razorpay | 100% Safe & Secure
             </div>
-            <button class="btn-primary" onclick="confirmBooking()">Pay Now with Razorpay</button>
+            <button class="btn-primary" id="confirmBookingBtn">Pay Now with Razorpay</button>
         </div>
     </div>
 
     <!-- Customize Modal -->
     <div id="customizeModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <span class="close" onclick="document.getElementById('customizeModal').style.display='none'">&times;</span>
+            <span class="close" data-close="customizeModal">&times;</span>
             <h2 id="modalTitle">Customize Package</h2>
             <form id="customForm">
                 <div class="form-group">
@@ -86,7 +86,7 @@
                     <label><input type="checkbox" value="1000"> Photoshoot (₹1,000)</label>
                 </div>
                 <div id="totalPrice" style="font-size:1.2rem;font-weight:700;color:#1abc9c;margin:1rem 0;"></div>
-                <button type="button" class="btn-primary" onclick="proceedToPayment()">Proceed to Payment</button>
+                <button type="button" class="btn-primary" id="proceedPaymentBtn">Proceed to Payment</button>
             </form>
         </div>
     </div>
@@ -197,6 +197,19 @@ async function loadPackage() {
         }
     }
 
+    // Hardcoded fallback — same as script.js defaults
+    if (!currentPkg) {
+        const HARDCODED = [
+            { id:'budget',    name:'Budget Andaman Escape',    desc:'4N/5D | Port Blair + Havelock | Basic Hotels + Ferries', price:15999, rating:4.2, image:'/images/beach1.jpg', inclusions:['Hotels','Ferries','Breakfast'], visible:true },
+            { id:'standard',  name:'Standard Andaman Bliss',   desc:'6N/7D | Port Blair + Havelock + Neil | Deluxe + Activities', price:21999, rating:4.6, image:'/images/beach2.jpg', inclusions:['Deluxe Hotels','Premium Ferries','Snorkeling'], visible:true },
+            { id:'luxury',    name:'Luxury Andaman Retreat',   desc:'6N/7D | All Islands | 5* Resorts + Scuba + Private Transfers', price:28999, rating:4.8, image:'/images/beach3.jpg', inclusions:['5* Resorts','VIP Ferries','Scuba Dive'], visible:true },
+            { id:'honeymoon', name:'Honeymoon Paradise',       desc:'5N/6D | Romantic Stays + Candlelight Dinner + Photos', price:24999, rating:4.9, image:'/images/beach4.jpg', inclusions:['Romantic Setup','Photoshoot','Dinner'], visible:true },
+            { id:'test',      name:'🧪 Payment Test Package',  desc:'Test the live payment gateway for ₹1 only', price:1, rating:5.0, image:'/images/beach1.jpg', inclusions:['Live Payment','Instant'], visible:true }
+        ];
+        currentPkg = HARDCODED.find(p => p.id === pkgId);
+        window._packages = HARDCODED;
+    }
+
     if (!currentPkg) {
         document.getElementById('pageContent').innerHTML = `
             <div class="pkg-loading" style="padding-top:6rem;">
@@ -301,7 +314,7 @@ function renderPage(pkg) {
                     <h2><i class="fas fa-images"></i> Photo Gallery</h2>
                     <div class="gallery-grid">
                         ${(pkg.images || [pkg.image]).map(img => `
-                        <div class="gallery-img" onclick="openImgLightbox('${img}')">
+                        <div class="gallery-img" style="cursor:pointer;">
                             <img src="${img}" alt="Package photo" loading="lazy">
                         </div>`).join('')}
                     </div>
@@ -340,12 +353,12 @@ function renderPage(pkg) {
                         ${(pkg.inclusions || []).slice(0,6).map(i => `<li><i class="fas ${getIcon(i)}"></i> ${i}</li>`).join('')}
                     </ul>
 
-                    <button class="btn-book-now" onclick="bookNow()">
+                    <button class="btn-book-now" id="bookNowBtn">
                         <i class="fas fa-credit-card"></i>
                         ${isTest ? 'Pay ₹1 Now (Test)' : 'Book Now'}
                     </button>
                     ${!isTest ? `
-                    <button class="btn-customize-pkg" onclick="customizeNow()">
+                    <button class="btn-customize-pkg" id="customizeNowBtn">
                         <i class="fas fa-sliders-h"></i> Customize This Package
                     </button>` : ''}
 
@@ -365,10 +378,30 @@ function renderPage(pkg) {
         </footer>
 
         <!-- Lightbox -->
-        <div id="lightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:none;align-items:center;justify-content:center;cursor:zoom-out;">
+        <div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out;">
             <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;">
         </div>
     `;
+
+    // Wire up booking card buttons (rendered into pageContent)
+    const bookNowBtn = document.getElementById('bookNowBtn');
+    if (bookNowBtn) bookNowBtn.addEventListener('click', bookNow);
+
+    const customizeNowBtn = document.getElementById('customizeNowBtn');
+    if (customizeNowBtn) customizeNowBtn.addEventListener('click', customizeNow);
+
+    // Gallery lightbox — event delegation on pageContent
+    document.getElementById('pageContent').addEventListener('click', function(e) {
+        const galleryImg = e.target.closest('.gallery-img');
+        if (galleryImg) {
+            const img = galleryImg.querySelector('img');
+            if (img) openImgLightbox(img.src);
+        }
+    });
+
+    // Lightbox click to close
+    const lightbox = document.getElementById('lightbox');
+    if (lightbox) lightbox.addEventListener('click', () => { lightbox.style.display = 'none'; });
 }
 
 function openImgLightbox(src) {
@@ -466,18 +499,38 @@ function updateNavAuth() {
 }
 updateNavAuth();
 
-// Close modals on outside click
-window.onclick = e => {
-    ['paymentModal','customizeModal'].forEach(id => {
-        const m = document.getElementById(id);
-        if (e.target === m) m.style.display = 'none';
+// Wire up static modal buttons and close handlers
+// (Script is at bottom of body — DOM is already parsed, run immediately)
+(function setupHandlers() {
+    // data-close close buttons
+    document.querySelectorAll('[data-close]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const m = document.getElementById(btn.dataset.close);
+            if (m) m.style.display = 'none';
+        });
     });
-};
 
-// Customize form checkbox listeners
-document.addEventListener('change', e => {
-    if (e.target.type === 'checkbox' && e.target.closest('#customForm')) updateTotal();
-});
+    // Pay Now button in payment modal
+    const confirmBookingBtn = document.getElementById('confirmBookingBtn');
+    if (confirmBookingBtn) confirmBookingBtn.addEventListener('click', window.confirmBooking);
+
+    // Proceed to Payment button in customize modal
+    const proceedPaymentBtn = document.getElementById('proceedPaymentBtn');
+    if (proceedPaymentBtn) proceedPaymentBtn.addEventListener('click', proceedToPayment);
+
+    // Close modals on outside click
+    window.addEventListener('click', e => {
+        ['paymentModal', 'customizeModal'].forEach(id => {
+            const m = document.getElementById(id);
+            if (e.target === m) m.style.display = 'none';
+        });
+    });
+
+    // Customize form checkbox listeners
+    document.addEventListener('change', e => {
+        if (e.target.type === 'checkbox' && e.target.closest('#customForm')) updateTotal();
+    });
+})();
 
 // Load on page ready
 loadPackage();
