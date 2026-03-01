@@ -286,6 +286,51 @@ document.addEventListener('DOMContentLoaded', function () {
         loadAndRenderPackages();
     }
 
+    // ── Itinerary Day Helpers ───────────────────────────────────
+    function renderDaysHtml(pkgIdx) {
+        const days = (packagesData[pkgIdx].days) || [];
+        if (days.length === 0) {
+            return '<p class="days-empty">No days yet. Click "+ Add Day" to start.</p>';
+        }
+        return days.map((day, dayIdx) => `
+            <div class="pkg-day-card">
+                <div class="pkg-day-header">
+                    <span class="pkg-day-num">Day ${day.day}</span>
+                    <button type="button" class="btn-del-day" onclick="window._pkgDeleteDay(${pkgIdx},${dayIdx})" title="Remove day">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="pkg-edit-row">
+                    <label>Title</label>
+                    <input type="text" class="pkg-input" value="${escHtml(day.title||'')}"
+                        placeholder="e.g. Arrival in Port Blair"
+                        oninput="window._pkgDayUpdate(${pkgIdx},${dayIdx},'title',this.value)">
+                </div>
+                <div class="pkg-edit-row">
+                    <label>Description</label>
+                    <input type="text" class="pkg-input" value="${escHtml(day.desc||'')}"
+                        placeholder="Short description of the day"
+                        oninput="window._pkgDayUpdate(${pkgIdx},${dayIdx},'desc',this.value)">
+                </div>
+                <div class="pkg-edit-row">
+                    <label>Activities <small>(one per line)</small></label>
+                    <textarea class="pkg-input pkg-textarea" rows="4"
+                        placeholder="Airport pickup&#10;Hotel check-in&#10;City tour"
+                        oninput="window._pkgDayUpdate(${pkgIdx},${dayIdx},'activities',this.value.split('\\n').map(s=>s.trim()).filter(Boolean))"
+                    >${escHtml((day.activities||[]).join('\n'))}</textarea>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderDaysContainer(pkgIdx) {
+        const container = document.getElementById('days-container-' + pkgIdx);
+        if (container) container.innerHTML = renderDaysHtml(pkgIdx);
+        // Update badge count
+        const badge = document.querySelector(`[data-idx="${pkgIdx}"] .itinerary-badge`);
+        if (badge) badge.textContent = (packagesData[pkgIdx].days||[]).length + ' days';
+    }
+
     function renderPackageEditorCards() {
         const container = document.getElementById('packageCards');
         if (!packagesData.length) {
@@ -344,6 +389,42 @@ document.addEventListener('DOMContentLoaded', function () {
                         </select>
                     </div>
                 </div>
+                <!-- Itinerary Editor (collapsible) -->
+                <details class="pkg-itinerary-section">
+                    <summary class="pkg-itinerary-summary">
+                        <i class="fas fa-map-marked-alt"></i> Edit Itinerary
+                        <span class="itinerary-badge">${(pkg.days||[]).length} days</span>
+                    </summary>
+                    <div class="pkg-itinerary-body">
+                        <div class="pkg-edit-row">
+                            <label>Duration</label>
+                            <input type="text" class="pkg-input" value="${escHtml(pkg.duration||'')}"
+                                placeholder="e.g. 4 Nights / 5 Days"
+                                oninput="window._pkgUpdate(${idx},'duration',this.value)">
+                        </div>
+                        <div class="pkg-edit-row">
+                            <label>Highlights <small>(comma-separated)</small></label>
+                            <input type="text" class="pkg-input" value="${escHtml((pkg.highlights||[]).join(', '))}"
+                                placeholder="e.g. Radhanagar Beach, Cellular Jail"
+                                oninput="window._pkgUpdate(${idx},'highlights',this.value.split(',').map(s=>s.trim()).filter(Boolean))">
+                        </div>
+                        <div class="pkg-edit-row">
+                            <label>Exclusions <small>(comma-separated)</small></label>
+                            <input type="text" class="pkg-input" value="${escHtml((pkg.exclusions||[]).join(', '))}"
+                                placeholder="e.g. Airfare, Lunch, Travel Insurance"
+                                oninput="window._pkgUpdate(${idx},'exclusions',this.value.split(',').map(s=>s.trim()).filter(Boolean))">
+                        </div>
+                        <div class="pkg-days-label">
+                            <label>Day-by-Day Itinerary</label>
+                        </div>
+                        <div id="days-container-${idx}" class="pkg-days-container">
+                            ${renderDaysHtml(idx)}
+                        </div>
+                        <button type="button" class="btn-add-day" onclick="window._pkgAddDay(${idx})">
+                            <i class="fas fa-plus"></i> Add Day
+                        </button>
+                    </div>
+                </details>
             </div>
         `).join('');
     }
@@ -361,6 +442,27 @@ document.addEventListener('DOMContentLoaded', function () {
         renderPackageEditorCards();
     };
 
+    window._pkgDayUpdate = function(pkgIdx, dayIdx, field, value) {
+        if (!packagesData[pkgIdx] || !packagesData[pkgIdx].days) return;
+        packagesData[pkgIdx].days[dayIdx][field] = value;
+    };
+
+    window._pkgDeleteDay = function(pkgIdx, dayIdx) {
+        if (!packagesData[pkgIdx] || !packagesData[pkgIdx].days) return;
+        if (!confirm('Remove Day ' + (dayIdx + 1) + '?')) return;
+        packagesData[pkgIdx].days.splice(dayIdx, 1);
+        packagesData[pkgIdx].days.forEach((d, i) => { d.day = i + 1; });
+        renderDaysContainer(pkgIdx);
+    };
+
+    window._pkgAddDay = function(pkgIdx) {
+        if (!packagesData[pkgIdx]) return;
+        if (!packagesData[pkgIdx].days) packagesData[pkgIdx].days = [];
+        const nextDay = packagesData[pkgIdx].days.length + 1;
+        packagesData[pkgIdx].days.push({ day: nextDay, title: 'Day ' + nextDay, desc: '', activities: [] });
+        renderDaysContainer(pkgIdx);
+    };
+
     window.addNewPackage = function() {
         packagesData.push({
             id: 'pkg_' + Date.now(),
@@ -370,11 +472,19 @@ document.addEventListener('DOMContentLoaded', function () {
             rating: 4.0,
             image: '/images/beach1.jpg',
             inclusions: ['Hotels', 'Ferries'],
-            visible: true
+            visible: true,
+            days: []
         });
         renderPackageEditorCards();
         document.getElementById('packageCards').lastElementChild?.scrollIntoView({ behavior: 'smooth' });
     };
+
+    // Wire up toolbar buttons (CSP-safe — no inline onclick)
+    const addPackageBtn = document.getElementById('addPackageBtn');
+    if (addPackageBtn) addPackageBtn.addEventListener('click', () => window.addNewPackage());
+
+    const publishBtnEl = document.getElementById('publishBtn');
+    if (publishBtnEl) publishBtnEl.addEventListener('click', () => window.saveAndPublishPackages());
 
     window.saveAndPublishPackages = async function() {
         const btn = document.getElementById('publishBtn');
