@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Package Details - Bharat Tours & Travels</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/package.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+
+    <!-- Minimal Navbar -->
+    <header style="position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(20,20,20,0.96);backdrop-filter:blur(10px);">
+        <nav style="display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;max-width:1400px;margin:0 auto;">
+            <a href="index.html" style="text-decoration:none;display:flex;align-items:center;">
+                <img src="/images/logo.png" alt="Bharat Tours & Travels" style="height:58px;width:auto;object-fit:contain;">
+            </a>
+            <div style="display:flex;gap:1rem;align-items:center;">
+                <a href="index.html#packages" style="color:rgba(255,255,255,0.8);text-decoration:none;font-size:0.9rem;"><i class="fas fa-suitcase"></i> All Packages</a>
+                <a href="index.html" id="navAuthLink" style="color:#fff;background:#1abc9c;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;font-size:0.88rem;font-weight:600;">Login</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Content rendered by JS -->
+    <div id="pageContent" style="padding-top:64px;">
+        <div class="pkg-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading package details…</p>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('paymentModal').style.display='none'">&times;</span>
+            <h2><i class="fas fa-credit-card"></i> Secure Payment</h2>
+            <p><strong>Final Amount:</strong> <span id="finalAmount">₹0</span></p>
+            <p id="bookingDetails"></p>
+            <div style="background:#e8f8f5;padding:1rem;border-radius:5px;margin:1rem 0;color:#16a085;">
+                <i class="fas fa-lock"></i> Secured by Razorpay | 100% Safe & Secure
+            </div>
+            <button class="btn-primary" onclick="confirmBooking()">Pay Now with Razorpay</button>
+        </div>
+    </div>
+
+    <!-- Customize Modal -->
+    <div id="customizeModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('customizeModal').style.display='none'">&times;</span>
+            <h2 id="modalTitle">Customize Package</h2>
+            <form id="customForm">
+                <div class="form-group">
+                    <label>Duration</label>
+                    <select id="duration">
+                        <option>4 Nights / 5 Days</option>
+                        <option>5 Nights / 6 Days</option>
+                        <option>6 Nights / 7 Days</option>
+                        <option>7 Nights / 8 Days</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rooms</label>
+                    <select id="rooms">
+                        <option>1 Room (Double)</option>
+                        <option>2 Rooms</option>
+                        <option>1 Suite</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Meals</label>
+                    <select id="meals">
+                        <option>Breakfast Only</option>
+                        <option>Breakfast + Dinner</option>
+                        <option>All Meals</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Add Activities</label>
+                    <label><input type="checkbox" value="2000"> Scuba Diving (₹2,000)</label><br>
+                    <label><input type="checkbox" value="1500"> Snorkeling (₹1,500)</label><br>
+                    <label><input type="checkbox" value="3000"> Candlelight Dinner (₹3,000)</label><br>
+                    <label><input type="checkbox" value="1000"> Photoshoot (₹1,000)</label>
+                </div>
+                <div id="totalPrice" style="font-size:1.2rem;font-weight:700;color:#1abc9c;margin:1rem 0;"></div>
+                <button type="button" class="btn-primary" onclick="proceedToPayment()">Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
+
+<script>
+// ── Defaults for packages without itinerary data ─────────────────
+const ITINERARY_DEFAULTS = {
+    budget: {
+        duration: '4 Nights / 5 Days',
+        highlights: ['Radhanagar Beach', 'Cellular Jail', 'Ross Island', 'Havelock Ferry'],
+        images: ['/images/beach1.jpg', '/images/neil1.jpg', '/images/beach2.jpg', '/images/neil2.jpg', '/images/ross2.jpg', '/images/beach3.jpg'],
+        days: [
+            { day: 1, title: 'Arrival in Port Blair', desc: 'Welcome to the Andaman Islands! Our representative will greet you at the airport.', activities: ['Airport pickup & hotel check-in', 'Visit Cellular Jail National Memorial', 'Attend Light & Sound Show at Cellular Jail', 'Overnight stay in Port Blair'] },
+            { day: 2, title: 'Port Blair – Havelock Island', desc: 'Journey to the stunning Havelock Island by ferry.', activities: ['Breakfast at hotel', 'Board ferry to Havelock Island (90 min)', 'Check-in to beach resort', 'Visit Radhanagar Beach (Asia\'s Best Beach)', 'Sunset at Beach No. 7'] },
+            { day: 3, title: 'Havelock Island – Beach Day', desc: 'Explore Havelock\'s pristine beaches and crystal clear waters.', activities: ['Morning at Elephant Beach (by boat)', 'Snorkeling at Elephant Beach coral reef', 'Lunch at local seafood restaurant', 'Evening leisure at Havelock beach', 'Bonfire on the beach (optional)'] },
+            { day: 4, title: 'Havelock – Return to Port Blair', desc: 'Return journey and explore more of Port Blair.', activities: ['Morning check-out and ferry back to Port Blair', 'Visit Ross Island & North Bay Island (glass-bottom boat ride)', 'Shopping at Aberdeen Bazaar for local souvenirs', 'Overnight stay in Port Blair'] },
+            { day: 5, title: 'Departure Day', desc: 'Bid farewell to the beautiful Andaman Islands.', activities: ['Breakfast and hotel check-out', 'Airport transfer', 'Departure with beautiful memories'] }
+        ],
+        inclusions: ['Accommodation in basic hotels (twin sharing)', 'Daily breakfast', 'Port Blair ↔ Havelock ferry (shared)', 'Airport transfers', 'Cellular Jail entry & sound show', 'Ross & North Bay Island tour (glass bottom boat)'],
+        exclusions: ['Airfare to/from Port Blair', 'Lunch & Dinner', 'Personal expenses', 'Camera charges at monuments', 'Water sports activities', 'Travel insurance']
+    },
+    standard: {
+        duration: '6 Nights / 7 Days',
+        highlights: ['Havelock Island', 'Neil Island', 'Scuba Diving', 'Barren Island View', 'Cellular Jail'],
+        images: ['/images/beach2.jpg', '/images/neil1.jpg', '/images/neil2.jpg', '/images/beach1.jpg', '/images/neil3.jpg', '/images/ross3.jpg'],
+        days: [
+            { day: 1, title: 'Arrival in Port Blair', desc: 'Arrive at Veer Savarkar Airport. Warm welcome and hotel check-in.', activities: ['Airport reception & deluxe hotel check-in', 'Visit Cellular Jail National Memorial', 'Light & Sound Show', 'Welcome dinner at hotel'] },
+            { day: 2, title: 'Port Blair Local Sightseeing', desc: 'Explore the historical and natural wonders of Port Blair.', activities: ['Breakfast at hotel', 'Anthropological Museum & Fisheries Museum', 'Chidiya Tapu (sunset point) – Bird watching', 'Corbyn\'s Cove Beach', 'Evening at leisure'] },
+            { day: 3, title: 'Port Blair – Havelock Island', desc: 'Transfer to the paradise island of Havelock.', activities: ['Breakfast & check-out', 'Premium ferry to Havelock Island', 'Check-in to deluxe resort', 'Radhanagar Beach (Asia\'s #1 Beach)', 'Sunset photography session'] },
+            { day: 4, title: 'Havelock – Water Adventures', desc: 'Thrilling underwater experiences await you.', activities: ['Beginner Scuba Diving session (PADI certified instructors)', 'Snorkeling at Elephant Beach', 'Glass-bottom boat ride over coral reefs', 'Sea Walk experience (optional)', 'Beachside barbecue dinner'] },
+            { day: 5, title: 'Havelock – Neil Island', desc: 'Scenic ferry to the serene Neil Island.', activities: ['Morning check-out', 'Ferry to Neil Island', 'Natural Bridge (Howrah Bridge)', 'Bharatpur & Laxmanpur Beaches', 'Cycling around the island', 'Overnight at Neil Island'] },
+            { day: 6, title: 'Neil Island – Port Blair', desc: 'Last island day before return to Port Blair.', activities: ['Sunrise at Laxmanpur Beach No. 2', 'Ferry back to Port Blair', 'Shopping at Sagarika Government Emporium', 'Farewell dinner', 'Overnight Port Blair'] },
+            { day: 7, title: 'Departure', desc: 'Time to say goodbye to this island paradise.', activities: ['Breakfast and check-out', 'Airport transfer', 'Depart with unforgettable memories'] }
+        ],
+        inclusions: ['6 nights in deluxe hotels/resorts (twin sharing)', 'Daily breakfast', 'Port Blair–Havelock–Neil–Port Blair ferries (premium)', 'All transfers in private AC vehicles', 'Beginner Scuba Diving session', 'All sightseeing per itinerary', 'Welcome & farewell dinners'],
+        exclusions: ['Airfare', 'Lunch & mid-day meals', 'Additional water sports', 'Camera charges', 'Personal expenses', 'Travel insurance', 'Items not in itinerary']
+    },
+    luxury: {
+        duration: '6 Nights / 7 Days',
+        highlights: ['5-Star Resort Stay', 'Private Beach Access', 'Advanced Scuba Dive', 'Private Yacht', 'Helicopter View (optional)'],
+        images: ['/images/beach3.jpg', '/images/neil4.jpg', '/images/beach4.jpg', '/images/neil6.jpg', '/images/beach2.jpg', '/images/ross2.jpg'],
+        days: [
+            { day: 1, title: 'Royal Welcome to Port Blair', desc: 'Experience luxury from the moment you land.', activities: ['Private car airport pickup', 'Check-in to 5-star resort (sea-facing suite)', 'Welcome cocktails and personal concierge briefing', 'Private dinner on the beach under the stars'] },
+            { day: 2, title: 'Port Blair VIP Sightseeing', desc: 'Exclusive private guided tour of Port Blair.', activities: ['Breakfast at rooftop restaurant (sea view)', 'Private guided Cellular Jail heritage tour', 'Private boat to Ross Island', 'Snorkeling at North Bay with personal instructor', 'Spa treatment at resort'] },
+            { day: 3, title: 'Private Yacht to Havelock', desc: 'Sail to Havelock in ultimate style.', activities: ['Gourmet breakfast at resort', 'Private yacht transfer to Havelock Island', 'Check-in to exclusive beach villa', 'Private beach access', 'Sundowner cocktails on your villa deck'] },
+            { day: 4, title: 'Havelock – Adventure Luxury', desc: 'The best of both luxury and adventure.', activities: ['Advanced Scuba Diving (PADI Open Water certified)', 'Private snorkeling charter to secret coral spots', 'Freshly caught seafood lunch by the beach', 'Spa massage and wellness session', 'Private candlelight beach dinner'] },
+            { day: 5, title: 'Havelock Free Day', desc: 'Completely personalized day – your choice.', activities: ['Sleep in or sunrise yoga on the beach', 'Optional: fishing trip / jet ski / parasailing', 'Gourmet picnic on a secluded beach', 'Professional photoshoot session', 'Evening bonfire with live music'] },
+            { day: 6, title: 'Havelock – Neil – Port Blair', desc: 'Scenic island hopping back to Port Blair.', activities: ['Private speedboat to Neil Island', 'Exclusive Neil Island tour (private vehicle)', 'Premium ferry back to Port Blair', 'Farewell gala dinner at 5-star restaurant', 'Live performance'] },
+            { day: 7, title: 'VIP Departure', desc: 'A farewell befitting royalty.', activities: ['Late checkout privilege (12 PM)', 'Spa morning (optional)', 'Private car to airport', 'Departure with lifetime memories'] }
+        ],
+        inclusions: ['6 nights in 5-star beachfront resorts (sea-facing suites)', 'All meals (breakfast, lunch & dinner)', 'Private yacht + speedboat transfers', 'All airport/inter-island transfers in luxury vehicles', 'Advanced Scuba Diving (certified)', 'Professional photoshoot session', 'Daily spa treatments', 'Personal concierge service 24/7', 'All entry fees and activities per itinerary'],
+        exclusions: ['Airfare to/from Port Blair', 'Helicopter tour', 'Alcohol & bar bills', 'Personal shopping', 'Travel insurance', 'Gratuities']
+    },
+    honeymoon: {
+        duration: '5 Nights / 6 Days',
+        highlights: ['Romantic Beach Dinners', 'Couple Spa', 'Photoshoot', 'Sunset Cruise', 'Private Villa'],
+        images: ['/images/beach4.jpg', '/images/beach1.jpg', '/images/neil6.jpg', '/images/beach2.jpg', '/images/neil1.jpg', '/images/beach3.jpg'],
+        days: [
+            { day: 1, title: 'Romantic Arrival', desc: 'Begin your love story in paradise.', activities: ['Private car pickup with flower bouquet welcome', 'Check-in to romantic couple\'s suite with sea view', 'Room decorated with flowers & rose petals', 'Candlelight welcome dinner on the beach', 'Bonfire under the stars'] },
+            { day: 2, title: 'Port Blair Romantic Exploration', desc: 'Discover the beauty of Port Blair together.', activities: ['Breakfast in bed (optional)', 'Private guided sightseeing of Port Blair', 'Cellular Jail (historical experience)', 'Couple\'s spa and wellness package', 'Evening sunset cruise with cocktails'] },
+            { day: 3, title: 'Ferry to Havelock – Beach Romance', desc: 'Havelock\'s beaches are made for couples.', activities: ['Morning ferry to Havelock Island', 'Check-in to couple\'s beach villa', 'Radhanagar Beach stroll (Asia\'s best beach)', 'Professional couple photoshoot on the beach', 'Romantic beachside dinner'] },
+            { day: 4, title: 'Havelock – Adventure for Two', desc: 'Create thrilling memories together.', activities: ['Couple\'s Scuba Diving (beginner session)', 'Snorkeling at Elephant Beach', 'Private picnic lunch on a secluded beach', 'Couple\'s massage at resort spa', 'Stargazing on the beach'] },
+            { day: 5, title: 'Havelock – Last Beach Day', desc: 'Soak in every last moment of paradise.', activities: ['Sunrise yoga on the beach', 'Leisure morning at your private beach', 'Last photoshoot session (drone shots optional)', 'Ferry back to Port Blair', 'Farewell romantic dinner at port-side restaurant'] },
+            { day: 6, title: 'Departure', desc: 'Until next time, paradise.', activities: ['Breakfast and check-out', 'Souvenir shopping', 'Airport transfer', 'Depart with hearts full of beautiful memories'] }
+        ],
+        inclusions: ['5 nights in couple\'s resorts (honeymoon suite)', 'Daily breakfast', 'Port Blair ↔ Havelock ferry (premium)', 'All transfers in private AC vehicles', 'Couple\'s spa session (1 hr each)', 'Professional photoshoot (50+ edited photos)', 'Candlelight dinners (2 nights)', 'Room decoration with flowers', 'Sunset cruise with cocktails', 'Beginner couple\'s scuba diving'],
+        exclusions: ['Airfare', 'Lunch', 'Additional spa sessions', 'Drone photoshoot', 'Personal expenses', 'Alcohol', 'Travel insurance']
+    },
+    test: {
+        duration: 'Instant',
+        highlights: ['Live Razorpay Integration', 'Secure Payment', 'Instant Confirmation'],
+        images: ['/images/beach1.jpg', '/images/beach2.jpg', '/images/beach3.jpg'],
+        days: [
+            { day: 1, title: 'Payment Test', desc: 'This is a ₹1 test to verify the payment gateway works correctly.', activities: ['Click "Pay ₹1 Now"', 'Complete Razorpay payment (use test/live card)', 'Receive booking confirmation', 'Check dashboard for booking record'] }
+        ],
+        inclusions: ['Live payment gateway test', 'Booking confirmation'],
+        exclusions: ['This is a test — no actual travel included']
+    }
+};
+
+const INCL_ICONS = {
+    'Hotels': 'fa-bed', 'Deluxe Hotels': 'fa-bed', '5-star Resorts': 'fa-bed', '5* Resorts': 'fa-bed',
+    'Ferries': 'fa-ship', 'Premium Ferries': 'fa-ship', 'VIP Ferries': 'fa-ship',
+    'Breakfast': 'fa-utensils', 'Snorkeling': 'fa-swimmer', 'Scuba Dive': 'fa-fish',
+    'Romantic Setup': 'fa-heart', 'Photoshoot': 'fa-camera', 'Dinner': 'fa-wine-glass',
+    'Live Payment': 'fa-check-circle', 'Instant': 'fa-bolt'
+};
+function getIcon(s) { return INCL_ICONS[s] || 'fa-check'; }
+
+let currentPkg = null;
+let currentBasePrice = 0;
+
+// ── Load package from API ────────────────────────────────────────
+async function loadPackage() {
+    const params = new URLSearchParams(window.location.search);
+    const pkgId = params.get('id') || 'budget';
+
+    try {
+        const res = await fetch('/.netlify/functions/packages', { cache: 'no-store' });
+        const packages = await res.json();
+        window._packages = packages;
+        currentPkg = packages.find(p => p.id === pkgId);
+    } catch(e) {
+        const cached = localStorage.getItem('sitePackages');
+        if (cached) {
+            window._packages = JSON.parse(cached);
+            currentPkg = window._packages.find(p => p.id === pkgId);
+        }
+    }
+
+    if (!currentPkg) {
+        document.getElementById('pageContent').innerHTML = `
+            <div class="pkg-loading" style="padding-top:6rem;">
+                <i class="fas fa-exclamation-circle" style="color:#e74c3c;"></i>
+                <p>Package not found. <a href="index.html#packages">Browse all packages</a></p>
+            </div>`;
+        return;
+    }
+
+    currentBasePrice = currentPkg.price;
+
+    // Merge with itinerary defaults
+    const defaults = ITINERARY_DEFAULTS[pkgId] || ITINERARY_DEFAULTS['budget'];
+    const pkg = {
+        duration:    currentPkg.duration    || defaults.duration,
+        highlights:  currentPkg.highlights  || defaults.highlights,
+        images:      currentPkg.images      || defaults.images,
+        days:        currentPkg.days        || defaults.days,
+        inclusions:  currentPkg.inclusions  || defaults.inclusions,
+        exclusions:  currentPkg.exclusions  || defaults.exclusions,
+        ...currentPkg
+    };
+
+    document.title = pkg.name + ' – Bharat Tours & Travels';
+    renderPage(pkg);
+}
+
+function renderPage(pkg) {
+    const isTest = pkg.id === 'test' || pkg.price <= 1;
+    const heroImg = pkg.image || '/images/beach1.jpg';
+
+    document.getElementById('pageContent').innerHTML = `
+        <!-- Hero -->
+        <div class="pkg-hero" style="background-image:url('${heroImg}');">
+            <div class="pkg-hero-content">
+                <a href="index.html#packages" class="back-btn"><i class="fas fa-arrow-left"></i> All Packages</a>
+                <h1>${pkg.name}</h1>
+                <div class="pkg-hero-meta">
+                    <span class="price-badge">₹${Number(pkg.price).toLocaleString()} ${isTest ? '/test' : '/person'}</span>
+                    <span class="rating-badge"><i class="fas fa-star" style="color:#f1c40f;"></i> ${Number(pkg.rating).toFixed(1)}</span>
+                    <span><i class="fas fa-clock"></i> ${pkg.duration}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> Andaman Islands</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Highlights Bar -->
+        <div class="pkg-highlights-bar">
+            ${(pkg.highlights || []).map(h => `<div class="pkg-highlight-item"><i class="fas fa-check-circle"></i> ${h}</div>`).join('')}
+        </div>
+
+        <!-- Main Content -->
+        <div class="pkg-main">
+            <!-- Left Column -->
+            <div class="pkg-left">
+                <!-- Overview -->
+                <div class="pkg-section">
+                    <h2><i class="fas fa-info-circle"></i> Overview</h2>
+                    <p style="color:#555;line-height:1.7;margin:0;">${pkg.desc || ''}</p>
+                </div>
+
+                <!-- Itinerary -->
+                <div class="pkg-section">
+                    <h2><i class="fas fa-map-marked-alt"></i> Day-by-Day Itinerary</h2>
+                    <div class="timeline">
+                        ${(pkg.days || []).map(d => `
+                        <div class="timeline-day">
+                            <div class="timeline-dot">${d.day}</div>
+                            <div class="timeline-day-header">
+                                <span class="day-badge">Day ${d.day}</span>
+                                <span class="timeline-day-title">${d.title}</span>
+                            </div>
+                            ${d.desc ? `<p class="timeline-day-desc">${d.desc}</p>` : ''}
+                            <ul class="timeline-activities">
+                                ${(d.activities || []).map(a => `<li><i class="fas fa-chevron-right"></i> ${a}</li>`).join('')}
+                            </ul>
+                        </div>`).join('')}
+                    </div>
+                </div>
+
+                <!-- Inclusions / Exclusions -->
+                <div class="pkg-section">
+                    <h2><i class="fas fa-list-check"></i> What's Included / Excluded</h2>
+                    <div class="incl-grid">
+                        <div>
+                            <p class="incl-subtitle" style="color:#1abc9c;">✅ Included</p>
+                            <ul class="incl-list inclusions">
+                                ${(pkg.inclusions || []).map(i => `<li><i class="fas fa-check-circle"></i> ${i}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="incl-subtitle" style="color:#e74c3c;">❌ Not Included</p>
+                            <ul class="incl-list exclusions">
+                                ${(pkg.exclusions || ['Airfare','Lunch & Dinner','Personal expenses']).map(i => `<li><i class="fas fa-times-circle"></i> ${i}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gallery -->
+                <div class="pkg-section">
+                    <h2><i class="fas fa-images"></i> Photo Gallery</h2>
+                    <div class="gallery-grid">
+                        ${(pkg.images || [pkg.image]).map(img => `
+                        <div class="gallery-img" onclick="openImgLightbox('${img}')">
+                            <img src="${img}" alt="Package photo" loading="lazy">
+                        </div>`).join('')}
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="pkg-section">
+                    <h2><i class="fas fa-file-contract"></i> Terms & Policies</h2>
+                    <ul style="color:#666;font-size:0.9rem;line-height:2;padding-left:1.2rem;margin:0;">
+                        <li>Check-in: 12:00 PM | Check-out: 11:00 AM</li>
+                        <li>Cancellation: 100% refund if cancelled 15+ days before travel date</li>
+                        <li>Cancellation: 50% refund if cancelled 7–14 days before travel date</li>
+                        <li>No refund for cancellations within 7 days of travel date</li>
+                        <li>ID proof mandatory at check-in (passport / Aadhar Card)</li>
+                        <li>Carry sufficient cash – ATMs may be limited on islands</li>
+                        <li>Sea conditions may affect ferry schedules (beyond our control)</li>
+                        <li>GST (5%) applicable on all package amounts</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Column – Booking Card -->
+            <div>
+                <div class="booking-card">
+                    <div class="bc-price">₹${Number(pkg.price).toLocaleString()} <span>${isTest ? '/test' : '/person'}</span></div>
+                    <div class="bc-rating">
+                        <i class="fas fa-star"></i>
+                        ${Number(pkg.rating).toFixed(1)}
+                        <span>(Highly Rated)</span>
+                    </div>
+
+                    <div class="bc-divider"></div>
+
+                    <p style="font-size:0.85rem;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin:0 0 0.6rem;">Package Includes</p>
+                    <ul class="bc-inclusions">
+                        ${(pkg.inclusions || []).slice(0,6).map(i => `<li><i class="fas ${getIcon(i)}"></i> ${i}</li>`).join('')}
+                    </ul>
+
+                    <button class="btn-book-now" onclick="bookNow()">
+                        <i class="fas fa-credit-card"></i>
+                        ${isTest ? 'Pay ₹1 Now (Test)' : 'Book Now'}
+                    </button>
+                    ${!isTest ? `
+                    <button class="btn-customize-pkg" onclick="customizeNow()">
+                        <i class="fas fa-sliders-h"></i> Customize This Package
+                    </button>` : ''}
+
+                    <div class="bc-assurance">
+                        <i class="fas fa-shield-alt"></i> 100% Secure Payment via Razorpay<br>
+                        <i class="fas fa-headset"></i> 24/7 Travel Support
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="background:#1a1a1a;color:rgba(255,255,255,0.6);text-align:center;padding:1.5rem;margin-top:2rem;font-size:0.88rem;">
+            © 2026 Bharat Tours and Travels · <a href="index.html" style="color:#1abc9c;">Home</a> · 
+            <a href="index.html#packages" style="color:#1abc9c;">All Packages</a> · 
+            <a href="index.html#contact" style="color:#1abc9c;">Contact</a>
+        </footer>
+
+        <!-- Lightbox -->
+        <div id="lightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:none;align-items:center;justify-content:center;cursor:zoom-out;">
+            <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;">
+        </div>
+    `;
+}
+
+function openImgLightbox(src) {
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lightboxImg').src = src;
+    lb.style.display = 'flex';
+}
+
+function bookNow() {
+    if (!currentPkg) return;
+    const price = currentPkg.price;
+    document.getElementById('finalAmount').textContent = '₹' + Number(price).toLocaleString();
+    document.getElementById('bookingDetails').textContent = 'Package: ' + currentPkg.name;
+    window.currentPackage = currentPkg.id;
+    window.currentBasePrice = price;
+    document.getElementById('paymentModal').style.display = 'block';
+}
+
+function customizeNow() {
+    if (!currentPkg) return;
+    document.getElementById('modalTitle').textContent = 'Customize ' + currentPkg.name;
+    window.currentPackage = currentPkg.id;
+    window.currentBasePrice = currentPkg.price;
+    updateTotal();
+    document.getElementById('customizeModal').style.display = 'block';
+}
+
+function updateTotal() {
+    let total = window.currentBasePrice || 0;
+    document.querySelectorAll('#customForm input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) total += parseInt(cb.value);
+    });
+    document.getElementById('totalPrice').textContent = 'Total: ₹' + total.toLocaleString();
+}
+
+function proceedToPayment() {
+    const totalStr = document.getElementById('totalPrice').textContent.match(/₹([\d,]+)/)[1].replace(/,/g,'');
+    document.getElementById('finalAmount').textContent = '₹' + Number(totalStr).toLocaleString();
+    document.getElementById('bookingDetails').textContent = 'Package: ' + currentPkg.name + ' | ' + document.getElementById('duration').value;
+    document.getElementById('customizeModal').style.display = 'none';
+    document.getElementById('paymentModal').style.display = 'block';
+}
+
+window.confirmBooking = async function() {
+    const priceStr = document.getElementById('finalAmount').textContent.replace(/[^0-9]/g,'');
+    const price = parseFloat(priceStr);
+    const currentUser = localStorage.getItem('currentUser');
+    const options = {
+        key: 'rzp_live_SLfG8nnKN3tXPC',
+        amount: price * 100,
+        currency: 'INR',
+        name: 'Bharat Tours & Travels',
+        description: currentPkg.name,
+        handler: function(response) {
+            // Save booking to localStorage
+            const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const user = currentUser ? JSON.parse(currentUser) : null;
+            bookings.push({
+                id: Date.now(),
+                package_name: currentPkg.id,
+                price,
+                duration: document.getElementById('duration') ? document.getElementById('duration').value : currentPkg.duration,
+                guests: '2 Adults',
+                payment_id: response.razorpay_payment_id,
+                status: 'confirmed',
+                createdAt: new Date().toISOString(),
+                userId: user ? user.id : 'guest'
+            });
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+            document.getElementById('paymentModal').style.display = 'none';
+            alert('🎉 Booking Confirmed!\nPayment ID: ' + response.razorpay_payment_id + '\n\nThank you for choosing Bharat Tours & Travels!');
+        },
+        prefill: {
+            name: currentUser ? JSON.parse(currentUser).username : 'Guest',
+            email: currentUser ? JSON.parse(currentUser).email : '',
+            contact: '9876543210'
+        },
+        theme: { color: '#1abc9c' }
+    };
+    if (typeof Razorpay === 'undefined') { alert('Payment system not loaded. Please refresh.'); return; }
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', r => alert('Payment failed: ' + r.error.description));
+    rzp.open();
+};
+
+// ── Auth nav link ────────────────────────────────────────────────
+function updateNavAuth() {
+    const link = document.getElementById('navAuthLink');
+    const user = localStorage.getItem('currentUser');
+    if (user && localStorage.getItem('token')) {
+        const u = JSON.parse(user);
+        link.textContent = u.username;
+        link.href = 'index.html';
+    }
+}
+updateNavAuth();
+
+// Close modals on outside click
+window.onclick = e => {
+    ['paymentModal','customizeModal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (e.target === m) m.style.display = 'none';
+    });
+};
+
+// Customize form checkbox listeners
+document.addEventListener('change', e => {
+    if (e.target.type === 'checkbox' && e.target.closest('#customForm')) updateTotal();
+});
+
+// Load on page ready
+loadPackage();
+</script>
+</body>
+</html>
