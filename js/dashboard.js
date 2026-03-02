@@ -439,7 +439,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="ite-fields-grid">
                         <div class="pkg-edit-row">
                             <label>Duration</label>
-                            <input id="ite-duration" type="text" class="pkg-input" placeholder="e.g. 4 Nights / 5 Days">
+                            <select id="ite-duration" class="pkg-input">
+                                ${Array.from({length:14},(_,i)=>`<option value="${i+1} Night${i>0?'s':''} / ${i+2} Days">${i+1} Night${i>0?'s':''} / ${i+2} Days</option>`).join('')}
+                            </select>
                         </div>
                         <div class="pkg-edit-row">
                             <label>Highlights <small>(comma-separated)</small></label>
@@ -462,12 +464,15 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
 
         // Set field values directly (avoids escaping issues)
-        document.getElementById('ite-duration').value = pkg.duration || '';
+        const durSel = document.getElementById('ite-duration');
+        durSel.value = pkg.duration || '';
+        // If no match, fall back to first option
+        if (!durSel.value) durSel.selectedIndex = 0;
         document.getElementById('ite-highlights').value = (pkg.highlights || []).join(', ');
         document.getElementById('ite-exclusions').value = (pkg.exclusions || []).join(', ');
 
         // Bind overview fields
-        document.getElementById('ite-duration').addEventListener('input', function() {
+        document.getElementById('ite-duration').addEventListener('change', function() {
             packagesData[pkgIdx].duration = this.value;
         });
         document.getElementById('ite-highlights').addEventListener('input', function() {
@@ -546,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="pkg-ite-footer">
                     <button type="button" class="btn-edit-itinerary" onclick="window._openItineraryEditor(${idx})">
                         <i class="fas fa-map-marked-alt"></i> Edit Itinerary
-                        <span class="ite-badge">${(pkg.days||[]).length} days</span>
+                        <span class="ite-badge">${(pkg.days && pkg.days.length) ? pkg.days.length : (ITINERARY_DEFAULTS[pkg.id] ? ITINERARY_DEFAULTS[pkg.id].days.length : 0)} days</span>
                     </button>
                 </div>
             </div>
@@ -598,9 +603,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window._closeItineraryEditor = function() {
         document.getElementById('itineraryEditor').style.display = 'none';
-        // Refresh badge on the card
         const idx = window._currentIteIdx;
         if (idx != null) {
+            // Update badge with real day count
             const badge = document.querySelector(`[data-idx="${idx}"] .ite-badge`);
             if (badge) badge.textContent = (packagesData[idx].days||[]).length + ' days';
         }
