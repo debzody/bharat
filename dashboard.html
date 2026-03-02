@@ -326,6 +326,29 @@
         </section>
     </main>
 
+    <!-- ── Full-Page Itinerary Editor Overlay ─────────────────── -->
+    <div id="itineraryEditor" class="ite-overlay" style="display:none;">
+        <div class="ite-topbar">
+            <button class="ite-back-btn" id="iteBackBtn">
+                <i class="fas fa-arrow-left"></i> Back to Packages
+            </button>
+            <div class="ite-topbar-center">
+                <i class="fas fa-map-marked-alt"></i>
+                <span id="itePkgName">Edit Itinerary</span>
+            </div>
+            <button class="ite-done-btn" id="iteDoneBtn">
+                <i class="fas fa-check"></i> Done
+            </button>
+        </div>
+        <div class="ite-page-body" id="iteBody">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
     <script src="js/dashboard.js"></script>
+    <script>
+        document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());
+        document.getElementById('iteDoneBtn').addEventListener('click', () => window._closeItineraryEditor());
+    </script>
 </body>
 </html>
