@@ -286,6 +286,71 @@ document.addEventListener('DOMContentLoaded', function () {
         loadAndRenderPackages();
     }
 
+    // ── Itinerary Defaults (same as package.html) ───────────────
+    const ITINERARY_DEFAULTS = {
+        budget: {
+            duration: '4 Nights / 5 Days',
+            highlights: ['Radhanagar Beach', 'Cellular Jail', 'Ross Island', 'Havelock Ferry'],
+            exclusions: ['Airfare', 'Lunch & Dinner', 'Personal expenses', 'Travel insurance'],
+            days: [
+                { day:1, title:'Arrival in Port Blair', desc:'Welcome to Andaman! Airport pickup and hotel check-in.', activities:['Airport pickup & hotel check-in','Visit Cellular Jail National Memorial','Light & Sound Show','Overnight in Port Blair'] },
+                { day:2, title:'Port Blair – Havelock Island', desc:'Journey to Havelock Island by ferry.', activities:['Breakfast at hotel','Ferry to Havelock Island (90 min)','Check-in to beach resort','Radhanagar Beach (Asia\'s Best Beach)','Sunset at Beach No. 7'] },
+                { day:3, title:'Havelock – Beach Day', desc:'Explore pristine beaches and crystal clear waters.', activities:['Morning at Elephant Beach by boat','Snorkeling at coral reef','Lunch at local seafood restaurant','Evening leisure at beach','Bonfire on the beach (optional)'] },
+                { day:4, title:'Havelock – Return to Port Blair', desc:'Return journey and explore Port Blair.', activities:['Ferry back to Port Blair','Ross Island & North Bay Island tour','Shopping at Aberdeen Bazaar','Overnight in Port Blair'] },
+                { day:5, title:'Departure Day', desc:'Farewell to the Andaman Islands.', activities:['Breakfast and hotel check-out','Airport transfer','Departure'] }
+            ]
+        },
+        standard: {
+            duration: '6 Nights / 7 Days',
+            highlights: ['Havelock Island', 'Neil Island', 'Scuba Diving', 'Cellular Jail'],
+            exclusions: ['Airfare', 'Lunch', 'Additional water sports', 'Personal expenses'],
+            days: [
+                { day:1, title:'Arrival in Port Blair', desc:'Arrive at Veer Savarkar Airport.', activities:['Airport reception & deluxe hotel check-in','Visit Cellular Jail','Light & Sound Show','Welcome dinner'] },
+                { day:2, title:'Port Blair Sightseeing', desc:'Explore historical and natural wonders.', activities:['Anthropological Museum','Chidiya Tapu sunset point','Corbyn\'s Cove Beach','Evening at leisure'] },
+                { day:3, title:'Port Blair – Havelock Island', desc:'Transfer to Havelock Island.', activities:['Premium ferry to Havelock','Check-in to deluxe resort','Radhanagar Beach','Sunset photography'] },
+                { day:4, title:'Havelock – Water Adventures', desc:'Thrilling underwater experiences.', activities:['Beginner Scuba Diving','Snorkeling at Elephant Beach','Glass-bottom boat ride','Beachside barbecue dinner'] },
+                { day:5, title:'Havelock – Neil Island', desc:'Scenic ferry to Neil Island.', activities:['Ferry to Neil Island','Natural Bridge','Bharatpur & Laxmanpur Beaches','Cycling around island'] },
+                { day:6, title:'Neil Island – Port Blair', desc:'Last island day before return.', activities:['Sunrise at Laxmanpur Beach','Ferry back to Port Blair','Shopping at Sagarika Emporium','Farewell dinner'] },
+                { day:7, title:'Departure', desc:'Time to say goodbye.', activities:['Breakfast and check-out','Airport transfer','Depart with memories'] }
+            ]
+        },
+        luxury: {
+            duration: '6 Nights / 7 Days',
+            highlights: ['5-Star Resort', 'Private Beach', 'Advanced Scuba', 'Private Yacht'],
+            exclusions: ['Airfare', 'Alcohol & bar bills', 'Personal shopping', 'Travel insurance'],
+            days: [
+                { day:1, title:'Royal Welcome to Port Blair', desc:'Experience luxury from the moment you land.', activities:['Private car airport pickup','Check-in to 5-star sea-facing suite','Welcome cocktails & personal concierge','Private beach dinner under stars'] },
+                { day:2, title:'Port Blair VIP Sightseeing', desc:'Exclusive private guided tour.', activities:['Rooftop breakfast with sea view','Private Cellular Jail heritage tour','Private boat to Ross Island','Snorkeling with personal instructor','Spa treatment'] },
+                { day:3, title:'Private Yacht to Havelock', desc:'Sail to Havelock in style.', activities:['Gourmet breakfast','Private yacht transfer to Havelock','Check-in to exclusive beach villa','Private beach access','Sundowner cocktails'] },
+                { day:4, title:'Havelock – Adventure Luxury', desc:'Best of luxury and adventure.', activities:['Advanced Scuba Diving (PADI)','Private snorkeling charter','Freshly caught seafood lunch','Spa massage session','Private candlelight beach dinner'] },
+                { day:5, title:'Havelock Free Day', desc:'Completely personalized day.', activities:['Sunrise yoga on beach','Optional: fishing / jet ski / parasailing','Gourmet beach picnic','Professional photoshoot','Evening bonfire with live music'] },
+                { day:6, title:'Havelock – Neil – Port Blair', desc:'Scenic island hopping back.', activities:['Private speedboat to Neil Island','Neil Island exclusive tour','Premium ferry to Port Blair','Farewell gala dinner'] },
+                { day:7, title:'VIP Departure', desc:'Farewell befitting royalty.', activities:['Late checkout privilege','Optional spa morning','Private car to airport','Departure'] }
+            ]
+        },
+        honeymoon: {
+            duration: '5 Nights / 6 Days',
+            highlights: ['Romantic Beach Dinners', 'Couple Spa', 'Photoshoot', 'Sunset Cruise'],
+            exclusions: ['Airfare', 'Lunch', 'Additional spa sessions', 'Personal expenses'],
+            days: [
+                { day:1, title:'Romantic Arrival', desc:'Begin your love story in paradise.', activities:['Flower bouquet welcome','Couple\'s suite with sea view','Room decorated with flowers','Candlelight beach dinner','Bonfire under the stars'] },
+                { day:2, title:'Port Blair Romantic Exploration', desc:'Discover beauty together.', activities:['Breakfast in bed','Private sightseeing of Port Blair','Cellular Jail visit','Couple\'s spa and wellness','Sunset cruise with cocktails'] },
+                { day:3, title:'Ferry to Havelock – Beach Romance', desc:'Havelock\'s beaches are made for couples.', activities:['Ferry to Havelock','Couple\'s beach villa check-in','Radhanagar Beach stroll','Professional couple photoshoot','Romantic beachside dinner'] },
+                { day:4, title:'Havelock – Adventure for Two', desc:'Create thrilling memories together.', activities:['Couple\'s Scuba Diving','Snorkeling at Elephant Beach','Private picnic lunch','Couple\'s spa massage','Stargazing on beach'] },
+                { day:5, title:'Havelock – Last Beach Day', desc:'Soak in every last moment.', activities:['Sunrise yoga on beach','Leisure morning at private beach','Last photoshoot session','Ferry back to Port Blair','Farewell romantic dinner'] },
+                { day:6, title:'Departure', desc:'Until next time, paradise.', activities:['Breakfast and check-out','Souvenir shopping','Airport transfer','Departure with beautiful memories'] }
+            ]
+        },
+        test: {
+            duration: 'Instant',
+            highlights: ['Live Razorpay Integration', 'Secure Payment'],
+            exclusions: ['No actual travel included'],
+            days: [
+                { day:1, title:'Payment Test', desc:'₹1 test to verify the payment gateway.', activities:['Click Pay ₹1 Now','Complete Razorpay payment','Receive booking confirmation'] }
+            ]
+        }
+    };
+
     // ── Itinerary Full-Page Editor ──────────────────────────────
     function renderIteDaysHtml(pkgIdx) {
         const days = (packagesData[pkgIdx].days) || [];
@@ -466,9 +531,17 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('ite-days-container').innerHTML = renderIteDaysHtml(pkgIdx);
     };
 
-    // Open full-page itinerary editor
+    // Open full-page itinerary editor (merge defaults if package has no itinerary data)
     window._openItineraryEditor = function(pkgIdx) {
         window._currentIteIdx = pkgIdx;
+        const pkg = packagesData[pkgIdx];
+        const defKey = pkg.id && ITINERARY_DEFAULTS[pkg.id] ? pkg.id : 'budget';
+        const def = ITINERARY_DEFAULTS[defKey];
+        // Merge defaults into the package if fields are missing
+        if (!pkg.days || pkg.days.length === 0)      pkg.days       = JSON.parse(JSON.stringify(def.days));
+        if (!pkg.duration)                            pkg.duration   = def.duration;
+        if (!pkg.highlights || !pkg.highlights.length) pkg.highlights = def.highlights.slice();
+        if (!pkg.exclusions || !pkg.exclusions.length) pkg.exclusions = def.exclusions.slice();
         renderItineraryEditor(pkgIdx);
         document.getElementById('itineraryEditor').style.display = 'flex';
     };
