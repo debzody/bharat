@@ -1004,7 +1004,9 @@ select.pkg-input {
 
 .ite-page-body {
     flex: 1;
+    min-height: 0;        /* required for flex child to actually scroll */
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 2rem;
     display: flex;
     flex-direction: column;
