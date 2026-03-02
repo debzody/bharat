@@ -1,0 +1,5 @@
+node_modules/
+.env
+travel.db
+*.log
+.DS_Store

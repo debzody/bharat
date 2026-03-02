@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bharat Tours and Travels - Best Andaman Holiday Packages</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Razorpay Payment Gateway -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="logo" style="display:flex;align-items:center;gap:0.6rem;">
+                    <img src="images/logo.png" alt="" style="height:48px;width:auto;object-fit:contain;">
+                    <span>Bharat Tours &amp; Travels</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#home"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="#packages"><i class="fas fa-suitcase"></i> Packages</a></li>
+                    <li><a href="#customize"><i class="fas fa-cog"></i> Customize</a></li>
+                    <li><a href="#contact"><i class="fas fa-phone"></i> Contact</a></li>
+                    <li><a href="dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="javascript:void(0)" id="signUpNavLink"><i class="fas fa-user-plus"></i> Sign Up</a></li>
+                    <li><a href="#" id="authLink"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <!-- Hero Carousel -->
+        <div class="hero-carousel">
+            <div class="carousel-track" id="carouselTrack">
+                <div class="carousel-slide active" style="background-image: url('images/beach1.jpg')">
+                    <div class="slide-caption">Radhanagar Beach — Asia's Best Beach</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/neil1.jpg')">
+                    <div class="slide-caption">Havelock Island — Turquoise Waters</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/beach2.jpg')">
+                    <div class="slide-caption">Neil Island — Serene Paradise</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/neil2.jpg')">
+                    <div class="slide-caption">Scuba Diving — Explore the Deep</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/beach3.jpg')">
+                    <div class="slide-caption">Luxury Resorts — World-Class Stays</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/neil3.jpg')">
+                    <div class="slide-caption">Elephant Beach — Crystal Clear Lagoon</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/beach4.jpg')">
+                    <div class="slide-caption">Romantic Sunsets — Honeymoon Special</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/neil4.jpg')">
+                    <div class="slide-caption">Overwater Bungalows — Ultimate Luxury</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/neil6.jpg')">
+                    <div class="slide-caption">Port Blair — Gateway to Andaman</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/ross2.jpg')">
+                    <div class="slide-caption">Ross Island — Colonial Heritage Trail</div>
+                </div>
+                <div class="carousel-slide" style="background-image: url('images/ross3.jpg')">
+                    <div class="slide-caption">Ross Island — Tropical Forest Walks</div>
+                </div>
+            </div>
+            <!-- Arrows -->
+            <button class="carousel-btn carousel-prev" id="carouselPrev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+            <button class="carousel-btn carousel-next" id="carouselNext" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+            <!-- Dots -->
+            <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+
+        <div class="hero-content">
+            <h1>Best Andaman Holiday Packages <br><small>From ₹15,999 PP</small></h1>
+            <p>Discover pristine beaches, crystal waters & adventure in Andaman Islands. Customizable packages with flights, hotels, ferries & activities.</p>
+            <div class="search-box">
+                <input type="text" placeholder="Andaman Packages" readonly>
+                <input type="date" id="checkin">
+                <input type="date" id="checkout">
+                <button id="findPkgsBtn">Find Packages</button>
+            </div>
+            <div class="trust-badges">
+                <span><i class="fas fa-award"></i> 50K+ Happy Travelers</span>
+                <span><i class="fas fa-shield-alt"></i> Secure Payments</span>
+                <span><i class="fas fa-clock"></i> Instant Confirmation</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <h3>1,000+ Local Guides</h3>
+                <p>Expert local knowledge for authentic experiences</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-star"></i></div>
+                <h3>Handcrafted Experiences</h3>
+                <p>Carefully curated tours designed for you</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-plane"></i></div>
+                <h3>100% Happy Travellers</h3>
+                <p>Trusted by thousands of satisfied guests</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="packages" class="destinations">
+        <div class="container">
+            <h2><i class="fas fa-suitcase"></i> Popular Andaman Packages</h2>
+            <div class="search-filter">
+                <input type="text" id="packageSearch" placeholder="Search packages by duration, price...">
+                <select id="sortSelect">
+                    <option>Sort by: Price Low-High</option>
+                    <option>Price High-Low</option>
+                    <option>Duration Short-Long</option>
+                    <option>Rating High-Low</option>
+                </select>
+            </div>
+            <div id="packagesGrid" class="destinations-grid">
+                <div style="text-align:center;padding:3rem;width:100%;grid-column:1/-1;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#1abc9c;"></i>
+                    <p style="color:#888;margin-top:0.75rem;">Loading packages…</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="customize" class="customization-section">
+        <div class="container">
+            <h2><i class="fas fa-magic"></i> Customize Your Package</h2>
+            <p>Tailor your Andaman holiday with add-ons like scuba diving, private dinners & more!</p>
+        </div>
+    </section>
+
+    <!-- Customization Modal -->
+    <div id="customizeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="customizeModal">&times;</span>
+            <h2 id="modalTitle">Customize Package</h2>
+            <form id="customForm">
+                <div class="form-group">
+                    <label>Duration</label>
+                    <select id="duration">
+                        <option>4 Nights / 5 Days</option>
+                        <option>5 Nights / 6 Days</option>
+                        <option>6 Nights / 7 Days</option>
+                        <option>7 Nights / 8 Days</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rooms</label>
+                    <select id="rooms">
+                        <option>1 Room (Double)</option>
+                        <option>2 Rooms</option>
+                        <option>1 Suite</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Meals</label>
+                    <select id="meals">
+                        <option>Breakfast Only</option>
+                        <option>Breakfast + Dinner</option>
+                        <option>All Meals</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Add Activities</label>
+                    <label><input type="checkbox" value="2000"> Scuba Diving (₹2000)</label><br>
+                    <label><input type="checkbox" value="1500"> Snorkeling (₹1500)</label><br>
+                    <label><input type="checkbox" value="3000"> Candlelight Dinner (₹3000)</label><br>
+                    <label><input type="checkbox" value="1000"> Photoshoot (₹1000)</label>
+                </div>
+                <div id="totalPrice">Base Price: ₹21,999</div>
+                <button type="button" class="btn-primary" id="proceedPaymentBtn">Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="loginModal">&times;</span>
+            <h2><i class="fas fa-sign-in-alt"></i> Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn-primary">Login</button>
+                <p style="text-align:center;margin-top:1rem;">Don't have account? <a href="#" id="goToRegister">Register</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="registerModal">&times;</span>
+            <h2><i class="fas fa-user-plus"></i> Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <button type="submit" class="btn-primary">Register</button>
+                <p style="text-align:center;margin-top:1rem;">Have account? <a href="#" id="goToLogin">Login</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <span class="close" data-close="profileModal">&times;</span>
+            <h2><i class="fas fa-user"></i> Profile & Bookings</h2>
+            <div id="profileInfo">
+                <p><strong>Welcome, </strong><span id="profileUsername"></span>!</p>
+                <button class="btn-primary" id="logoutBtn" style="width:auto;">Logout</button>
+            </div>
+            <h3>My Bookings</h3>
+            <div id="bookingsList"></div>
+        </div>
+    </div>
+
+    <!-- Payment Modal - Updated with Razorpay Integration -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="paymentModal">&times;</span>
+            <h2><i class="fas fa-credit-card"></i> Secure Payment</h2>
+            <p><strong>Final Amount:</strong> <span id="finalAmount">₹21,999</span></p>
+            <p id="bookingDetails"></p>
+            <div style="background: #e8f8f5; padding: 1rem; border-radius: 5px; margin: 1rem 0; color: #16a085;">
+                <i class="fas fa-lock"></i> Secured by Razorpay | 100% Safe & Secure
+            </div>
+            <button class="btn-primary" id="confirmBookingBtn">Pay Now with Razorpay</button>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+                <i class="fas fa-info-circle"></i> You will be redirected to Razorpay payment gateway
+            </p>
+        </div>
+    </div>
+
+    <section id="contact" class="payment-section">
+        <div class="container">
+            <h2>Ready to Book?</h2>
+            <p>Call us at <a href="tel:+919876543210" style="color:#1abc9c;">+91 98765 43210</a> or email info@bharattours.com</p>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2026 Bharat Tours and Travels. All rights reserved. | Best Andaman Holiday Packages</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

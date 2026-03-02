@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bharat Tours and Travels</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Access guard — only user "deb" may view this page
+        (function() {
+            var token = localStorage.getItem('token');
+            var raw = localStorage.getItem('currentUser');
+            if (!token || !raw) {
+                alert('⛔ Access denied. Please login first.');
+                window.location.replace('index.html');
+                return;
+            }
+            try {
+                var user = JSON.parse(raw);
+                if (!user || user.username.toLowerCase() !== 'deb') {
+                    alert('⛔ Access denied. This dashboard is restricted.');
+                    window.location.replace('index.html');
+                }
+            } catch(e) {
+                window.location.replace('index.html');
+            }
+        })();
+    </script>
+</head>
+<body class="dashboard-body">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="Bharat Tours" style="height:52px;width:auto;object-fit:contain;filter:brightness(1.1);">
+            </div>
+            <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="sidebar-link active" data-section="overview">
+                <i class="fas fa-th-large"></i> Overview
+            </a>
+            <a href="#" class="sidebar-link" data-section="bookings">
+                <i class="fas fa-calendar-check"></i> Bookings
+            </a>
+            <a href="#" class="sidebar-link" data-section="packages">
+                <i class="fas fa-suitcase"></i> Packages
+            </a>
+            <a href="#" class="sidebar-link" data-section="customers">
+                <i class="fas fa-users"></i> Customers
+            </a>
+            <a href="#" class="sidebar-link" data-section="revenue">
+                <i class="fas fa-chart-line"></i> Revenue
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="index.html" class="sidebar-link">
+                <i class="fas fa-arrow-left"></i> Back to Site
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Top Bar -->
+        <header class="dashboard-topbar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="topbar-title" id="pageTitle">Dashboard Overview</h1>
+            <div class="topbar-actions">
+                <span class="topbar-user" id="topbarUser">
+                    <i class="fas fa-user-circle"></i> <span id="dashUsername">Admin</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- Overview Section -->
+        <section class="dashboard-section active" id="section-overview">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #e8f8f5; color: #1abc9c;">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalBookings">0</span>
+                        <span class="stat-label">Total Bookings</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #eaf2f8; color: #3498db;">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalRevenue">₹0</span>
+                        <span class="stat-label">Total Revenue</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fef9e7; color: #f39c12;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalCustomers">0</span>
+                        <span class="stat-label">Customers</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fdedec; color: #e74c3c;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="confirmedBookings">0</span>
+                        <span class="stat-label">Confirmed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <!-- Booking Status Chart -->
+                <div class="chart-card">
+                    <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Booking Status</h3>
+                    <div class="donut-chart-container">
+                        <div class="donut-chart" id="statusChart">
+                            <div class="donut-hole">
+                                <span class="donut-number" id="donutTotal">0</span>
+                                <span class="donut-label">Total</span>
+                            </div>
+                        </div>
+                        <div class="donut-legend">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #1abc9c;"></span>
+                                Confirmed (<span id="legendConfirmed">0</span>)
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #e74c3c;"></span>
+                                Cancelled (<span id="legendCancelled">0</span>)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue by Package -->
+                <div class="chart-card">
+                    <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Revenue by Package</h3>
+                    <div class="bar-chart" id="revenueChart">
+                        <p class="chart-empty">No revenue data yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Bookings -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3><i class="fas fa-clock"></i> Recent Bookings</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Package</th>
+                                <th>Customer</th>
+                                <th>Duration</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentBookingsBody">
+                            <tr><td colspan="7" class="table-empty">No bookings yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bookings Section -->
+        <section class="dashboard-section" id="section-bookings">
+            <div class="section-header">
+                <h2>All Bookings</h2>
+                <div class="section-actions">
+                    <input type="text" class="search-input" id="bookingSearch" placeholder="Search bookings...">
+                    <select class="filter-select" id="bookingFilter">
+                        <option value="all">All Status</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Package</th>
+                                <th>Customer</th>
+                                <th>Duration</th>
+                                <th>Guests</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allBookingsBody">
+                            <tr><td colspan="9" class="table-empty">No bookings yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Packages Section -->
+        <section class="dashboard-section" id="section-packages">
+            <div class="section-header">
+                <h2><i class="fas fa-suitcase-rolling"></i> Manage Packages</h2>
+                <div class="section-actions">
+                    <button class="btn-add-package" id="addPackageBtn">
+                        <i class="fas fa-plus"></i> Add Package
+                    </button>
+                    <button class="btn-save-packages" id="publishBtn">
+                        <i class="fas fa-cloud-upload-alt"></i> Save & Publish
+                    </button>
+                </div>
+            </div>
+            <div id="publishStatus" class="publish-status" style="display:none;"></div>
+            <div class="packages-editor-grid" id="packageCards">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Customers Section -->
+        <section class="dashboard-section" id="section-customers">
+            <div class="section-header">
+                <h2>Registered Customers</h2>
+                <div class="section-actions">
+                    <input type="text" class="search-input" id="customerSearch" placeholder="Search customers...">
+                </div>
+            </div>
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Bookings</th>
+                                <th>Total Spent</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersBody">
+                            <tr><td colspan="5" class="table-empty">No customers yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Revenue Section -->
+        <section class="dashboard-section" id="section-revenue">
+            <div class="section-header">
+                <h2>Revenue Analytics</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #e8f8f5; color: #1abc9c;">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="revTotalRevenue">₹0</span>
+                        <span class="stat-label">Total Revenue</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #eaf2f8; color: #3498db;">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="revAvgBooking">₹0</span>
+                        <span class="stat-label">Avg. Booking Value</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fef9e7; color: #f39c12;">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="revTopPackage">-</span>
+                        <span class="stat-label">Top Package</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fdedec; color: #e74c3c;">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="revCancelledRevenue">₹0</span>
+                        <span class="stat-label">Lost Revenue</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Breakdown -->
+            <div class="chart-card" style="margin-top: 1.5rem;">
+                <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Revenue Breakdown by Package</h3>
+                <div class="revenue-breakdown" id="revenueBreakdown">
+                    <p class="chart-empty">No revenue data yet</p>
+                </div>
+            </div>
+
+            <!-- Monthly Trend -->
+            <div class="chart-card" style="margin-top: 1.5rem;">
+                <h3 class="chart-title"><i class="fas fa-chart-line"></i> Monthly Booking Trend</h3>
+                <div class="monthly-trend" id="monthlyTrend">
+                    <p class="chart-empty">No trend data yet</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
