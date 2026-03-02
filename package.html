@@ -16,7 +16,7 @@
     <header style="position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(20,20,20,0.96);backdrop-filter:blur(10px);">
         <nav style="display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;max-width:1400px;margin:0 auto;">
             <a href="index.html" style="text-decoration:none;display:flex;align-items:center;">
-                <img src="/images/logo.png" alt="Bharat Tours & Travels" style="height:58px;width:auto;object-fit:contain;">
+                <img src="images/logo.png" alt="Bharat Tours & Travels" style="height:58px;width:auto;object-fit:contain;">
             </a>
             <div style="display:flex;gap:1rem;align-items:center;">
                 <a href="index.html#packages" style="color:rgba(255,255,255,0.8);text-decoration:none;font-size:0.9rem;"><i class="fas fa-suitcase"></i> All Packages</a>
@@ -97,7 +97,7 @@ const ITINERARY_DEFAULTS = {
     budget: {
         duration: '4 Nights / 5 Days',
         highlights: ['Radhanagar Beach', 'Cellular Jail', 'Ross Island', 'Havelock Ferry'],
-        images: ['/images/beach1.jpg', '/images/neil1.jpg', '/images/beach2.jpg', '/images/neil2.jpg', '/images/ross2.jpg', '/images/beach3.jpg'],
+        images: ['images/beach1.jpg', 'images/neil1.jpg', 'images/beach2.jpg', 'images/neil2.jpg', 'images/ross2.jpg', 'images/beach3.jpg'],
         days: [
             { day: 1, title: 'Arrival in Port Blair', desc: 'Welcome to the Andaman Islands! Our representative will greet you at the airport.', activities: ['Airport pickup & hotel check-in', 'Visit Cellular Jail National Memorial', 'Attend Light & Sound Show at Cellular Jail', 'Overnight stay in Port Blair'] },
             { day: 2, title: 'Port Blair – Havelock Island', desc: 'Journey to the stunning Havelock Island by ferry.', activities: ['Breakfast at hotel', 'Board ferry to Havelock Island (90 min)', 'Check-in to beach resort', 'Visit Radhanagar Beach (Asia\'s Best Beach)', 'Sunset at Beach No. 7'] },
@@ -111,7 +111,7 @@ const ITINERARY_DEFAULTS = {
     standard: {
         duration: '6 Nights / 7 Days',
         highlights: ['Havelock Island', 'Neil Island', 'Scuba Diving', 'Barren Island View', 'Cellular Jail'],
-        images: ['/images/beach2.jpg', '/images/neil1.jpg', '/images/neil2.jpg', '/images/beach1.jpg', '/images/neil3.jpg', '/images/ross3.jpg'],
+        images: ['images/beach2.jpg', 'images/neil1.jpg', 'images/neil2.jpg', 'images/beach1.jpg', 'images/neil3.jpg', 'images/ross3.jpg'],
         days: [
             { day: 1, title: 'Arrival in Port Blair', desc: 'Arrive at Veer Savarkar Airport. Warm welcome and hotel check-in.', activities: ['Airport reception & deluxe hotel check-in', 'Visit Cellular Jail National Memorial', 'Light & Sound Show', 'Welcome dinner at hotel'] },
             { day: 2, title: 'Port Blair Local Sightseeing', desc: 'Explore the historical and natural wonders of Port Blair.', activities: ['Breakfast at hotel', 'Anthropological Museum & Fisheries Museum', 'Chidiya Tapu (sunset point) – Bird watching', 'Corbyn\'s Cove Beach', 'Evening at leisure'] },
@@ -127,7 +127,7 @@ const ITINERARY_DEFAULTS = {
     luxury: {
         duration: '6 Nights / 7 Days',
         highlights: ['5-Star Resort Stay', 'Private Beach Access', 'Advanced Scuba Dive', 'Private Yacht', 'Helicopter View (optional)'],
-        images: ['/images/beach3.jpg', '/images/neil4.jpg', '/images/beach4.jpg', '/images/neil6.jpg', '/images/beach2.jpg', '/images/ross2.jpg'],
+        images: ['images/beach3.jpg', 'images/neil4.jpg', 'images/beach4.jpg', 'images/neil6.jpg', 'images/beach2.jpg', 'images/ross2.jpg'],
         days: [
             { day: 1, title: 'Royal Welcome to Port Blair', desc: 'Experience luxury from the moment you land.', activities: ['Private car airport pickup', 'Check-in to 5-star resort (sea-facing suite)', 'Welcome cocktails and personal concierge briefing', 'Private dinner on the beach under the stars'] },
             { day: 2, title: 'Port Blair VIP Sightseeing', desc: 'Exclusive private guided tour of Port Blair.', activities: ['Breakfast at rooftop restaurant (sea view)', 'Private guided Cellular Jail heritage tour', 'Private boat to Ross Island', 'Snorkeling at North Bay with personal instructor', 'Spa treatment at resort'] },
@@ -143,7 +143,7 @@ const ITINERARY_DEFAULTS = {
     honeymoon: {
         duration: '5 Nights / 6 Days',
         highlights: ['Romantic Beach Dinners', 'Couple Spa', 'Photoshoot', 'Sunset Cruise', 'Private Villa'],
-        images: ['/images/beach4.jpg', '/images/beach1.jpg', '/images/neil6.jpg', '/images/beach2.jpg', '/images/neil1.jpg', '/images/beach3.jpg'],
+        images: ['images/beach4.jpg', 'images/beach1.jpg', 'images/neil6.jpg', 'images/beach2.jpg', 'images/neil1.jpg', 'images/beach3.jpg'],
         days: [
             { day: 1, title: 'Romantic Arrival', desc: 'Begin your love story in paradise.', activities: ['Private car pickup with flower bouquet welcome', 'Check-in to romantic couple\'s suite with sea view', 'Room decorated with flowers & rose petals', 'Candlelight welcome dinner on the beach', 'Bonfire under the stars'] },
             { day: 2, title: 'Port Blair Romantic Exploration', desc: 'Discover the beauty of Port Blair together.', activities: ['Breakfast in bed (optional)', 'Private guided sightseeing of Port Blair', 'Cellular Jail (historical experience)', 'Couple\'s spa and wellness package', 'Evening sunset cruise with cocktails'] },
@@ -158,7 +158,7 @@ const ITINERARY_DEFAULTS = {
     test: {
         duration: 'Instant',
         highlights: ['Live Razorpay Integration', 'Secure Payment', 'Instant Confirmation'],
-        images: ['/images/beach1.jpg', '/images/beach2.jpg', '/images/beach3.jpg'],
+        images: ['images/beach1.jpg', 'images/beach2.jpg', 'images/beach3.jpg'],
         days: [
             { day: 1, title: 'Payment Test', desc: 'This is a ₹1 test to verify the payment gateway works correctly.', activities: ['Click "Pay ₹1 Now"', 'Complete Razorpay payment (use test/live card)', 'Receive booking confirmation', 'Check dashboard for booking record'] }
         ],
@@ -200,11 +200,11 @@ async function loadPackage() {
     // Hardcoded fallback — same as script.js defaults
     if (!currentPkg) {
         const HARDCODED = [
-            { id:'budget',    name:'Budget Andaman Escape',    desc:'4N/5D | Port Blair + Havelock | Basic Hotels + Ferries', price:15999, rating:4.2, image:'/images/beach1.jpg', inclusions:['Hotels','Ferries','Breakfast'], visible:true },
-            { id:'standard',  name:'Standard Andaman Bliss',   desc:'6N/7D | Port Blair + Havelock + Neil | Deluxe + Activities', price:21999, rating:4.6, image:'/images/beach2.jpg', inclusions:['Deluxe Hotels','Premium Ferries','Snorkeling'], visible:true },
-            { id:'luxury',    name:'Luxury Andaman Retreat',   desc:'6N/7D | All Islands | 5* Resorts + Scuba + Private Transfers', price:28999, rating:4.8, image:'/images/beach3.jpg', inclusions:['5* Resorts','VIP Ferries','Scuba Dive'], visible:true },
-            { id:'honeymoon', name:'Honeymoon Paradise',       desc:'5N/6D | Romantic Stays + Candlelight Dinner + Photos', price:24999, rating:4.9, image:'/images/beach4.jpg', inclusions:['Romantic Setup','Photoshoot','Dinner'], visible:true },
-            { id:'test',      name:'🧪 Payment Test Package',  desc:'Test the live payment gateway for ₹1 only', price:1, rating:5.0, image:'/images/beach1.jpg', inclusions:['Live Payment','Instant'], visible:true }
+            { id:'budget',    name:'Budget Andaman Escape',    desc:'4N/5D | Port Blair + Havelock | Basic Hotels + Ferries', price:15999, rating:4.2, image:'images/beach1.jpg', inclusions:['Hotels','Ferries','Breakfast'], visible:true },
+            { id:'standard',  name:'Standard Andaman Bliss',   desc:'6N/7D | Port Blair + Havelock + Neil | Deluxe + Activities', price:21999, rating:4.6, image:'images/beach2.jpg', inclusions:['Deluxe Hotels','Premium Ferries','Snorkeling'], visible:true },
+            { id:'luxury',    name:'Luxury Andaman Retreat',   desc:'6N/7D | All Islands | 5* Resorts + Scuba + Private Transfers', price:28999, rating:4.8, image:'images/beach3.jpg', inclusions:['5* Resorts','VIP Ferries','Scuba Dive'], visible:true },
+            { id:'honeymoon', name:'Honeymoon Paradise',       desc:'5N/6D | Romantic Stays + Candlelight Dinner + Photos', price:24999, rating:4.9, image:'images/beach4.jpg', inclusions:['Romantic Setup','Photoshoot','Dinner'], visible:true },
+            { id:'test',      name:'🧪 Payment Test Package',  desc:'Test the live payment gateway for ₹1 only', price:1, rating:5.0, image:'images/beach1.jpg', inclusions:['Live Payment','Instant'], visible:true }
         ];
         currentPkg = HARDCODED.find(p => p.id === pkgId);
         window._packages = HARDCODED;
@@ -239,7 +239,7 @@ async function loadPackage() {
 
 function renderPage(pkg) {
     const isTest = pkg.id === 'test' || pkg.price <= 1;
-    const heroImg = pkg.image || '/images/beach1.jpg';
+    const heroImg = pkg.image || 'images/beach1.jpg';
 
     document.getElementById('pageContent').innerHTML = `
         <!-- Hero -->

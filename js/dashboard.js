@@ -260,10 +260,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let packagesData = [];
 
     const SITE_IMAGES = [
-        '/images/beach1.jpg', '/images/beach2.jpg', '/images/beach3.jpg',
-        '/images/beach4.jpg', '/images/neil1.jpg', '/images/neil2.jpg',
-        '/images/neil3.jpg', '/images/neil4.jpg', '/images/neil6.jpg',
-        '/images/ross2.jpg', '/images/ross3.jpg'
+        'images/beach1.jpg', 'images/beach2.jpg', 'images/beach3.jpg',
+        'images/beach4.jpg', 'images/neil1.jpg', 'images/neil2.jpg',
+        'images/neil3.jpg', 'images/neil4.jpg', 'images/neil6.jpg',
+        'images/ross2.jpg', 'images/ross3.jpg'
     ];
 
     async function loadAndRenderPackages() {
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Fallback to PACKAGES constant
             packagesData = Object.entries(PACKAGES).map(([id, p]) => ({
                 id, name: p.name, desc: '', price: p.price,
-                rating: 4.5, image: '/images/beach1.jpg', inclusions: [], visible: true
+                rating: 4.5, image: 'images/beach1.jpg', inclusions: [], visible: true
             }));
         }
         renderPackageEditorCards();
@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
             desc: '',
             price: 10000,
             rating: 4.0,
-            image: '/images/beach1.jpg',
+            image: 'images/beach1.jpg',
             inclusions: ['Hotels', 'Ferries'],
             visible: true,
             days: []
