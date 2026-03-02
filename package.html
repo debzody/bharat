@@ -186,6 +186,7 @@ async function loadPackage() {
 
     try {
         const res = await fetch('/.netlify/functions/packages', { cache: 'no-store' });
+        if (!res.ok) throw new Error('API unavailable: ' + res.status);
         const packages = await res.json();
         window._packages = packages;
         currentPkg = packages.find(p => p.id === pkgId);

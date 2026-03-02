@@ -24,12 +24,11 @@ async function loadAndRenderSitePackages() {
     // 2. Always fetch fresh from API (updates cache and re-renders)
     try {
         const res = await fetch('/.netlify/functions/packages', { cache: 'no-store' });
-        if (res.ok) {
-            const data = await res.json();
-            window._packages = data;
-            localStorage.setItem('sitePackages', JSON.stringify(data));
-            renderSitePackages();
-        }
+        if (!res.ok) throw new Error('API unavailable: ' + res.status);
+        const data = await res.json();
+        window._packages = data;
+        localStorage.setItem('sitePackages', JSON.stringify(data));
+        renderSitePackages();
     } catch(e) {
         // API unavailable (local dev) — keep cached or use hardcoded defaults
         if (!window._packages) {
