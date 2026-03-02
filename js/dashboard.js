@@ -471,9 +471,34 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('ite-highlights').value = (pkg.highlights || []).join(', ');
         document.getElementById('ite-exclusions').value = (pkg.exclusions || []).join(', ');
 
-        // Bind overview fields
+        // Bind overview fields — duration change also syncs day cards
         document.getElementById('ite-duration').addEventListener('change', function() {
             packagesData[pkgIdx].duration = this.value;
+            // Parse target day count from e.g. "4 Nights / 5 Days" → 5
+            const match = this.value.match(/(\d+)\s*Days?/i);
+            if (!match) return;
+            const targetDays = parseInt(match[1]);
+            const days = packagesData[pkgIdx].days;
+            const currentCount = days.length;
+            if (targetDays === currentCount) return;
+            if (targetDays > currentCount) {
+                // Add blank days up to target
+                for (let i = currentCount + 1; i <= targetDays; i++) {
+                    days.push({ day: i, title: 'Day ' + i, desc: '', activities: [] });
+                }
+            } else {
+                // Trim excess days (warn if content exists)
+                const excess = days.slice(targetDays);
+                const hasContent = excess.some(d => d.title && d.title !== 'Day ' + d.day || (d.activities && d.activities.length));
+                if (hasContent && !confirm(`Remove ${currentCount - targetDays} day(s) from the end? Any content in those days will be lost.`)) {
+                    // Revert select
+                    this.value = packagesData[pkgIdx].duration;
+                    return;
+                }
+                days.splice(targetDays);
+                days.forEach((d, i) => { d.day = i + 1; });
+            }
+            renderIteDaysContainer(pkgIdx);
         });
         document.getElementById('ite-highlights').addEventListener('input', function() {
             packagesData[pkgIdx].highlights = this.value.split(',').map(s => s.trim()).filter(Boolean);
