@@ -433,29 +433,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const body = document.getElementById('iteBody');
         body.innerHTML = `
-            <div class="ite-section">
-                <div class="ite-section-title"><i class="fas fa-info-circle"></i> Overview</div>
-                <div class="ite-fields-grid">
-                    <div class="pkg-edit-row">
-                        <label>Duration</label>
-                        <input id="ite-duration" type="text" class="pkg-input" placeholder="e.g. 4 Nights / 5 Days">
-                    </div>
-                    <div class="pkg-edit-row">
-                        <label>Highlights <small>(comma-separated)</small></label>
-                        <input id="ite-highlights" type="text" class="pkg-input" placeholder="e.g. Radhanagar Beach, Cellular Jail">
-                    </div>
-                    <div class="pkg-edit-row">
-                        <label>Exclusions <small>(comma-separated)</small></label>
-                        <input id="ite-exclusions" type="text" class="pkg-input" placeholder="e.g. Airfare, Lunch, Travel Insurance">
+            <div class="ite-inner-wrap">
+                <div class="ite-section">
+                    <div class="ite-section-title"><i class="fas fa-info-circle"></i> Overview</div>
+                    <div class="ite-fields-grid">
+                        <div class="pkg-edit-row">
+                            <label>Duration</label>
+                            <input id="ite-duration" type="text" class="pkg-input" placeholder="e.g. 4 Nights / 5 Days">
+                        </div>
+                        <div class="pkg-edit-row">
+                            <label>Highlights <small>(comma-separated)</small></label>
+                            <input id="ite-highlights" type="text" class="pkg-input" placeholder="e.g. Radhanagar Beach, Cellular Jail">
+                        </div>
+                        <div class="pkg-edit-row">
+                            <label>Exclusions <small>(comma-separated)</small></label>
+                            <input id="ite-exclusions" type="text" class="pkg-input" placeholder="e.g. Airfare, Lunch, Travel Insurance">
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="ite-section">
-                <div class="ite-section-title"><i class="fas fa-calendar-day"></i> Day-by-Day Itinerary</div>
-                <div id="ite-days-container" class="ite-days-container"></div>
-                <button type="button" class="btn-add-day" id="ite-add-day-btn">
-                    <i class="fas fa-plus"></i> Add Day
-                </button>
+                <div class="ite-section">
+                    <div class="ite-section-title"><i class="fas fa-calendar-day"></i> Day-by-Day Itinerary</div>
+                    <div id="ite-days-container" class="ite-days-container"></div>
+                    <button type="button" class="btn-add-day" id="ite-add-day-btn">
+                        <i class="fas fa-plus"></i> Add Day
+                    </button>
+                </div>
             </div>
         `;
 
