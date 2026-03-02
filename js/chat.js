@@ -2,394 +2,414 @@
 (function () {
     'use strict';
 
+    // ── Client-side fallback (works even without Netlify) ──────
+    function clientFallback(msg) {
+        const q = (msg || '').toLowerCase();
+        if (/hi|hello|hey|namaste|good/.test(q))
+            return '👋 Hello! Welcome to **Bharat Tours & Travels**! I\'m your Andaman travel assistant. Ask me anything about packages, prices, beaches or activities! 🏝️';
+        if (/price|cost|rate|how much|₹|rupee|afford/.test(q))
+            return '💰 Our packages:\n• **Budget Escape** – ₹15,999/person (4N/5D)\n• **Standard Bliss** – ₹21,999/person (6N/7D)\n• **Luxury Retreat** – ₹28,999/person (6N/7D)\n• **Honeymoon Paradise** – ₹24,999/couple (5N/6D)\n\nAll include hotels, ferries & breakfast! 🏖️';
+        if (/honeymoon|couple|romantic|anniversary|wedding/.test(q))
+            return '💑 Our **Honeymoon Paradise** (5N/6D, ₹24,999) is perfect for couples!\n\nIncludes: Sea-view suite, candlelight beach dinner, couple spa, sunset cruise & professional photoshoot. Book now! 🌅';
+        if (/luxury|premium|5 star|five star|best|vip/.test(q))
+            return '✨ **Luxury Andaman Retreat** (6N/7D, ₹28,999):\n• 5-star beachfront resort\n• Private yacht transfers\n• All meals included\n• Advanced PADI scuba diving\n• Daily spa treatments\n• Personal concierge 24/7';
+        if (/budget|cheap|affordable|economy|low cost/.test(q))
+            return '🌊 **Budget Andaman Escape** (4N/5D, ₹15,999/person):\n• Port Blair + Havelock Island\n• Hotel accommodation\n• Ferry transfers\n• Daily breakfast\n• Cellular Jail & Ross Island tour\n\nGreat value for an amazing trip!';
+        if (/standard|mid|normal|medium/.test(q))
+            return '⭐ **Standard Andaman Bliss** (6N/7D, ₹21,999):\n• Port Blair + Havelock + Neil Island\n• Deluxe hotels\n• Beginner scuba diving\n• All sightseeing included\n• Premium ferries';
+        if (/scuba|dive|diving|underwater/.test(q))
+            return '🤿 Andaman has world-class diving! \n\n• **Beginner scuba** included in Standard & Honeymoon packages\n• **Advanced PADI** diving in Luxury package\n• Best spots: Elephant Beach, North Bay, Barren Island\n\nNo experience needed for beginner sessions!';
+        if (/snorkel/.test(q))
+            return '🐠 Snorkeling is fantastic at **Elephant Beach** (Havelock) and **Bharatpur Beach** (Neil Island). Included in Standard, Luxury & Honeymoon packages. Crystal clear waters with vibrant coral reefs!';
+        if (/beach|radhanagar|havelock|neil|port blair|island/.test(q))
+            return '🏖️ Must-visit beaches:\n• **Radhanagar Beach** (Havelock) – Asia\'s Best Beach\n• **Elephant Beach** – best for snorkeling\n• **Laxmanpur Beach** (Neil) – amazing sunset\n• **Corbyn\'s Cove** (Port Blair) – palm-lined bay\n\nAll covered in our packages!';
+        if (/when|best time|season|monsoon|weather|visit/.test(q))
+            return '☀️ **Best time:** October – May\n• Oct–Nov: Post-monsoon, lush & calm seas\n• Dec–Feb: Peak season, perfect weather\n• Mar–May: Warm, less crowded\n\n⚠️ Avoid June–September (monsoon). Book early for December!';
+        if (/book|booking|reserve|payment|pay|how to/.test(q))
+            return '📱 **Easy Booking:**\n1. Choose your package\n2. Click "Book Now"\n3. Select dates & guests\n4. Pay securely via Razorpay\n\nWe accept UPI, credit/debit cards & net banking. Instant confirmation! ✅';
+        if (/duration|days|nights|how long|long/.test(q))
+            return '📅 Package durations:\n• Budget: **4 Nights / 5 Days**\n• Standard: **6 Nights / 7 Days**\n• Luxury: **6 Nights / 7 Days**\n• Honeymoon: **5 Nights / 6 Days**\n\nCustom durations available on request!';
+        if (/include|inclus|what.*get|cover/.test(q))
+            return '✅ **All packages include:**\n• Hotel accommodation\n• Ferry transfers\n• Daily breakfast\n• Airport pickup & drop\n\n**Extras by package:**\n• Standard: Scuba diving\n• Luxury: All meals + spa + yacht\n• Honeymoon: Candlelight dinners + photoshoot';
+        if (/exclude|not include|extra|additional/.test(q))
+            return '❌ **Generally NOT included:**\n• Airfare to Port Blair\n• Lunch & dinner (Budget/Standard)\n• Personal expenses\n• Travel insurance\n• Extra water sports\n\nContact us for custom add-ons!';
+        if (/contact|phone|email|call|reach|whatsapp|support/.test(q))
+            return '📞 **Contact Us:**\n• Phone: +91 98765 43210\n• Email: info@bharattours.com\n• Visit: Contact section on homepage\n• Hours: Mon–Sat, 9am–7pm IST\n\nWe\'d love to plan your dream trip! 🌴';
+        if (/cancel|refund|policy/.test(q))
+            return '📋 **Cancellation Policy:**\n• 15+ days before: 100% refund\n• 7–14 days before: 50% refund\n• Within 7 days: No refund\n\nWe recommend travel insurance for peace of mind!';
+        if (/activity|activities|what to do|adventure|fun/.test(q))
+            return '🎯 **Top Andaman Activities:**\n• 🤿 Scuba diving & snorkeling\n• 🚤 Island hopping\n• 🐠 Glass-bottom boat rides\n• 🏄 Sea walking & jet ski\n• 🌅 Sunset cruises\n• 📸 Professional photoshoots\n• 🏛️ Cellular Jail heritage tour';
+        if (/flight|fly|airport|how to reach/.test(q))
+            return '✈️ **Getting to Andaman:**\n• Fly to **Veer Savarkar International Airport**, Port Blair\n• Direct flights from Chennai, Kolkata, Delhi, Mumbai, Bangalore\n• ~2 hour flight from Chennai/Kolkata\n\nAirfare is NOT included in packages (book separately).';
+        return '😊 Great question! I\'d love to help you plan your **Andaman trip**. You can ask me about:\n• 💰 Package prices\n• 🏖️ Best beaches\n• 🤿 Activities & diving\n• 📅 Best time to visit\n• 📞 How to book\n\nOr visit our Contact page for personalized assistance!';
+    }
+
     // ── Inject CSS ─────────────────────────────────────────────
     const style = document.createElement('style');
     style.textContent = `
-    /* Chat Widget */
-    .chat-widget {
+    .chat-widget-btn {
         position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 9999;
-        font-family: 'Segoe UI', Arial, sans-serif;
-    }
-    .chat-toggle-btn {
-        width: 60px;
-        height: 60px;
+        bottom: 28px;
+        right: 28px;
+        z-index: 99999;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #1abc9c, #16a085);
+        background: linear-gradient(135deg, #1abc9c, #0e8c72);
         border: none;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 20px rgba(26,188,156,0.5);
+        box-shadow: 0 6px 24px rgba(26,188,156,0.55);
         transition: transform 0.2s, box-shadow 0.2s;
-        position: relative;
     }
-    .chat-toggle-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(26,188,156,0.6); }
-    .chat-toggle-btn i { color: #fff; font-size: 1.5rem; }
+    .chat-widget-btn:hover { transform: scale(1.1); box-shadow: 0 8px 32px rgba(26,188,156,0.65); }
+    .chat-widget-btn i { color: #fff; font-size: 1.65rem; pointer-events: none; }
     .chat-notif-dot {
         position: absolute;
-        top: 4px; right: 4px;
-        width: 14px; height: 14px;
+        top: 3px; right: 3px;
+        width: 16px; height: 16px;
         background: #e74c3c;
         border-radius: 50%;
-        border: 2px solid #fff;
-        animation: pulse-dot 1.5s infinite;
+        border: 2.5px solid #fff;
         display: none;
+        animation: chat-pulse 1.6s infinite;
     }
-    @keyframes pulse-dot {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.3); }
-    }
+    @keyframes chat-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.35)} }
 
-    /* Chat Panel */
-    .chat-panel {
-        position: absolute;
-        bottom: 76px;
-        right: 0;
-        width: 420px;
-        height: 620px;
+    .chat-panel-wrap {
+        position: fixed;
+        bottom: 106px;
+        right: 28px;
+        z-index: 99998;
+        width: 460px;
+        height: min(680px, calc(100vh - 130px));
         background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+        border-radius: 20px;
+        box-shadow: 0 12px 48px rgba(0,0,0,0.22);
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        transform: scale(0.85) translateY(20px);
         transform-origin: bottom right;
+        transform: scale(0.88) translateY(16px);
         opacity: 0;
         pointer-events: none;
-        transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), opacity 0.2s;
+        transition: transform 0.28s cubic-bezier(.34,1.5,.64,1), opacity 0.22s ease;
     }
-    .chat-panel.open {
+    .chat-panel-wrap.open {
         transform: scale(1) translateY(0);
         opacity: 1;
         pointer-events: all;
     }
 
     /* Header */
-    .chat-header {
-        background: linear-gradient(135deg, #1abc9c, #16a085);
-        padding: 1.1rem 1.25rem;
+    .cp-header {
+        background: linear-gradient(135deg, #1abc9c, #0e8c72);
+        padding: 1.1rem 1.4rem;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.85rem;
         flex-shrink: 0;
     }
-    .chat-avatar {
-        width: 46px; height: 46px;
+    .cp-avatar {
+        width: 48px; height: 48px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.22);
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
-    }
-    .chat-avatar i { color: #fff; font-size: 1.35rem; }
-    .chat-agent-info { flex: 1; }
-    .chat-agent-name { color: #fff; font-weight: 700; font-size: 1.05rem; }
-    .chat-agent-status { color: rgba(255,255,255,0.82); font-size: 0.82rem; margin-top: 2px; }
-    .chat-close-btn {
-        background: rgba(255,255,255,0.2);
-        border: none;
+        font-size: 1.4rem;
         color: #fff;
-        width: 30px; height: 30px;
+    }
+    .cp-info { flex: 1; min-width: 0; }
+    .cp-name { color: #fff; font-weight: 700; font-size: 1.08rem; }
+    .cp-status { color: rgba(255,255,255,0.85); font-size: 0.82rem; margin-top: 2px; }
+    .cp-close {
+        background: rgba(255,255,255,0.18);
+        border: none; color: #fff;
+        width: 34px; height: 34px;
         border-radius: 50%;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: 1rem;
         display: flex; align-items: center; justify-content: center;
         transition: background 0.2s;
+        flex-shrink: 0;
     }
-    .chat-close-btn:hover { background: rgba(255,255,255,0.35); }
+    .cp-close:hover { background: rgba(255,255,255,0.32); }
 
     /* Messages */
-    .chat-messages {
+    .cp-messages {
         flex: 1 1 0;
         height: 0;
         overflow-y: auto;
-        padding: 1.25rem;
+        padding: 1.35rem 1.25rem;
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
-        background: #f7f9fc;
-        -webkit-overflow-scrolling: touch;
+        gap: 1rem;
+        background: #f4f7fb;
+        scroll-behavior: smooth;
     }
-    .chat-bubble {
-        max-width: 82%;
-        padding: 0.75rem 1rem;
-        border-radius: 14px;
-        font-size: 0.95rem;
-        line-height: 1.6;
+    .cp-messages::-webkit-scrollbar { width: 5px; }
+    .cp-messages::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+    .cp-bubble {
+        max-width: 80%;
+        padding: 0.8rem 1.1rem;
+        border-radius: 16px;
+        font-size: 0.97rem;
+        line-height: 1.65;
         word-break: break-word;
     }
-    .chat-bubble.bot {
+    .cp-bubble.bot {
         background: #fff;
-        color: #333;
-        border-radius: 4px 14px 14px 14px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        color: #2d2d2d;
+        border-radius: 4px 16px 16px 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         align-self: flex-start;
     }
-    .chat-bubble.user {
-        background: linear-gradient(135deg, #1abc9c, #16a085);
+    .cp-bubble.user {
+        background: linear-gradient(135deg, #1abc9c, #0e8c72);
         color: #fff;
-        border-radius: 14px 14px 4px 14px;
+        border-radius: 16px 16px 4px 16px;
         align-self: flex-end;
     }
-    .chat-bubble.typing {
+    .cp-bubble.typing {
         background: #fff;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         align-self: flex-start;
-        border-radius: 4px 14px 14px 14px;
-        padding: 0.7rem 1rem;
+        border-radius: 4px 16px 16px 16px;
+        padding: 0.85rem 1.1rem;
     }
-    .typing-dots { display: flex; gap: 4px; align-items: center; }
-    .typing-dots span {
-        width: 7px; height: 7px;
-        background: #aaa;
+    .cp-typing-dots { display: flex; gap: 5px; align-items: center; }
+    .cp-typing-dots span {
+        width: 8px; height: 8px;
+        background: #bbb;
         border-radius: 50%;
-        animation: typing-bounce 1.2s infinite;
+        animation: cp-bounce 1.2s infinite;
     }
-    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typing-bounce {
-        0%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-6px); }
+    .cp-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .cp-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes cp-bounce {
+        0%,80%,100% { transform: translateY(0); }
+        40% { transform: translateY(-7px); }
     }
 
     /* Quick replies */
-    .chat-quick-replies {
+    .cp-quick {
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
-        padding: 0.5rem 1.25rem 0.75rem;
-        background: #f7f9fc;
+        padding: 0.6rem 1.25rem 0.8rem;
+        background: #f4f7fb;
+        border-top: 1px solid #eaf0f6;
     }
-    .chat-quick-btn {
-        padding: 0.4rem 0.9rem;
+    .cp-quick-btn {
+        padding: 0.42rem 0.95rem;
         border: 1.5px solid #1abc9c;
         background: #fff;
-        color: #1abc9c;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        color: #0e8c72;
+        border-radius: 22px;
+        font-size: 0.87rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.18s;
-        white-space: nowrap;
+        font-family: inherit;
     }
-    .chat-quick-btn:hover { background: #1abc9c; color: #fff; }
+    .cp-quick-btn:hover { background: #1abc9c; color: #fff; border-color: #1abc9c; }
 
-    /* Input */
-    .chat-input-area {
+    /* Input bar */
+    .cp-input-bar {
         display: flex;
-        gap: 0.6rem;
+        align-items: center;
+        gap: 0.65rem;
         padding: 0.9rem 1.25rem;
-        border-top: 1px solid #eee;
         background: #fff;
+        border-top: 1px solid #e8eef4;
         flex-shrink: 0;
     }
-    .chat-input {
+    .cp-input {
         flex: 1;
-        border: 1.5px solid #e0e0e0;
-        border-radius: 24px;
-        padding: 0.65rem 1.1rem;
+        border: 1.5px solid #dce4ed;
+        border-radius: 26px;
+        padding: 0.72rem 1.15rem;
         font-family: inherit;
-        font-size: 0.95rem;
+        font-size: 0.97rem;
+        color: #333;
         outline: none;
-        transition: border-color 0.2s;
-        background: #f7f9fc;
+        background: #f7fafc;
+        transition: border-color 0.2s, background 0.2s;
     }
-    .chat-input:focus { border-color: #1abc9c; background: #fff; }
-    .chat-send-btn {
-        width: 44px; height: 44px;
+    .cp-input:focus { border-color: #1abc9c; background: #fff; }
+    .cp-send {
+        width: 46px; height: 46px;
         border-radius: 50%;
         background: #1abc9c;
         border: none;
         color: #fff;
         cursor: pointer;
         display: flex; align-items: center; justify-content: center;
-        font-size: 0.9rem;
+        font-size: 1rem;
         flex-shrink: 0;
         transition: background 0.2s, transform 0.15s;
     }
-    .chat-send-btn:hover { background: #16a085; transform: scale(1.08); }
-    .chat-send-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+    .cp-send:hover:not(:disabled) { background: #0e8c72; transform: scale(1.1); }
+    .cp-send:disabled { background: #c5d5da; cursor: not-allowed; }
 
-    /* Mobile */
-    @media (max-width: 600px) {
-        .chat-panel {
-            width: calc(100vw - 24px);
-            height: 80vh;
-            right: -8px;
-            bottom: 72px;
+    @media (max-width: 520px) {
+        .chat-panel-wrap {
+            width: calc(100vw - 20px);
+            right: 10px;
+            bottom: 100px;
+            height: min(600px, calc(100vh - 120px));
         }
-        .chat-widget { bottom: 16px; right: 16px; }
+        .chat-widget-btn { bottom: 20px; right: 16px; }
     }
     `;
     document.head.appendChild(style);
 
     // ── Inject HTML ────────────────────────────────────────────
-    const widget = document.createElement('div');
-    widget.className = 'chat-widget';
-    widget.id = 'chatWidget';
-    widget.innerHTML = `
-        <div class="chat-panel" id="chatPanel">
-            <div class="chat-header">
-                <div class="chat-avatar"><i class="fas fa-robot"></i></div>
-                <div class="chat-agent-info">
-                    <div class="chat-agent-name">Andaman AI Guide</div>
-                    <div class="chat-agent-status"><span style="color:#a8f0de">●</span> Online · Replies instantly</div>
-                </div>
-                <button class="chat-close-btn" id="chatCloseBtn" title="Close chat">
-                    <i class="fas fa-times"></i>
-                </button>
+    const panel = document.createElement('div');
+    panel.className = 'chat-panel-wrap';
+    panel.id = 'cpPanel';
+    panel.innerHTML = `
+        <div class="cp-header">
+            <div class="cp-avatar"><i class="fas fa-robot"></i></div>
+            <div class="cp-info">
+                <div class="cp-name">Andaman AI Guide</div>
+                <div class="cp-status"><span style="color:#a8f5de;">●</span> Online · Always here to help</div>
             </div>
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-quick-replies" id="chatQuickReplies"></div>
-            <div class="chat-input-area">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Ask about packages, prices…" maxlength="300">
-                <button class="chat-send-btn" id="chatSendBtn" title="Send">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
+            <button class="cp-close" id="cpClose" title="Close"><i class="fas fa-times"></i></button>
         </div>
-        <button class="chat-toggle-btn" id="chatToggleBtn" title="Chat with us">
-            <i class="fas fa-comments" id="chatToggleIcon"></i>
-            <span class="chat-notif-dot" id="chatNotifDot"></span>
-        </button>
+        <div class="cp-messages" id="cpMessages"></div>
+        <div class="cp-quick" id="cpQuick"></div>
+        <div class="cp-input-bar">
+            <input class="cp-input" id="cpInput" type="text" placeholder="Type your question here…" maxlength="400" autocomplete="off">
+            <button class="cp-send" id="cpSend" title="Send"><i class="fas fa-paper-plane"></i></button>
+        </div>
     `;
-    document.body.appendChild(widget);
 
-    // ── State ──────────────────────────────────────────────────
-    const panel       = document.getElementById('chatPanel');
-    const messages    = document.getElementById('chatMessages');
-    const input       = document.getElementById('chatInput');
-    const sendBtn     = document.getElementById('chatSendBtn');
-    const toggleBtn   = document.getElementById('chatToggleBtn');
-    const closeBtn    = document.getElementById('chatCloseBtn');
-    const toggleIcon  = document.getElementById('chatToggleIcon');
-    const notifDot    = document.getElementById('chatNotifDot');
-    const quickReplies = document.getElementById('chatQuickReplies');
+    const btn = document.createElement('button');
+    btn.className = 'chat-widget-btn';
+    btn.id = 'cpBtn';
+    btn.title = 'Chat with us';
+    btn.innerHTML = `<i class="fas fa-comments" id="cpBtnIcon"></i><span class="chat-notif-dot" id="cpDot"></span>`;
 
-    let isOpen    = false;
-    let isBusy    = false;
-    let chatHistory = [];
-    let hasOpened = false;
+    document.body.appendChild(panel);
+    document.body.appendChild(btn);
 
-    const QUICK_QUESTIONS = [
-        '💰 Package prices',
-        '🏖️ Best beaches',
-        '🤿 Scuba diving',
-        '💑 Honeymoon package',
-        '📅 Best time to visit',
-        '📞 Contact us'
+    // ── Refs ───────────────────────────────────────────────────
+    const msgs    = document.getElementById('cpMessages');
+    const input   = document.getElementById('cpInput');
+    const sendBtn = document.getElementById('cpSend');
+    const closeEl = document.getElementById('cpClose');
+    const btnIcon = document.getElementById('cpBtnIcon');
+    const dot     = document.getElementById('cpDot');
+    const quick   = document.getElementById('cpQuick');
+
+    let isOpen = false, isBusy = false, opened = false;
+    let history = [];
+
+    const QUICK_Q = [
+        '💰 Package prices', '🏖️ Best beaches', '🤿 Scuba diving',
+        '💑 Honeymoon', '📅 Best time to visit', '📞 Contact us'
     ];
 
     // ── Helpers ────────────────────────────────────────────────
+    function fmt(t) {
+        return String(t)
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+    }
+
+    function addBot(text) {
+        const el = document.createElement('div');
+        el.className = 'cp-bubble bot';
+        el.innerHTML = fmt(text);
+        msgs.appendChild(el);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function addUser(text) {
+        const el = document.createElement('div');
+        el.className = 'cp-bubble user';
+        el.textContent = text;
+        msgs.appendChild(el);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function showTyping() {
+        const el = document.createElement('div');
+        el.className = 'cp-bubble typing';
+        el.id = 'cpTyping';
+        el.innerHTML = `<div class="cp-typing-dots"><span></span><span></span><span></span></div>`;
+        msgs.appendChild(el);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function removeTyping() {
+        document.getElementById('cpTyping')?.remove();
+    }
+
+    function renderQuick() {
+        quick.innerHTML = '';
+        QUICK_Q.forEach(q => {
+            const b = document.createElement('button');
+            b.className = 'cp-quick-btn';
+            b.textContent = q;
+            b.onclick = () => { quick.innerHTML = ''; send(q.replace(/^[^\w₹]*/,'').trim()); };
+            quick.appendChild(b);
+        });
+    }
+
     function openChat() {
         isOpen = true;
         panel.classList.add('open');
-        toggleIcon.className = 'fas fa-times';
-        notifDot.style.display = 'none';
-        if (!hasOpened) {
-            hasOpened = true;
-            addBotMessage('👋 Hi! I\'m your Andaman AI Guide from **Bharat Tours & Travels**. Ask me about packages, beaches, activities, or prices. How can I help? 🌊');
-            showQuickReplies();
+        btnIcon.className = 'fas fa-times';
+        dot.style.display = 'none';
+        if (!opened) {
+            opened = true;
+            addBot('👋 Hi! I\'m your **Andaman AI Guide** from Bharat Tours & Travels.\n\nAsk me anything about our packages, beaches, activities or pricing! 🌊');
+            renderQuick();
         }
-        setTimeout(() => input.focus(), 200);
+        setTimeout(() => input.focus(), 250);
     }
 
     function closeChat() {
         isOpen = false;
         panel.classList.remove('open');
-        toggleIcon.className = 'fas fa-comments';
+        btnIcon.className = 'fas fa-comments';
     }
 
-    function scrollToBottom() {
-        messages.scrollTop = messages.scrollHeight;
-    }
-
-    function formatText(text) {
-        // Convert **bold** to <strong>
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br>');
-    }
-
-    function addBotMessage(text) {
-        const el = document.createElement('div');
-        el.className = 'chat-bubble bot';
-        el.innerHTML = formatText(text);
-        messages.appendChild(el);
-        scrollToBottom();
-        return el;
-    }
-
-    function addUserMessage(text) {
-        const el = document.createElement('div');
-        el.className = 'chat-bubble user';
-        el.textContent = text;
-        messages.appendChild(el);
-        scrollToBottom();
-    }
-
-    function showTyping() {
-        const el = document.createElement('div');
-        el.className = 'chat-bubble typing';
-        el.id = 'typingIndicator';
-        el.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
-        messages.appendChild(el);
-        scrollToBottom();
-    }
-
-    function removeTyping() {
-        const el = document.getElementById('typingIndicator');
-        if (el) el.remove();
-    }
-
-    function showQuickReplies() {
-        quickReplies.innerHTML = '';
-        QUICK_QUESTIONS.forEach(q => {
-            const btn = document.createElement('button');
-            btn.className = 'chat-quick-btn';
-            btn.textContent = q;
-            btn.addEventListener('click', () => {
-                quickReplies.innerHTML = '';
-                sendMessage(q.replace(/^[^\w₹]*/, '').trim());
-            });
-            quickReplies.appendChild(btn);
-        });
-    }
-
-    // ── Send Message ───────────────────────────────────────────
-    async function sendMessage(text) {
+    // ── Send ───────────────────────────────────────────────────
+    async function send(text) {
+        text = (text || '').trim();
         if (!text || isBusy) return;
         isBusy = true;
         sendBtn.disabled = true;
-        quickReplies.innerHTML = '';
-
-        addUserMessage(text);
+        quick.innerHTML = '';
+        addUser(text);
         input.value = '';
         showTyping();
-
-        chatHistory.push({ role: 'user', text });
+        history.push({ role: 'user', text });
 
         try {
             const res = await fetch('/.netlify/functions/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, history: chatHistory.slice(-10) })
+                body: JSON.stringify({ message: text, history: history.slice(-10) })
             });
-
+            if (!res.ok) throw new Error('status ' + res.status);
             const data = await res.json();
             removeTyping();
-
-            const reply = data.reply || 'Sorry, I couldn\'t get a response. Please try again!';
-            addBotMessage(reply);
-            chatHistory.push({ role: 'bot', text: reply });
-
+            const reply = (data && data.reply) ? data.reply : clientFallback(text);
+            addBot(reply);
+            history.push({ role: 'bot', text: reply });
         } catch {
             removeTyping();
-            addBotMessage('Oops! Something went wrong. Please check your connection or contact us directly. 😊');
+            // Use client-side fallback when function unavailable
+            const reply = clientFallback(text);
+            addBot(reply);
+            history.push({ role: 'bot', text: reply });
         }
 
         isBusy = false;
@@ -397,20 +417,14 @@
         input.focus();
     }
 
-    // ── Event Listeners ────────────────────────────────────────
-    toggleBtn.addEventListener('click', () => isOpen ? closeChat() : openChat());
-    closeBtn.addEventListener('click', closeChat);
-
-    sendBtn.addEventListener('click', () => sendMessage(input.value.trim()));
+    // ── Events ─────────────────────────────────────────────────
+    btn.addEventListener('click', () => isOpen ? closeChat() : openChat());
+    closeEl.addEventListener('click', closeChat);
+    sendBtn.addEventListener('click', () => send(input.value));
     input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage(input.value.trim());
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); }
     });
 
-    // Show notification dot after 3 seconds if not opened
-    setTimeout(() => {
-        if (!hasOpened) notifDot.style.display = 'block';
-    }, 3000);
+    // Notification dot after 4 seconds
+    setTimeout(() => { if (!opened) dot.style.display = 'block'; }, 4000);
 })();
