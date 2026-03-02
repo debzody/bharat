@@ -352,79 +352,134 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // ── Itinerary Full-Page Editor ──────────────────────────────
-    function renderIteDaysHtml(pkgIdx) {
-        const days = (packagesData[pkgIdx].days) || [];
-        if (days.length === 0) {
-            return '<p class="days-empty">No days yet. Click "+ Add Day" to start.</p>';
-        }
-        return days.map((day, dayIdx) => `
-            <div class="ite-day-card">
-                <div class="ite-day-header">
-                    <span class="pkg-day-num">Day ${day.day}</span>
-                    <button type="button" class="btn-del-day" onclick="window._iteDeleteDay(${pkgIdx},${dayIdx})" title="Remove day">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="pkg-edit-row">
-                    <label>Title</label>
-                    <input type="text" class="pkg-input" value="${escHtml(day.title||'')}"
-                        placeholder="e.g. Arrival in Port Blair"
-                        oninput="window._pkgDayUpdate(${pkgIdx},${dayIdx},'title',this.value)">
-                </div>
-                <div class="pkg-edit-row">
-                    <label>Description</label>
-                    <input type="text" class="pkg-input" value="${escHtml(day.desc||'')}"
-                        placeholder="Short description of the day"
-                        oninput="window._pkgDayUpdate(${pkgIdx},${dayIdx},'desc',this.value)">
-                </div>
-                <div class="pkg-edit-row">
-                    <label>Activities <small>(one per line)</small></label>
-                    <textarea class="pkg-input pkg-textarea" rows="5"
-                        placeholder="Airport pickup&#10;Hotel check-in&#10;City tour"
-                        oninput="window._pkgDayUpdate(${pkgIdx},${dayIdx},'activities',this.value.split('\\n').map(s=>s.trim()).filter(Boolean))"
-                    >${escHtml((day.activities||[]).join('\n'))}</textarea>
-                </div>
+    // Get the working itinerary data for a package (merged with defaults)
+    function getIteData(pkgIdx) {
+        const pkg = packagesData[pkgIdx];
+        const defKey = (pkg.id && ITINERARY_DEFAULTS[pkg.id]) ? pkg.id : 'budget';
+        const def = ITINERARY_DEFAULTS[defKey];
+        return {
+            duration:   pkg.duration   || def.duration,
+            highlights: (pkg.highlights && pkg.highlights.length) ? pkg.highlights : def.highlights,
+            exclusions: (pkg.exclusions && pkg.exclusions.length) ? pkg.exclusions : def.exclusions,
+            days:       (pkg.days && pkg.days.length)            ? pkg.days       : def.days
+        };
+    }
+
+    function buildDayCard(pkgIdx, dayIdx, day) {
+        const el = document.createElement('div');
+        el.className = 'ite-day-card';
+        el.innerHTML = `
+            <div class="ite-day-header">
+                <span class="pkg-day-num">Day ${day.day}</span>
+                <button type="button" class="btn-del-day" title="Remove day">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-        `).join('');
+            <div class="pkg-edit-row">
+                <label>Title</label>
+                <input type="text" class="pkg-input" value="${escHtml(day.title||'')}" placeholder="e.g. Arrival in Port Blair">
+            </div>
+            <div class="pkg-edit-row">
+                <label>Description</label>
+                <input type="text" class="pkg-input" value="${escHtml(day.desc||'')}" placeholder="Short description of the day">
+            </div>
+            <div class="pkg-edit-row">
+                <label>Activities <small>(one per line)</small></label>
+                <textarea class="pkg-input pkg-textarea" rows="5" placeholder="Airport pickup&#10;Hotel check-in&#10;City tour"></textarea>
+            </div>
+        `;
+        // Set textarea value directly (avoids HTML entity issues)
+        el.querySelector('textarea').value = (day.activities || []).join('\n');
+
+        // Bind events
+        el.querySelector('.btn-del-day').addEventListener('click', () => window._iteDeleteDay(pkgIdx, dayIdx));
+        el.querySelector('input[placeholder*="Arrival"]').addEventListener('input', function() {
+            packagesData[pkgIdx].days[dayIdx].title = this.value;
+        });
+        el.querySelector('input[placeholder*="Short"]').addEventListener('input', function() {
+            packagesData[pkgIdx].days[dayIdx].desc = this.value;
+        });
+        el.querySelector('textarea').addEventListener('input', function() {
+            packagesData[pkgIdx].days[dayIdx].activities = this.value.split('\n').map(s => s.trim()).filter(Boolean);
+        });
+        return el;
+    }
+
+    function renderIteDaysContainer(pkgIdx) {
+        const container = document.getElementById('ite-days-container');
+        if (!container) return;
+        container.innerHTML = '';
+        const days = packagesData[pkgIdx].days || [];
+        if (days.length === 0) {
+            container.innerHTML = '<p class="days-empty">No days yet. Click &ldquo;+ Add Day&rdquo; to start.</p>';
+            return;
+        }
+        days.forEach((day, dayIdx) => {
+            container.appendChild(buildDayCard(pkgIdx, dayIdx, day));
+        });
     }
 
     function renderItineraryEditor(pkgIdx) {
         const pkg = packagesData[pkgIdx];
+        const data = getIteData(pkgIdx);
+
+        // Ensure packagesData has the merged values
+        pkg.days       = data.days.map(d => ({ ...d, activities: [...(d.activities||[])] }));
+        pkg.duration   = data.duration;
+        pkg.highlights = data.highlights.slice();
+        pkg.exclusions = data.exclusions.slice();
+
         document.getElementById('itePkgName').textContent = pkg.name;
-        document.getElementById('iteBody').innerHTML = `
+
+        const body = document.getElementById('iteBody');
+        body.innerHTML = `
             <div class="ite-section">
                 <div class="ite-section-title"><i class="fas fa-info-circle"></i> Overview</div>
                 <div class="ite-fields-grid">
                     <div class="pkg-edit-row">
                         <label>Duration</label>
-                        <input type="text" class="pkg-input" value="${escHtml(pkg.duration||'')}"
-                            placeholder="e.g. 4 Nights / 5 Days"
-                            oninput="window._pkgUpdate(${pkgIdx},'duration',this.value)">
+                        <input id="ite-duration" type="text" class="pkg-input" placeholder="e.g. 4 Nights / 5 Days">
                     </div>
                     <div class="pkg-edit-row">
                         <label>Highlights <small>(comma-separated)</small></label>
-                        <input type="text" class="pkg-input" value="${escHtml((pkg.highlights||[]).join(', '))}"
-                            placeholder="e.g. Radhanagar Beach, Cellular Jail"
-                            oninput="window._pkgUpdate(${pkgIdx},'highlights',this.value.split(',').map(s=>s.trim()).filter(Boolean))">
+                        <input id="ite-highlights" type="text" class="pkg-input" placeholder="e.g. Radhanagar Beach, Cellular Jail">
                     </div>
                     <div class="pkg-edit-row">
                         <label>Exclusions <small>(comma-separated)</small></label>
-                        <input type="text" class="pkg-input" value="${escHtml((pkg.exclusions||[]).join(', '))}"
-                            placeholder="e.g. Airfare, Lunch, Travel Insurance"
-                            oninput="window._pkgUpdate(${pkgIdx},'exclusions',this.value.split(',').map(s=>s.trim()).filter(Boolean))">
+                        <input id="ite-exclusions" type="text" class="pkg-input" placeholder="e.g. Airfare, Lunch, Travel Insurance">
                     </div>
                 </div>
             </div>
             <div class="ite-section">
                 <div class="ite-section-title"><i class="fas fa-calendar-day"></i> Day-by-Day Itinerary</div>
-                <div id="ite-days-container" class="ite-days-container">
-                    ${renderIteDaysHtml(pkgIdx)}
-                </div>
-                <button type="button" class="btn-add-day" onclick="window._iteAddDay(${pkgIdx})">
+                <div id="ite-days-container" class="ite-days-container"></div>
+                <button type="button" class="btn-add-day" id="ite-add-day-btn">
                     <i class="fas fa-plus"></i> Add Day
                 </button>
             </div>
         `;
+
+        // Set field values directly (avoids escaping issues)
+        document.getElementById('ite-duration').value = pkg.duration || '';
+        document.getElementById('ite-highlights').value = (pkg.highlights || []).join(', ');
+        document.getElementById('ite-exclusions').value = (pkg.exclusions || []).join(', ');
+
+        // Bind overview fields
+        document.getElementById('ite-duration').addEventListener('input', function() {
+            packagesData[pkgIdx].duration = this.value;
+        });
+        document.getElementById('ite-highlights').addEventListener('input', function() {
+            packagesData[pkgIdx].highlights = this.value.split(',').map(s => s.trim()).filter(Boolean);
+        });
+        document.getElementById('ite-exclusions').addEventListener('input', function() {
+            packagesData[pkgIdx].exclusions = this.value.split(',').map(s => s.trim()).filter(Boolean);
+        });
+
+        // Add day button
+        document.getElementById('ite-add-day-btn').addEventListener('click', () => window._iteAddDay(pkgIdx));
+
+        // Render days
+        renderIteDaysContainer(pkgIdx);
     }
 
     function renderPackageEditorCards() {
@@ -520,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!confirm('Remove Day ' + (dayIdx + 1) + '?')) return;
         packagesData[pkgIdx].days.splice(dayIdx, 1);
         packagesData[pkgIdx].days.forEach((d, i) => { d.day = i + 1; });
-        document.getElementById('ite-days-container').innerHTML = renderIteDaysHtml(pkgIdx);
+        renderIteDaysContainer(pkgIdx);
     };
 
     window._iteAddDay = function(pkgIdx) {
@@ -528,22 +583,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!packagesData[pkgIdx].days) packagesData[pkgIdx].days = [];
         const nextDay = packagesData[pkgIdx].days.length + 1;
         packagesData[pkgIdx].days.push({ day: nextDay, title: 'Day ' + nextDay, desc: '', activities: [] });
-        document.getElementById('ite-days-container').innerHTML = renderIteDaysHtml(pkgIdx);
+        renderIteDaysContainer(pkgIdx);
     };
 
-    // Open full-page itinerary editor (merge defaults if package has no itinerary data)
+    // Open full-page itinerary editor
     window._openItineraryEditor = function(pkgIdx) {
         window._currentIteIdx = pkgIdx;
-        const pkg = packagesData[pkgIdx];
-        const defKey = pkg.id && ITINERARY_DEFAULTS[pkg.id] ? pkg.id : 'budget';
-        const def = ITINERARY_DEFAULTS[defKey];
-        // Merge defaults into the package if fields are missing
-        if (!pkg.days || pkg.days.length === 0)      pkg.days       = JSON.parse(JSON.stringify(def.days));
-        if (!pkg.duration)                            pkg.duration   = def.duration;
-        if (!pkg.highlights || !pkg.highlights.length) pkg.highlights = def.highlights.slice();
-        if (!pkg.exclusions || !pkg.exclusions.length) pkg.exclusions = def.exclusions.slice();
         renderItineraryEditor(pkgIdx);
         document.getElementById('itineraryEditor').style.display = 'flex';
+        document.getElementById('iteBody').scrollTop = 0;
     };
 
     window._closeItineraryEditor = function() {
