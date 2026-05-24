@@ -789,12 +789,19 @@ body.hero-page .topbar,
     padding:.85rem 2rem;
     gap:.5rem;
 }
-.topbar.scrolled{
-    background:rgba(12,28,36,.96);
-    border-bottom-color:rgba(255,255,255,.06);
-    box-shadow:0 4px 20px rgba(0,0,0,.18);
-    padding-top:.7rem;padding-bottom:.7rem;
+.topbar.scrolled,
+.topbar.is-scrolled{
+    background:rgba(12,28,36,.96) !important;
+    backdrop-filter:saturate(180%) blur(12px) !important;
+    -webkit-backdrop-filter:saturate(180%) blur(12px) !important;
+    border-color:rgba(255,255,255,.06) !important;
+    box-shadow:0 4px 20px rgba(0,0,0,.18) !important;
+    padding-top:.7rem !important;padding-bottom:.7rem !important;
 }
+/* Fade the brand-line2 ("Andaman Specialists") on scroll for visual hierarchy
+   like the mockup, and keep brand-line1 fully white & legible. */
+.topbar.scrolled .brand-line2,
+.topbar.is-scrolled .brand-line2{opacity:.6}
 
 /* Brand: small icon-mark + 2-line block (Bharat Tours / Andaman Specialists) */
 .topbar-logo img{
