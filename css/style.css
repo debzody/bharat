@@ -1021,3 +1021,301 @@ body.hero-page .hero{padding-top:7rem}
 
 /* Hide the eyebrow pill above the hero h1 (mockup doesn't use one) */
 .hero-eyebrow{display:none !important}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ NON-HERO TOPBAR (solid dark) ════════════════════════════════
+   On pages without a hero photo (flights, bookings, profile, settings,
+   privacy, terms, etc.) the white-on-glass topbar is invisible against
+   the page's light background. Force a solid dark navy bar identical
+   to the scrolled state of the hero topbar.
+   ════════════════════════════════════════════════════════════════════ */
+body:not(.hero-page) .topbar{
+    background:rgba(12,28,36,.96) !important;
+    backdrop-filter:saturate(180%) blur(12px) !important;
+    -webkit-backdrop-filter:saturate(180%) blur(12px) !important;
+    border-color:rgba(255,255,255,.06) !important;
+    box-shadow:0 4px 20px rgba(0,0,0,.18) !important;
+}
+/* On non-hero pages, brand-line2 stays muted so the brand name is
+   the visual anchor (matches scrolled hero behaviour). */
+body:not(.hero-page) .topbar .brand-line2{opacity:.6}
+/* Non-hero pages need padding to push content below the now-fixed bar. */
+body:not(.hero-page) .main-content{padding-top:calc(var(--tb-h) + 1rem)}
+
+/* Make the non-hero login pill use the teal gradient straight away
+   (matches scrolled state of hero pages). */
+body:not(.hero-page) .topnav-item.topnav-cta{
+    background:linear-gradient(135deg,var(--primary-teal-soft),var(--primary-teal)) !important;
+    color:#fff !important;
+    box-shadow:0 4px 14px rgba(13,122,138,.4) !important;
+}
+body:not(.hero-page) .topnav-item.topnav-cta span{color:#fff !important}
+
+/* Hide the .bookings-help / inline contact strip duplicates that JS
+   sometimes injects on non-hero pages too. */
+body:not(.hero-page) .contact-strip-floating{display:none !important}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ ADMIN DASHBOARD — HACKER / TERMINAL THEME ═══════════════════
+   Triggered by <body class="dashboard-page"> (added in dashboard.html).
+   Pure black background, neon-green text, monospace, scanline overlay,
+   grid lines, cyber-blue accents. Real "Mr. Robot / Hackers" vibe.
+   ════════════════════════════════════════════════════════════════════ */
+body.dashboard-page{
+    background:#0a0e0a !important;
+    color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code','SF Mono','Menlo','Consolas',monospace !important;
+}
+/* Faint horizontal scanlines + green CRT glow overlay */
+body.dashboard-page::before{
+    content:"";
+    position:fixed;inset:0;
+    background:
+        repeating-linear-gradient(0deg,
+            rgba(126,255,143,.03) 0,
+            rgba(126,255,143,.03) 1px,
+            transparent 1px,
+            transparent 3px),
+        radial-gradient(ellipse at center,rgba(126,255,143,.06) 0%,transparent 70%);
+    pointer-events:none;z-index:1;
+    mix-blend-mode:screen;
+}
+/* Subtle grid lines on the body for a "code editor" feel */
+body.dashboard-page::after{
+    content:"";
+    position:fixed;inset:0;
+    background-image:
+        linear-gradient(rgba(126,255,143,.04) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(126,255,143,.04) 1px,transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;z-index:0;
+}
+body.dashboard-page > *{position:relative;z-index:2}
+
+/* Hacker topbar */
+body.dashboard-page .topbar{
+    background:rgba(0,8,4,.92) !important;
+    border:1px solid rgba(126,255,143,.18) !important;
+    border-radius:0 !important;
+    box-shadow:0 0 24px rgba(126,255,143,.12),0 4px 0 rgba(126,255,143,.05) !important;
+}
+body.dashboard-page .topbar-logo .brand-line1{
+    color:#7eff8f !important;-webkit-text-fill-color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-shadow:0 0 8px rgba(126,255,143,.5);
+    letter-spacing:0 !important;
+}
+body.dashboard-page .topbar-logo .brand-line2{
+    color:rgba(126,255,143,.6) !important;-webkit-text-fill-color:rgba(126,255,143,.6) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+}
+body.dashboard-page .topnav-item{
+    color:rgba(126,255,143,.75) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-transform:lowercase !important;
+}
+body.dashboard-page .topnav-item span{color:inherit !important;font-family:inherit !important}
+body.dashboard-page .topnav-item:hover{
+    background:rgba(126,255,143,.1) !important;color:#7eff8f !important;
+    text-shadow:0 0 6px rgba(126,255,143,.6);
+}
+body.dashboard-page .topnav-item.active{
+    background:rgba(126,255,143,.12) !important;color:#7eff8f !important;
+    box-shadow:inset 0 -2px 0 #7eff8f;
+}
+body.dashboard-page .topnav-item.topnav-cta{
+    background:#0a0e0a !important;color:#7eff8f !important;
+    border:1px solid #7eff8f !important;
+    border-radius:4px !important;
+    box-shadow:0 0 12px rgba(126,255,143,.3) !important;
+    text-transform:uppercase !important;
+    letter-spacing:.1em !important;
+}
+body.dashboard-page .topnav-item.topnav-cta span{color:#7eff8f !important}
+body.dashboard-page .topnav-item.topnav-cta:hover{
+    background:#7eff8f !important;color:#0a0e0a !important;
+}
+body.dashboard-page .topnav-item.topnav-cta:hover span{color:#0a0e0a !important}
+
+/* Dashboard cards / sections — bordered terminal panels */
+body.dashboard-page .container,
+body.dashboard-page .dashboard-section,
+body.dashboard-page .dashboard-content{color:#cdf5d3}
+body.dashboard-page h1,
+body.dashboard-page h2,
+body.dashboard-page h3,
+body.dashboard-page h4{
+    color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code',monospace;
+    text-shadow:0 0 8px rgba(126,255,143,.4);
+    letter-spacing:.02em;
+}
+body.dashboard-page h1::before,
+body.dashboard-page h2::before{
+    content:"> ";color:#46c95c;opacity:.7;
+}
+
+/* KPI / stat tiles */
+body.dashboard-page .kpi-card,
+body.dashboard-page .stat-card,
+body.dashboard-page .dashboard-card,
+body.dashboard-page .stat-block,
+body.dashboard-page .card,
+body.dashboard-page [class*="stat-"]{
+    background:rgba(8,16,10,.85) !important;
+    border:1px solid rgba(126,255,143,.25) !important;
+    border-radius:4px !important;
+    box-shadow:0 0 0 1px rgba(126,255,143,.05),0 4px 12px rgba(0,0,0,.5) !important;
+    color:#cdf5d3 !important;
+    backdrop-filter:blur(4px);
+}
+body.dashboard-page .kpi-card:hover,
+body.dashboard-page .dashboard-card:hover,
+body.dashboard-page .stat-block:hover{
+    border-color:#7eff8f !important;
+    box-shadow:0 0 24px rgba(126,255,143,.25) !important;
+}
+body.dashboard-page .kpi-num,
+body.dashboard-page .stat-num,
+body.dashboard-page .kpi-card .num,
+body.dashboard-page [class*="-num"]{
+    color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-shadow:0 0 14px rgba(126,255,143,.55);
+    letter-spacing:.02em;
+}
+body.dashboard-page .kpi-label,
+body.dashboard-page .stat-label,
+body.dashboard-page .kpi-card .label,
+body.dashboard-page [class*="-label"],
+body.dashboard-page [class*="-cap"]{
+    color:rgba(126,255,143,.55) !important;
+    text-transform:uppercase !important;
+    letter-spacing:.18em !important;
+    font-size:.7rem !important;
+}
+
+/* KPI icons go neon green */
+body.dashboard-page .kpi-icon,
+body.dashboard-page .stat-icon,
+body.dashboard-page .feature-icon,
+body.dashboard-page .card i:not(.fab):not(.um-item i){
+    color:#7eff8f !important;
+    background:rgba(126,255,143,.08) !important;
+    border:1px solid rgba(126,255,143,.2) !important;
+    border-radius:4px !important;
+    text-shadow:0 0 8px rgba(126,255,143,.5);
+}
+
+/* Tables & lists turn into terminal-style logs */
+body.dashboard-page table,
+body.dashboard-page .data-table{
+    background:rgba(8,16,10,.6) !important;
+    border:1px solid rgba(126,255,143,.2) !important;
+    color:#cdf5d3 !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    font-size:.85rem !important;
+}
+body.dashboard-page th{
+    background:rgba(126,255,143,.08) !important;
+    color:#7eff8f !important;
+    border-bottom:1px solid rgba(126,255,143,.3) !important;
+    text-transform:uppercase !important;letter-spacing:.1em !important;
+    font-size:.72rem !important;
+}
+body.dashboard-page td{
+    border-top:1px solid rgba(126,255,143,.08) !important;
+    color:#cdf5d3 !important;
+}
+body.dashboard-page tr:hover td{
+    background:rgba(126,255,143,.05) !important;
+    color:#7eff8f !important;
+}
+
+/* Buttons — terminal style */
+body.dashboard-page .btn-primary,
+body.dashboard-page button.btn,
+body.dashboard-page button[type="submit"]{
+    background:#0a0e0a !important;
+    color:#7eff8f !important;
+    border:1px solid #7eff8f !important;
+    border-radius:4px !important;
+    box-shadow:0 0 12px rgba(126,255,143,.25),inset 0 0 0 1px rgba(126,255,143,.08) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-transform:uppercase !important;
+    letter-spacing:.1em !important;
+    font-weight:700 !important;
+}
+body.dashboard-page .btn-primary:hover,
+body.dashboard-page button.btn:hover,
+body.dashboard-page button[type="submit"]:hover{
+    background:#7eff8f !important;color:#0a0e0a !important;
+    box-shadow:0 0 24px rgba(126,255,143,.6) !important;
+}
+
+/* Form inputs */
+body.dashboard-page input,
+body.dashboard-page select,
+body.dashboard-page textarea{
+    background:rgba(8,16,10,.7) !important;
+    color:#cdf5d3 !important;
+    border:1px solid rgba(126,255,143,.25) !important;
+    border-radius:3px !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    font-size:.88rem !important;
+}
+body.dashboard-page input:focus,
+body.dashboard-page select:focus,
+body.dashboard-page textarea:focus{
+    border-color:#7eff8f !important;
+    box-shadow:0 0 0 2px rgba(126,255,143,.2) !important;outline:none !important;
+}
+
+/* Charts / canvas containers — give them a terminal frame */
+body.dashboard-page canvas,
+body.dashboard-page .chart-container{
+    background:rgba(8,16,10,.5) !important;
+    border:1px solid rgba(126,255,143,.18) !important;
+    border-radius:4px !important;
+    padding:.5rem !important;
+}
+
+/* Status badges */
+body.dashboard-page .status,
+body.dashboard-page .badge{
+    background:rgba(126,255,143,.12) !important;
+    color:#7eff8f !important;
+    border:1px solid rgba(126,255,143,.3) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-transform:uppercase !important;
+    letter-spacing:.1em !important;
+    font-size:.7rem !important;
+    border-radius:3px !important;
+}
+body.dashboard-page .status.confirmed{background:rgba(126,255,143,.2) !important;color:#7eff8f !important}
+body.dashboard-page .status.pending{background:rgba(247,201,72,.15) !important;color:#f7c948 !important;border-color:rgba(247,201,72,.4) !important}
+body.dashboard-page .status.cancelled{background:rgba(255,107,91,.15) !important;color:#ff6b5b !important;border-color:rgba(255,107,91,.4) !important}
+
+/* Footer on dashboard — keep it dark/terminal */
+body.dashboard-page footer.ft,
+body.dashboard-page footer{
+    background:#000 !important;
+    border-top:1px solid rgba(126,255,143,.18) !important;
+    color:rgba(126,255,143,.55) !important;
+}
+body.dashboard-page .ft-brand-name,
+body.dashboard-page .ft-col h4{
+    color:#7eff8f !important;font-family:'JetBrains Mono','Fira Code',monospace !important;
+}
+body.dashboard-page .ft-mark{
+    background:#7eff8f !important;color:#0a0e0a !important;box-shadow:0 0 12px rgba(126,255,143,.4) !important;
+}
+
+/* Optional blinking cursor at the end of dashboard h1 — pure flair */
+body.dashboard-page h1::after{
+    content:"_";
+    color:#7eff8f;
+    animation:hacker-cursor 1s steps(1) infinite;
+    margin-left:.2rem;
+}
+@keyframes hacker-cursor{50%{opacity:0}}
