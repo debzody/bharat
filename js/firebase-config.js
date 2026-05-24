@@ -163,3 +163,27 @@ window.FLIGHT_AFFILIATES = {
     cleartrip:     { tag: "AFFID-CLEARTRIP",    subId: "andamanvoyages" },
     travelpayouts: { tag: "",                   marker: "" }   // optional widget
 };
+
+// ── Google Reviews (Places API via Maps JavaScript API) ──────────
+// Used by js/google-reviews.js to fetch & render up to 5 live Google
+// reviews for the business on any page that has a `[data-google-reviews]`
+// host element (currently the homepage testimonials section).
+//
+// SECURITY: the API key WILL appear in your page source — that's how
+// browser-side Google Maps integrations work. The mitigation is a
+// referrer restriction: in https://console.cloud.google.com/apis/credentials
+// click your key → Application restrictions → "HTTP referrers" and add:
+//   • https://andamanvoyages.in/*
+//   • https://*.andamanvoyages.in/*
+//   • http://localhost:*/*       (only if you also dev locally)
+// With that lock in place, the key is useless from any other origin.
+// Also restrict the API list to: Places API + Maps JavaScript API.
+//
+// To find your Place ID: https://developers.google.com/maps/documentation/places/web-service/place-id
+// Search by your business name and copy the alphanumeric Place ID.
+window.GOOGLE_REVIEWS = {
+    apiKey:       "AIzaSyCcWzQqx4ftndN_9s9BfhSV5Pzyy9QXwLs",
+    placeId:      "ChIJYVLws7yViDARQMew5EIX0Dk",
+    cacheHours:   24,    // localStorage cache lifetime
+    mapsLanguage: "en"
+};

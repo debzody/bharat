@@ -519,7 +519,16 @@
             <div class="tst-stat"><div class="tst-stat__num">24×7</div><div class="tst-stat__label">On-ground support</div></div>
         </div>
 
-        <div class="tst-grid">
+        <!-- ── Live Google Reviews (loaded by js/google-reviews.js) ───
+             The host element below is filled with real Google reviews on
+             page load. Until the API call resolves the existing hard-coded
+             tst-grid below acts as a fallback (hidden once gr-loaded
+             class is added to the host). On API failure (no key, network
+             error, etc.) the fallback stays visible — so the page is
+             never broken. -->
+        <div data-google-reviews></div>
+
+        <div class="tst-grid tst-grid-fallback">
             <div class="tst-card">
                 <div class="tst-card__head">
                     <div class="tst-card__avatar">PS</div>
@@ -580,6 +589,97 @@
             <i class="fab fa-google" style="color:#4285f4"></i>
             Verified reviews from Google · TripAdvisor · MakeMyTrip
         </div>
+
+        <!-- ── Google Reviews component CSS (only used on this page) ─── -->
+        <style>
+            /* Hide the hard-coded fallback grid once live reviews load */
+            [data-google-reviews].gr-loaded ~ .tst-grid-fallback { display: none; }
+
+            [data-google-reviews] {
+                margin: 0 auto 2rem;
+                max-width: 1200px;
+                padding: 0 1rem;
+            }
+            [data-google-reviews]:empty { display: none; }
+
+            .gr-header {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                background: #fff;
+                border: 1px solid #e3e8ef;
+                border-radius: 14px;
+                padding: 1rem 1.4rem;
+                box-shadow: 0 4px 14px rgba(10,31,68,0.05);
+                margin-bottom: 1.25rem;
+            }
+            .gr-header-left  { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+            .gr-google-logo  { font-family: "Product Sans","Poppins",sans-serif; font-weight: 700; font-size: 1.5rem; letter-spacing: -.5px; user-select: none; }
+            .gr-header-rating{ display: flex; align-items: center; gap: .5rem; }
+            .gr-rating-num   { font-size: 1.8rem; font-weight: 800; color: #0d2c3a; line-height: 1; }
+            .gr-stars        { color: #fbbc05; font-size: 1rem; letter-spacing: 1px; }
+            .gr-rating-count { color: #5a6877; font-size: .9rem; margin-top: .15rem; }
+            .gr-header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+            .gr-cta-write, .gr-cta-all {
+                display: inline-flex; align-items: center; gap: .35rem;
+                padding: .55rem 1rem; border-radius: 999px; font-size: .85rem;
+                font-weight: 600; text-decoration: none; transition: transform .12s, box-shadow .12s;
+            }
+            .gr-cta-write { background: linear-gradient(135deg,#4285f4 0%,#34a853 100%); color: #fff; }
+            .gr-cta-all   { background: #fff; color: #0d7a8a; border: 1px solid #cfd9df; }
+            .gr-cta-write:hover, .gr-cta-all:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(10,31,68,0.12); }
+
+            .gr-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1rem;
+            }
+            .gr-card {
+                background: #fff;
+                border: 1px solid #e3e8ef;
+                border-radius: 12px;
+                padding: 1.1rem;
+                box-shadow: 0 2px 8px rgba(10,31,68,0.04);
+                transition: box-shadow .15s, transform .15s;
+                display: flex;
+                flex-direction: column;
+            }
+            .gr-card:hover { box-shadow: 0 8px 24px rgba(10,31,68,0.10); transform: translateY(-2px); }
+            .gr-card-head {
+                display: grid;
+                grid-template-columns: 44px 1fr auto;
+                gap: .65rem;
+                align-items: center;
+                margin-bottom: .65rem;
+            }
+            .gr-avatar {
+                width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+                background: linear-gradient(135deg,#0d7a8a,#16a085);
+                display: flex; align-items: center; justify-content: center;
+                color: #fff; font-weight: 700; font-size: 1rem;
+            }
+            .gr-avatar-text { /* same as .gr-avatar — text fallback */ }
+            .gr-card-name { font-weight: 700; color: #0d2c3a; font-size: .95rem; line-height: 1.2; margin: 0; }
+            .gr-card-time { color: #6b7a99; font-size: .78rem; display: inline-flex; align-items: center; gap: .3rem; margin-top: .15rem; }
+            .gr-card-time i { color: #4285f4; }
+            .gr-card-stars { color: #fbbc05; font-size: .85rem; letter-spacing: .5px; }
+            .gr-card-text  { color: #2c3e50; font-size: .92rem; line-height: 1.55; margin: 0 0 .5rem; flex: 1; }
+            .gr-more-btn {
+                background: transparent; border: 0; padding: 0;
+                color: #0d7a8a; font-weight: 600; font-size: .85rem;
+                cursor: pointer; align-self: flex-start;
+            }
+            .gr-more-btn:hover { text-decoration: underline; }
+
+            @media (max-width: 720px) {
+                .gr-header { padding: .85rem 1rem; }
+                .gr-google-logo { font-size: 1.2rem; }
+                .gr-rating-num { font-size: 1.5rem; }
+                .gr-cta-write, .gr-cta-all { padding: .45rem .8rem; font-size: .8rem; }
+            }
+        </style>
     </section>
 
     <!-- ═══ RECENT BOOKINGS TICKER (FOMO / social proof) ══════════════ -->
@@ -998,5 +1098,8 @@
     <script src="js/chat.js?v=14"></script>
     <script src="js/security.js?v=2"></script>
     <script src="js/user-menu.js?v=8"></script>
+    <!-- Live Google Reviews — fetches from Places API; falls back to the
+         hardcoded testimonials grid above if no API key is configured. -->
+    <script src="js/google-reviews.js?v=1" defer></script>
 </body>
 </html>
