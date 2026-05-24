@@ -286,16 +286,30 @@ document.addEventListener('DOMContentLoaded', function () {
         'images/ross2.jpg', 'images/ross3.jpg'
     ];
 
+    // Track whether the package editor has been hydrated yet — once hydrated
+    // we MUST NOT re-fetch / re-render from refreshAll() because that would
+    // wipe in-progress edits and re-trigger Firestore reads on every tick.
+    let packagesHydrated = false;
+
     async function loadAndRenderPackages() {
         const container = document.getElementById('packageCards');
         container.innerHTML = '<p style="padding:2rem;color:#888;text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading packages…</p>';
 
         if (window.PackagesStore) {
-            await window.PackagesStore.loadWithStaleWhileRevalidate(function (data) {
-                packagesData = data;
-                renderPackageEditorCards();
-            });
-            if (packagesData && packagesData.length) return;
+            // Single fetch only — avoid the "stale-while-revalidate" double
+            // callback that previously caused two re-renders (and therefore
+            // two Firestore round-trips and lost typing focus).
+            try {
+                const result = await window.PackagesStore.load();
+                if (result && Array.isArray(result.data) && result.data.length) {
+                    packagesData = result.data;
+                    renderPackageEditorCards();
+                    packagesHydrated = true;
+                    return;
+                }
+            } catch (e) {
+                console.warn('PackagesStore.load failed', e);
+            }
         }
 
         // Fallback hard-coded defaults
@@ -304,9 +318,15 @@ document.addEventListener('DOMContentLoaded', function () {
             rating: 4.5, image: 'images/beach1.jpg', inclusions: [], visible: true
         }));
         renderPackageEditorCards();
+        packagesHydrated = true;
     }
 
     function renderPackages() {
+        // Only fetch from the network once. Subsequent refreshAll() ticks
+        // (e.g. after a booking cancel, after `storage` events from other
+        // tabs, after settings save) must NOT re-load the package editor —
+        // it would discard any unsaved edits and hammer Firestore.
+        if (packagesHydrated) return;
         loadAndRenderPackages();
     }
 
