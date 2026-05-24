@@ -4,16 +4,59 @@
 
     var RAZORPAY_KEY = 'rzp_live_SLfG8nnKN3tXPC';
     var GST_RATE = 0.05;
-    // ADVANCE_RATE is dynamic — loaded from SettingsStore (global) and may be
-    // overridden per-user. Defaults to 5% until the async settings load.
-    var ADVANCE_RATE = 0.05;
-    var ADVANCE_PCT  = 5;       // human-readable (used for "5% advance" labels)
 
-    // Format the advance percentage for display: "5%" or "7.5%"
-    function fmtPct(p) {
-        if (typeof p !== 'number' || !isFinite(p)) p = 5;
-        // strip trailing .0 if it's a whole number
-        return (Number.isInteger(p) ? String(p) : (Math.round(p * 10) / 10)) + '%';
+    // ── Booking advance: flat per-head amounts ─────────────────────────
+    // Replaces the older "5% of total trip cost" model. The exact rule is
+    // documented at /terms#cancellation; this code is the single source of
+    // truth for what Razorpay actually charges.
+    //
+    //   • Luxury / Premium / Honeymoon  → ₹11,000 / head
+    //   • Budget / Standard / everything else → ₹6,000 / head
+    //
+    // The 'test' package keeps its ₹1 charge so the live-payment smoke test
+    // still works without bumping it to ₹6,000.
+    var ADVANCE_LUXURY   = 11000;
+    var ADVANCE_STANDARD = 6000;
+    // Package-id → head price. Anything not in this map falls back to STANDARD.
+    var ADVANCE_BY_PKG = {
+        budget:    ADVANCE_STANDARD,
+        standard:  ADVANCE_STANDARD,
+        luxury:    ADVANCE_LUXURY,
+        premium:   ADVANCE_LUXURY,
+        honeymoon: ADVANCE_LUXURY
+    };
+
+    // Per-head advance for the package currently in the cart.
+    function advancePerHead() {
+        if (!state.cart) return ADVANCE_STANDARD;
+        // Test package — keep the smoke-test cheap (₹1).
+        if (state.cart.pkgId === 'test' || state.cart.price <= 1) return 1;
+        // Look up by package id; case-insensitive.
+        var key = String(state.cart.pkgId || '').toLowerCase();
+        if (ADVANCE_BY_PKG[key]) return ADVANCE_BY_PKG[key];
+        // Soft heuristic — if the package name contains "luxury", "premium",
+        // or "honeymoon" we still apply the higher tier even when the id
+        // doesn't match (e.g. admin-created packages with custom ids).
+        var nm = String(state.cart.name || '').toLowerCase();
+        if (/luxury|premium|honeymoon/.test(nm)) return ADVANCE_LUXURY;
+        return ADVANCE_STANDARD;
+    }
+
+    // Headcount (children counted as full heads for advance — the policy
+    // says "₹6,000 per traveller", not "per adult").
+    function headCount() {
+        if (!state.cart) return 1;
+        var n = (Number(state.cart.adults) || 0) + (Number(state.cart.children) || 0);
+        return Math.max(1, n);
+    }
+
+    // For backwards-compat with code below that referenced ADVANCE_RATE
+    // (e.g. the SettingsStore async loader that used to override it).
+    // The Razorpay description used to say "5% advance for…"; we keep
+    // a tiny helper that produces a human label like "₹6,000 advance".
+    function fmtAdvanceLabel() {
+        var per = advancePerHead();
+        return R + Number(per).toLocaleString('en-IN') + '/head';
     }
     var COUPONS = {
         'WELCOME500':  { type: 'flat',    value: 500,  label: 'Rs.500 off',  min: 5000  },
@@ -137,8 +180,14 @@
         var s = calcSubtotal(), d = calcDiscount(s), t = s - d;
         return t + calcGst(t);
     }
-    function calcAdvance() { return Math.max(1, Math.round(calcTotal() * ADVANCE_RATE)); }
-    function calcBalance() { return calcTotal() - calcAdvance(); }
+    // Booking advance is now a flat per-head amount (₹6,000 or ₹11,000),
+    // NOT a percentage of the total trip cost. See ADVANCE_BY_PKG above.
+    function calcAdvance() {
+        // Cap at the actual total — guards against a tiny test cart where
+        // headcount × per-head would exceed the trip cost.
+        return Math.min(calcTotal(), Math.max(1, advancePerHead() * headCount()));
+    }
+    function calcBalance() { return Math.max(0, calcTotal() - calcAdvance()); }
 
     // ── HTML builder ──
     function esc(s) {
@@ -218,10 +267,19 @@
 
     function summaryCard() {
         var s = calcSubtotal(), d = calcDiscount(s), taxable = s - d, gst = calcGst(taxable), total = taxable + gst;
-        var advance = Math.max(1, Math.round(total * ADVANCE_RATE));
-        var balance = total - advance;
+        var advance = calcAdvance();
+        var balance = Math.max(0, total - advance);
         var c = state.cart;
-        var people = (Number(c.adults) || 0) + (Number(c.children) || 0);
+        var people = headCount();
+        var perHead = advancePerHead();
+        var isLuxuryTier = perHead === ADVANCE_LUXURY;
+
+        // Cancellation rule values for this tier — keeps the UI in sync
+        // with /terms#cancellation without re-reading anything.
+        var cxlFee     = isLuxuryTier ? 7000 : 4000;
+        var cxlRefund  = isLuxuryTier ? 4000 : 2000;
+        var tierLabel  = isLuxuryTier ? 'Luxury / Premium / Honeymoon' : 'Budget / Standard';
+
         var couponHtml = state.coupon
             ? '<div class="coupon-applied"><i class="fas fa-check-circle"></i> ' + esc(state.coupon.code) + ' applied — ' + esc(state.coupon.label) + ' <a href="#" id="removeCouponLink" style="float:right;color:#0a5a68;">Remove</a></div>'
             : '';
@@ -235,9 +293,9 @@
             '<div class="row"><span>GST (5%)</span><span>' + R + fmt(gst) + '</span></div>' +
             '<div class="row total"><span>Total Trip Cost</span><span class="val">' + R + fmt(total) + '</span></div>' +
 
-            // Advance / balance split — the headline of this booking model
+            // Advance / balance split — flat ₹6K / ₹11K per head, NOT a %.
             '<div class="advance-split">' +
-                '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + fmtPct(ADVANCE_PCT) + ' advance)</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>' +
+                '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' ' + (people === 1 ? 'traveller' : 'travellers') + ')</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>' +
                 '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> Balance after travel</span><span>' + R + fmt(balance) + '</span></div>' +
             '</div>' +
 
@@ -246,15 +304,14 @@
             '<div id="rzp-embed-container" class="rzp-embed-container" style="display:none;"></div>' +
             '<a href="/#packages" style="text-decoration:none;"><button class="btn-secondary" type="button"><i class="fas fa-arrow-left"></i> Continue Browsing</button></a>' +
 
-            // Cancellation policy summary
+            // Cancellation policy summary — flat per-head fee, not a %.
             '<div class="cxl-policy">' +
                 '<strong><i class="fas fa-info-circle"></i> Cancellation Policy</strong>' +
                 '<ul>' +
-                    '<li><strong>60+ days</strong> before travel: 95% refund <em>(5% fee on advance)</em></li>' +
-                    '<li><strong>30–60 days</strong> before travel: 90% refund <em>(10% fee on advance)</em></li>' +
-                    '<li><strong>Within 30 days</strong> of travel: 50% refund <em>(50% fee on advance)</em></li>' +
+                    '<li><strong>More than 7 days</strong> before travel (' + esc(tierLabel) + '): ' + R + fmt(cxlFee) + '/head retained as cancellation fee &mdash; <strong>' + R + fmt(cxlRefund) + '/head refunded</strong>.</li>' +
+                    '<li><strong>Within 7 days of travel (or no-show):</strong> no refund &mdash; full advance forfeited.</li>' +
                 '</ul>' +
-                '<small>Balance of ' + R + fmt(balance) + ' is paid directly at the end of your trip — UPI / bank transfer / cash.</small>' +
+                '<small>Balance of ' + R + fmt(balance) + ' is paid directly at the end of your trip — UPI / bank transfer / cash. <a href="/terms#cancellation" style="color:#0a5a68;">Full policy →</a></small>' +
             '</div>' +
 
             '<div class="payment-trust"><i class="fas fa-shield-alt"></i> Secured by Razorpay &middot; PCI-DSS compliant<br><i class="fas fa-headset"></i> 24/7 support: <a href="tel:+918880195191" style="color:#0a5a68;font-weight:600;">+91 88801 95191</a></div>' +
@@ -406,7 +463,7 @@
             amount: advance * 100,            // ← charge only the 5% advance
             currency: 'INR',
             name: 'Bharat Tours & Travels',
-            description: fmtPct(ADVANCE_PCT) + ' advance for ' + state.cart.name + ' (Ref ' + ref + ')',
+            description: 'Booking advance (' + R + Number(advancePerHead()).toLocaleString('en-IN') + '/head x ' + headCount() + ') for ' + state.cart.name + ' (Ref ' + ref + ')',
             image: 'https://andamanvoyages.in/images/logo.png',
             prefill: { name: name, email: email, contact: phone },
             notes: {
@@ -421,7 +478,7 @@
                 total_trip_cost: String(total),
                 advance_paid:    String(advance),
                 balance_due:     String(balance),
-                payment_type:    'advance_5pct'
+                payment_type:    'advance_per_head'
             },
             theme: { color: '#0d7a8a' },
             handler: function (response) { onPaymentSuccess(response, ref, total, advance, balance, name, email, phone, date, notes); },
@@ -527,13 +584,13 @@
             '<div class="co-card" style="grid-column:1/-1;text-align:center;padding:3rem 1.5rem;">' +
                 '<div style="width:80px;height:80px;border-radius:50%;background:#e8f8f5;color:#0a5a68;display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:1rem;"><i class="fas fa-check-circle"></i></div>' +
                 '<h2 style="color:#0a5a68;margin:0 0 .5rem;font-size:1.6rem;">Booking Confirmed!</h2>' +
-                '<p style="color:#5a6877;margin:0 0 1.5rem;font-size:1rem;">Your ' + fmtPct(ADVANCE_PCT) + ' advance payment was successful and your seat is reserved. We\'ve emailed your confirmation to <strong>' + esc(email) + '</strong>.</p>' +
+                '<p style="color:#5a6877;margin:0 0 1.5rem;font-size:1rem;">Your booking advance payment was successful and your seat is reserved. We\'ve emailed your confirmation to <strong>' + esc(email) + '</strong>.</p>' +
                 '<div style="display:inline-block;background:#f8fafb;padding:1.1rem 1.5rem;border-radius:10px;text-align:left;font-size:.92rem;color:#2c3e50;border:1px dashed #cfd9df;">' +
                     '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">Booking Ref:</span> <strong>' + esc(ref) + '</strong></div>' +
                     '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">Payment ID:</span> <strong>' + esc(paymentId) + '</strong></div>' +
                     '<hr style="border:none;border-top:1px dashed #cfd9df;margin:.6rem 0;">' +
                     '<div style="margin-bottom:.4rem;"><span style="color:#7f8c8d;">Total Trip Cost:</span> <strong>' + R + fmt(total) + '</strong></div>' +
-                    '<div style="margin-bottom:.4rem;color:#0a5a68;"><span>Advance Paid (' + fmtPct(ADVANCE_PCT) + '):</span> <strong>' + R + fmt(advance) + '</strong></div>' +
+                    '<div style="margin-bottom:.4rem;color:#0a5a68;"><span>Advance Paid:</span> <strong>' + R + fmt(advance) + '</strong></div>' +
                     '<div style="color:#a04000;"><span>Balance Due After Travel:</span> <strong>' + R + fmt(balance) + '</strong></div>' +
                 '</div>' +
 
@@ -551,47 +608,12 @@
         window.Toast.success('Booking confirmed! Advance ' + R + fmt(advance) + ' paid. Ref: ' + ref, { duration: 8000 });
     }
 
-    // ── Resolve effective advance rate (global setting + per-user override) ──
-    // Reads /settings/site.advanceRate, then checks the current user's profile
-    // for an `advanceRate` field that overrides the global value.
-    function resolveAdvanceRate() {
-        try {
-            // 1. global default from SettingsStore (cached or fresh)
-            var globalP = (window.SettingsStore && window.SettingsStore.load)
-                ? window.SettingsStore.load()
-                : Promise.resolve(null);
-
-            // 2. resolve current user, then their advanceRate override (if any)
-            var userP = (window.__firebaseReady && window.__firebaseReady.then)
-                ? window.__firebaseReady.then(function (fb) {
-                    var u = fb.auth && fb.auth.currentUser;
-                    if (!u) return null;
-                    if (window.UsersStore && window.UsersStore.fetchUserDoc) {
-                        return window.UsersStore.fetchUserDoc(u.uid).catch(function () { return null; });
-                    }
-                    return null;
-                  }).catch(function () { return null; })
-                : Promise.resolve(null);
-
-            return Promise.all([globalP, userP]).then(function (results) {
-                var globalSettings = results[0] || {};
-                var userDoc        = results[1] || {};
-
-                var rate = 5; // ultimate fallback
-                if (typeof globalSettings.advanceRate === 'number' && isFinite(globalSettings.advanceRate)) {
-                    rate = globalSettings.advanceRate;
-                }
-                if (userDoc && typeof userDoc.advanceRate === 'number' && isFinite(userDoc.advanceRate)) {
-                    rate = userDoc.advanceRate;
-                }
-                ADVANCE_PCT  = rate;
-                ADVANCE_RATE = rate / 100;
-                return rate;
-            });
-        } catch (e) {
-            return Promise.resolve(5);
-        }
-    }
+    // The booking advance is now a flat per-head amount (see ADVANCE_BY_PKG
+    // at the top of the file), not a percentage. The old resolveAdvanceRate()
+    // function read /settings/site.advanceRate + per-user overrides — both of
+    // which are obsolete under the new policy. We keep an empty stub so the
+    // existing init code below can still call it without breaking.
+    function resolveAdvanceRate() { return Promise.resolve(); }
 
     // ── Init ──
     document.addEventListener('DOMContentLoaded', function () {
