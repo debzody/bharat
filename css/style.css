@@ -807,13 +807,17 @@ body.hero-page .topbar,
 .topbar.scrolled .brand-line2,
 .topbar.is-scrolled .brand-line2{opacity:.6}
 
-/* Brand: small icon-mark + 2-line block (Bharat Tours / Andaman Specialists) */
+/* Brand: small circular emblem + 2-line block (Bharat Transport & Tourism /
+   Andaman Specialists). The new logo is itself a circular badge with its
+   own coloured background — drop the teal-gradient & box, just give it a
+   subtle ring-glow so it pops on dark and light topbars alike. */
 .topbar-logo img{
-    width:40px;height:40px;border-radius:11px;
-    background:linear-gradient(135deg,var(--primary-teal-soft),var(--primary-teal));
-    object-fit:cover;
-    box-shadow:0 4px 14px rgba(13,122,138,.45);
+    width:46px;height:46px;border-radius:50%;
+    background:transparent;
+    object-fit:contain;
+    box-shadow:0 4px 14px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.12);
     filter:none;
+    padding:1px;
 }
 .topbar-logo .brand-line1,
 .topbar .brand-line1{
