@@ -470,9 +470,54 @@
                  chart can drop in here — see the (now-removed) realtime block in
                  git history for the original markup. -->
 
-            <!-- Looker Studio embed (optional) -->
+            <!-- ── Pre-embedded Looker Studio reports ─────────────── -->
             <div class="chart-card" style="margin-top:1.25rem;">
-                <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Embedded full report</h3>
+                <h3 class="chart-title"><i class="fas fa-chart-line"></i> Looker Studio Report #1</h3>
+                <p style="color:#666;font-size:.88rem;margin:0 0 .75rem;">
+                    Source:
+                    <a href="https://datastudio.google.com/s/iF5e78n_lg8" target="_blank" rel="noopener">
+                        datastudio.google.com/s/iF5e78n_lg8
+                    </a>
+                </p>
+                <div style="position:relative;width:100%;border-radius:8px;overflow:hidden;border:1px solid #e3e8ef;">
+                    <iframe
+                        src="https://datastudio.google.com/embed/s/iF5e78n_lg8"
+                        style="width:100%;height:720px;border:0;display:block;"
+                        frameborder="0"
+                        allowfullscreen
+                        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        title="Looker Studio Report 1">
+                    </iframe>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-top:1.25rem;">
+                <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Looker Studio Report #2</h3>
+                <p style="color:#666;font-size:.88rem;margin:0 0 .75rem;">
+                    Source:
+                    <a href="https://datastudio.google.com/s/us26lUXO2oo" target="_blank" rel="noopener">
+                        datastudio.google.com/s/us26lUXO2oo
+                    </a>
+                </p>
+                <div style="position:relative;width:100%;border-radius:8px;overflow:hidden;border:1px solid #e3e8ef;">
+                    <iframe
+                        src="https://datastudio.google.com/embed/s/us26lUXO2oo"
+                        style="width:100%;height:720px;border:0;display:block;"
+                        frameborder="0"
+                        allowfullscreen
+                        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        title="Looker Studio Report 2">
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Looker Studio embed (optional, custom URL) -->
+            <div class="chart-card" style="margin-top:1.25rem;">
+                <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Custom embedded report</h3>
                 <p style="color:#666;font-size:.92rem;margin:0 0 1rem;">
                     Want a beautiful dashboard right inside this admin panel? Clone Google's
                     free <strong>GA4 Looker Studio template</strong>, point it at your property, set
@@ -1125,7 +1170,12 @@
         // Pre-configured Looker Studio embed URL for THIS site's GA4 property.
         // The admin can replace it via the input field below; their choice is
         // stored in localStorage and overrides this default.
-        const DEFAULT_LOOKER_URL = 'https://lookerstudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_m63q9t54bd?params=%7B%22dp56%22%3A%22a141318394w538554925%22%7D';
+        // The site owner shared the public Looker Studio report at
+        //   https://datastudio.google.com/s/iF5e78n_lg8
+        // Looker accepts the short URL inside an iframe and follows the redirect
+        // to the underlying /embed/reporting/<id>/page/<pageId> URL. Public-share
+        // links work without auth so any visitor with admin can see the embed.
+        const DEFAULT_LOOKER_URL = 'https://datastudio.google.com/embed/s/iF5e78n_lg8';
         let lookerUrl = DEFAULT_LOOKER_URL;
 
         try {
