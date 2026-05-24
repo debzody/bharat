@@ -471,76 +471,82 @@
                  git history for the original markup. -->
 
             <!-- ── Pre-embedded Looker Studio reports ───────────────
-                 Three pages of report 4457bd4b-94a8-453a-b0ac-db067d21f97b,
-                 pinned to property a141318394w538554925 via the params query.
-                 The /embed/reporting/<id>/page/<pageId> URL is the
-                 iframe-friendly form Looker Studio renders without auth UI.   -->
-            <div class="chart-card" style="margin-top:1.25rem;">
-                <h3 class="chart-title"><i class="fas fa-chart-line"></i> Acquisition Overview</h3>
-                <p style="color:#666;font-size:.88rem;margin:0 0 .75rem;">
-                    Source:
-                    <a href="https://datastudio.google.com/u/0/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/kIV1C?s=iF5e78n_lg8&params=%7B%22dp56%22:%22a141318394w538554925%22%7D"
-                       target="_blank" rel="noopener">
-                        Open in Looker Studio →
-                    </a>
-                </p>
-                <div style="position:relative;width:100%;border-radius:8px;overflow:hidden;border:1px solid #e3e8ef;">
-                    <iframe
-                        src="https://datastudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/kIV1C"
-                        style="width:100%;height:780px;border:0;display:block;"
-                        frameborder="0"
-                        allowfullscreen
-                        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        title="Looker Studio — Acquisition">
-                    </iframe>
+                 Three pages of report 4457bd4b-94a8-453a-b0ac-db067d21f97b
+                 rendered side-by-side in a compact responsive grid.
+                 Each card scales the 1366×768 native Looker page down with
+                 CSS transform so the whole report fits without scroll.
+                 Click "Expand" to toggle a single card to full size.       -->
+            <div class="looker-grid">
+                <div class="looker-card">
+                    <div class="looker-card-head">
+                        <h4><i class="fas fa-chart-line"></i> Acquisition</h4>
+                        <div class="looker-card-actions">
+                            <button type="button" class="looker-expand-btn" title="Toggle full size">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <a class="looker-open-btn"
+                               href="https://datastudio.google.com/u/0/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/kIV1C?s=iF5e78n_lg8&params=%7B%22dp56%22:%22a141318394w538554925%22%7D"
+                               target="_blank" rel="noopener" title="Open in Looker Studio">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="looker-frame-shell">
+                        <iframe class="looker-frame"
+                            src="https://datastudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/kIV1C"
+                            frameborder="0" allowfullscreen
+                            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                            title="Looker Studio — Acquisition"></iframe>
+                    </div>
                 </div>
-            </div>
 
-            <div class="chart-card" style="margin-top:1.25rem;">
-                <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Engagement &amp; Pages</h3>
-                <p style="color:#666;font-size:.88rem;margin:0 0 .75rem;">
-                    Source:
-                    <a href="https://datastudio.google.com/u/0/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_ev5o6t54bd?s=iF5e78n_lg8&params=%7B%22dp56%22:%22a141318394w538554925%22%7D"
-                       target="_blank" rel="noopener">
-                        Open in Looker Studio →
-                    </a>
-                </p>
-                <div style="position:relative;width:100%;border-radius:8px;overflow:hidden;border:1px solid #e3e8ef;">
-                    <iframe
-                        src="https://datastudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_ev5o6t54bd"
-                        style="width:100%;height:780px;border:0;display:block;"
-                        frameborder="0"
-                        allowfullscreen
-                        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        title="Looker Studio — Engagement">
-                    </iframe>
+                <div class="looker-card">
+                    <div class="looker-card-head">
+                        <h4><i class="fas fa-chart-bar"></i> Engagement &amp; Pages</h4>
+                        <div class="looker-card-actions">
+                            <button type="button" class="looker-expand-btn" title="Toggle full size">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <a class="looker-open-btn"
+                               href="https://datastudio.google.com/u/0/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_ev5o6t54bd?s=iF5e78n_lg8&params=%7B%22dp56%22:%22a141318394w538554925%22%7D"
+                               target="_blank" rel="noopener" title="Open in Looker Studio">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="looker-frame-shell">
+                        <iframe class="looker-frame"
+                            src="https://datastudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_ev5o6t54bd"
+                            frameborder="0" allowfullscreen
+                            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                            title="Looker Studio — Engagement"></iframe>
+                    </div>
                 </div>
-            </div>
 
-            <div class="chart-card" style="margin-top:1.25rem;">
-                <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Tech &amp; Demographics</h3>
-                <p style="color:#666;font-size:.88rem;margin:0 0 .75rem;">
-                    Source:
-                    <a href="https://datastudio.google.com/u/0/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_m63q9t54bd?s=iF5e78n_lg8&params=%7B%22dp56%22:%22a141318394w538554925%22%7D"
-                       target="_blank" rel="noopener">
-                        Open in Looker Studio →
-                    </a>
-                </p>
-                <div style="position:relative;width:100%;border-radius:8px;overflow:hidden;border:1px solid #e3e8ef;">
-                    <iframe
-                        src="https://datastudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_m63q9t54bd"
-                        style="width:100%;height:780px;border:0;display:block;"
-                        frameborder="0"
-                        allowfullscreen
-                        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        title="Looker Studio — Tech & Demographics">
-                    </iframe>
+                <div class="looker-card">
+                    <div class="looker-card-head">
+                        <h4><i class="fas fa-chart-pie"></i> Tech &amp; Demographics</h4>
+                        <div class="looker-card-actions">
+                            <button type="button" class="looker-expand-btn" title="Toggle full size">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <a class="looker-open-btn"
+                               href="https://datastudio.google.com/u/0/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_m63q9t54bd?s=iF5e78n_lg8&params=%7B%22dp56%22:%22a141318394w538554925%22%7D"
+                               target="_blank" rel="noopener" title="Open in Looker Studio">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="looker-frame-shell">
+                        <iframe class="looker-frame"
+                            src="https://datastudio.google.com/embed/reporting/4457bd4b-94a8-453a-b0ac-db067d21f97b/page/p_m63q9t54bd"
+                            frameborder="0" allowfullscreen
+                            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                            title="Looker Studio — Tech &amp; Demographics"></iframe>
+                    </div>
                 </div>
             </div>
 
@@ -1398,6 +1404,63 @@
     })();
     </script>
 
+    <!-- ── Looker compact-grid: dynamic scale + expand toggle ──
+         Each .looker-frame is rendered at its native 1366×768 and we
+         apply a CSS transform: scale(...) so it fits the card's actual
+         pixel width. Recalculated on load + window resize + when the
+         user expands/collapses a card. Also wires the expand button. -->
+    <script>
+    (function () {
+        const NATIVE_W = 1366;   // Looker page native width
+        const NATIVE_H = 768;    // Looker page native height
+        const cards = document.querySelectorAll('.looker-card');
+        if (!cards.length) return;
+
+        function rescale(card) {
+            const shell = card.querySelector('.looker-frame-shell');
+            const frame = card.querySelector('.looker-frame');
+            if (!shell || !frame) return;
+            const w = shell.clientWidth;
+            if (!w) return;
+            const scale = w / NATIVE_W;
+            frame.style.transform = 'scale(' + scale.toFixed(4) + ')';
+            // Make the shell tall enough to host the scaled iframe
+            // (scaled height = NATIVE_H * scale)
+            shell.style.paddingTop = '0px';
+            shell.style.height = (NATIVE_H * scale) + 'px';
+        }
+
+        function rescaleAll() { cards.forEach(rescale); }
+
+        // Initial pass after layout settles (iframes need their card
+        // width to be measurable, so we rAF).
+        requestAnimationFrame(rescaleAll);
+        window.addEventListener('resize', () => requestAnimationFrame(rescaleAll));
+        // Also rescale when the Analytics tab becomes visible — section
+        // toggling is via display:none, so dimensions are 0 until shown.
+        document.querySelectorAll('.sidebar-link[data-section="analytics"]').forEach(link => {
+            link.addEventListener('click', () => setTimeout(rescaleAll, 50));
+        });
+
+        // Expand / collapse toggle
+        cards.forEach(card => {
+            const btn = card.querySelector('.looker-expand-btn');
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                // Only one card expanded at a time
+                cards.forEach(c => { if (c !== card) c.classList.remove('expanded'); });
+                card.classList.toggle('expanded');
+                // After flip, recalc all cards (their widths change)
+                requestAnimationFrame(rescaleAll);
+                // Smoothly bring the expanded card into view
+                if (card.classList.contains('expanded')) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    })();
+    </script>
+
     <!-- Inline analytics-tab CSS (small, page-specific) -->
     <style>
         .stat-card-link {
@@ -1413,6 +1476,132 @@
             0%, 100% { opacity: 1; }
             50%      { opacity: .35; }
         }
+        /* ── Looker compact embed grid ─────────────────────────
+           Renders Looker's 1366×768 native page inside a 3-column
+           responsive grid. The iframe is forced to its native size
+           and CSS-scaled down so the visualisation stays sharp and
+           the whole page fits without scroll. Click "Expand" on any
+           card to flip the .looker-card.expanded class which removes
+           the scale and column constraint. */
+        .looker-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+        .looker-card {
+            background: #fff;
+            border: 1px solid #e3e8ef;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(10,31,68,0.04);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow .15s ease, grid-column .2s ease;
+        }
+        .looker-card:hover {
+            box-shadow: 0 6px 18px rgba(10,31,68,0.10);
+        }
+        .looker-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .55rem .8rem;
+            background: linear-gradient(135deg, #f6fafb 0%, #eef6f8 100%);
+            border-bottom: 1px solid #e3e8ef;
+            min-height: 38px;
+        }
+        .looker-card-head h4 {
+            margin: 0;
+            font-size: .85rem;
+            font-weight: 700;
+            color: #1c2b48;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .looker-card-head h4 i {
+            color: #0d7a8a;
+            font-size: .9rem;
+        }
+        .looker-card-actions {
+            display: flex;
+            gap: .25rem;
+            flex-shrink: 0;
+        }
+        .looker-expand-btn,
+        .looker-open-btn {
+            background: #fff;
+            border: 1px solid #cfd9df;
+            color: #5a6877;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: .75rem;
+            text-decoration: none;
+            transition: background .12s, border-color .12s, color .12s;
+        }
+        .looker-expand-btn:hover,
+        .looker-open-btn:hover {
+            background: #eef6f8;
+            border-color: #b7cdd6;
+            color: #0d7a8a;
+        }
+        /* The shell sets the visible (compact) box; the iframe inside
+           is forced to its native 1366×768 and scaled to fit. */
+        .looker-frame-shell {
+            position: relative;
+            width: 100%;
+            /* ~16:9-ish but a bit taller because Looker reports usually
+               are. Tweak the aspect ratio if your report is square. */
+            padding-top: 60%;
+            background: #fff;
+            overflow: hidden;
+        }
+        .looker-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1366px;
+            height: 768px;
+            border: 0;
+            transform-origin: 0 0;
+            /* The scale is calculated from the card's actual width
+               (≈ viewport / 3 minus padding). 0.32 fits ~1366px source
+               in a ~437px-wide column at desktop widths and looks crisp
+               on retina. JS below recalculates per-card on resize. */
+            transform: scale(.32);
+        }
+        /* Expanded state — single full-width row, taller, scale ↑ */
+        .looker-card.expanded {
+            grid-column: 1 / -1;
+        }
+        .looker-card.expanded .looker-frame-shell {
+            padding-top: 50%;
+        }
+        .looker-card.expanded .looker-expand-btn i::before {
+            content: "\f066"; /* fa-compress */
+        }
+
+        /* Tablet — 2 columns */
+        @media (max-width: 1100px) {
+            .looker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .looker-frame { transform: scale(.42); }
+        }
+        /* Phone — 1 column, larger scale so it's still readable */
+        @media (max-width: 720px) {
+            .looker-grid { grid-template-columns: 1fr; }
+            .looker-frame { transform: scale(.55); }
+            .looker-card.expanded .looker-frame { transform: scale(.7); }
+        }
+
         /* Looker date-range pills */
         .looker-range-pills {
             display: flex;
