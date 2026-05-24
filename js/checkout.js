@@ -296,7 +296,7 @@
             // Advance / balance split — flat ₹6K / ₹11K per head, NOT a %.
             '<div class="advance-split">' +
                 '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' ' + (people === 1 ? 'traveller' : 'travellers') + ')</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>' +
-                '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> Balance after travel</span><span>' + R + fmt(balance) + '</span></div>' +
+                '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> Balance during or after travel</span><span>' + R + fmt(balance) + '</span></div>' +
             '</div>' +
 
             '<button class="btn-pay" id="payBtn"><i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm</button>' +
@@ -311,7 +311,7 @@
                     '<li><strong>More than 7 days</strong> before travel (' + esc(tierLabel) + '): ' + R + fmt(cxlFee) + '/head retained as cancellation fee &mdash; <strong>' + R + fmt(cxlRefund) + '/head refunded</strong>.</li>' +
                     '<li><strong>Within 7 days of travel (or no-show):</strong> no refund &mdash; full advance forfeited.</li>' +
                 '</ul>' +
-                '<small>Balance of ' + R + fmt(balance) + ' is paid directly at the end of your trip — UPI / bank transfer / cash. <a href="/terms#cancellation" style="color:#0a5a68;">Full policy →</a></small>' +
+                '<small>Balance of ' + R + fmt(balance) + ' is paid directly during or after your trip — UPI / bank transfer / cash. <a href="/terms#cancellation" style="color:#0a5a68;">Full policy →</a></small>' +
             '</div>' +
 
             '<div class="payment-trust"><i class="fas fa-shield-alt"></i> Secured by Razorpay &middot; PCI-DSS compliant<br><i class="fas fa-headset"></i> 24/7 support: <a href="tel:+918880195191" style="color:#0a5a68;font-weight:600;">+91 88801 95191</a></div>' +
@@ -595,7 +595,7 @@
                 '</div>' +
 
                 '<div style="background:#fff8e7;color:#8a6d3b;border-left:3px solid #f39c12;padding:.75rem 1rem;border-radius:6px;margin:1.25rem auto 0;max-width:520px;text-align:left;font-size:.9rem;line-height:1.55;">' +
-                    '<i class="fas fa-info-circle"></i> <strong>Balance payment:</strong> ' + R + fmt(balance) + ' will be collected on the last day of your trip via UPI / bank transfer / cash. We will not charge this amount until your travel ends.' +
+                    '<i class="fas fa-info-circle"></i> <strong>Balance payment:</strong> ' + R + fmt(balance) + ' will be collected during or after your trip via UPI / bank transfer / cash. We will not charge this amount until your trip is in progress.' +
                 '</div>' +
 
                 '<div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">' +
