@@ -807,17 +807,23 @@ body.hero-page .topbar,
 .topbar.scrolled .brand-line2,
 .topbar.is-scrolled .brand-line2{opacity:.6}
 
-/* Brand: small circular emblem + 2-line block (Bharat Transport & Tourism /
-   Andaman Specialists). The new logo is itself a circular badge with its
-   own coloured background — drop the teal-gradient & box, just give it a
-   subtle ring-glow so it pops on dark and light topbars alike. */
+/* Brand: circular emblem + 2-line block (Bharat Transport & Tourism /
+   Andaman Specialists). The new logo PNG already has a circular badge
+   with transparent corners — DON'T crop it with border-radius (that would
+   chop the inner emblem). Just size it cleanly with a soft drop-shadow. */
 .topbar-logo img{
-    width:46px;height:46px;border-radius:50%;
-    background:transparent;
-    object-fit:contain;
-    box-shadow:0 4px 14px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.12);
-    filter:none;
-    padding:1px;
+    width:64px !important;height:64px !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    object-fit:contain !important;
+    filter:drop-shadow(0 3px 10px rgba(0,0,0,.45)) !important;
+    box-shadow:none !important;
+    padding:0 !important;
+}
+@media (max-width:768px){
+    .topbar-logo img{
+        width:52px !important;height:52px !important;
+    }
 }
 .topbar-logo .brand-line1,
 .topbar .brand-line1{
@@ -900,9 +906,8 @@ body.hero-page .hero{padding-top:7rem}
 }
 @media (max-width:768px){
     .topbar{border-radius:0}
-    .topbar-logo img{height:40px;width:40px}
     .topbar-logo .brand-line2{font-size:.6rem}
-    /* Restore the mobile dropdown panel using its existing rules */
+    /* Mobile logo size handled by the dedicated rule above (52×52) */
 }
 
 /* ════════════════════════════════════════════════════════════════════
