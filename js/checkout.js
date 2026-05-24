@@ -299,7 +299,22 @@
                 '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> Balance during or after travel</span><span>' + R + fmt(balance) + '</span></div>' +
             '</div>' +
 
-            '<button class="btn-pay" id="payBtn"><i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm</button>' +
+            // Mandatory T&C / Cancellation acceptance — Pay button stays
+            // disabled until this is ticked. Customers must explicitly
+            // acknowledge BOTH the Terms & Conditions and the Cancellation
+            // Policy before any money changes hands; this is required by
+            // Razorpay's merchant guidelines for travel/refund-eligible
+            // bookings and protects us in any future dispute.
+            '<label class="tnc-accept" for="tncAcceptBox">' +
+                '<input type="checkbox" id="tncAcceptBox">' +
+                '<span>I have read and agree to the ' +
+                    '<a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>' +
+                    ' and the ' +
+                    '<a href="/terms#cancellation" target="_blank" rel="noopener">Cancellation Policy</a>.' +
+                '</span>' +
+            '</label>' +
+
+            '<button class="btn-pay" id="payBtn" disabled><i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm</button>' +
             // Embedded Razorpay container — checkout renders inline here (no popup)
             '<div id="rzp-embed-container" class="rzp-embed-container" style="display:none;"></div>' +
             '<a href="/#packages" style="text-decoration:none;"><button class="btn-secondary" type="button"><i class="fas fa-arrow-left"></i> Continue Browsing</button></a>' +
@@ -370,6 +385,16 @@
 
         var pay = document.getElementById('payBtn');
         if (pay) pay.addEventListener('click', startPayment);
+
+        // T&C / Cancellation acceptance gate — toggle the Pay button's
+        // enabled state directly off the checkbox, so the user gets
+        // visual feedback the moment they tick it.
+        var tncBox = document.getElementById('tncAcceptBox');
+        if (tncBox && pay) {
+            tncBox.addEventListener('change', function () {
+                pay.disabled = !tncBox.checked;
+            });
+        }
     }
 
     function applyCoupon() {
@@ -399,6 +424,16 @@
 
     function startPayment() {
         if (!state.cart) return;
+        // T&C / Cancellation policy must be accepted first. We check this
+        // up-front (before login / validation) because if the user hasn't
+        // ticked the box we don't even want to send them through the rest
+        // of the funnel — show the warning, focus the checkbox, and stop.
+        var tncBox = document.getElementById('tncAcceptBox');
+        if (tncBox && !tncBox.checked) {
+            window.Toast.warning('Please accept the Terms & Conditions and Cancellation Policy to continue.', { duration: 5000 });
+            try { tncBox.focus({ preventScroll: false }); tncBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            return;
+        }
         if (!isLoggedIn()) {
             try { sessionStorage.setItem('postLoginIntent', JSON.stringify({ type: 'checkout', ts: Date.now() })); } catch (e) {}
             window.Toast.info('Please log in to continue with payment.', { duration: 3000 });
@@ -591,7 +626,7 @@
                     '<hr style="border:none;border-top:1px dashed #cfd9df;margin:.6rem 0;">' +
                     '<div style="margin-bottom:.4rem;"><span style="color:#7f8c8d;">Total Trip Cost:</span> <strong>' + R + fmt(total) + '</strong></div>' +
                     '<div style="margin-bottom:.4rem;color:#0a5a68;"><span>Advance Paid:</span> <strong>' + R + fmt(advance) + '</strong></div>' +
-                    '<div style="color:#a04000;"><span>Balance Due After Travel:</span> <strong>' + R + fmt(balance) + '</strong></div>' +
+                    '<div style="color:#a04000;"><span>Balance during or after travel:</span> <strong>' + R + fmt(balance) + '</strong></div>' +
                 '</div>' +
 
                 '<div style="background:#fff8e7;color:#8a6d3b;border-left:3px solid #f39c12;padding:.75rem 1rem;border-radius:6px;margin:1.25rem auto 0;max-width:520px;text-align:left;font-size:.9rem;line-height:1.55;">' +
