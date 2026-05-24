@@ -347,12 +347,27 @@
         var emailVerifSent = false;
         var emailVerifError = null;
         if (!isAdminEmail(email)) {
+            // Helper: detect the "domain not authorised for continue URL"
+            // error in either the v8 (err.code) OR v9-modular shape (the
+            // SDK sometimes only sets err.message). When this fires it
+            // means the customer's redirect URL isn't on the project's
+            // Authorized Domains list yet — we silently retry without
+            // the continue URL so the email still goes out.
+            function isUnauthorizedContinueUri(err) {
+                if (!err) return false;
+                if (err.code === 'auth/unauthorized-continue-uri') return true;
+                var msg = String(err.message || err || '').toLowerCase();
+                return msg.indexOf('unauthorized-continue-uri') >= 0
+                    || msg.indexOf('domain not allowlisted') >= 0
+                    || msg.indexOf('domain not whitelisted') >= 0;
+            }
             try {
-                // The redirect URL must be on your Firebase Authorized Domains
-                // list (Firebase Console → Authentication → Settings →
-                // Authorized domains). If it isn't, the call fails with
-                // 'auth/unauthorized-continue-uri'. As a fallback we omit
-                // the continue URL (Firebase then uses its default page).
+                // First attempt: send WITH a redirect URL pointing back to
+                // the site. The redirect URL must be on your Firebase
+                // Authorized Domains list (Firebase Console → Authentication
+                // → Settings → Authorized domains). If it isn't, we fall
+                // back to a no-redirect send (Firebase's default landing
+                // page is used instead).
                 try {
                     await firebaseAuth.sendEmailVerification(cred.user, {
                         url: window.location.origin + '/?verified=1',
@@ -360,8 +375,11 @@
                     });
                     emailVerifSent = true;
                 } catch (innerErr) {
-                    if (innerErr && innerErr.code === 'auth/unauthorized-continue-uri') {
-                        console.warn('Continue URL not authorized, retrying without redirect…');
+                    if (isUnauthorizedContinueUri(innerErr)) {
+                        console.warn('[Firebase] Continue URL not authorized — retrying without redirect…');
+                        // No `actionCodeSettings` arg → Firebase uses its
+                        // own default landing page, which doesn't require
+                        // any domain to be allowlisted.
                         await firebaseAuth.sendEmailVerification(cred.user);
                         emailVerifSent = true;
                     } else {
@@ -373,7 +391,7 @@
                 console.error('[Firebase] sendEmailVerification FAILED:', err);
                 console.error('  → code:', err && err.code);
                 console.error('  → message:', err && err.message);
-                console.error('  → If code is auth/unauthorized-continue-uri:');
+                console.error('  → If this is auth/unauthorized-continue-uri:');
                 console.error('     Add your domain at https://console.firebase.google.com/project/' +
                     (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) +
                     '/authentication/settings (Authorized domains).');
