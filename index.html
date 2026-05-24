@@ -189,7 +189,7 @@
         ]
     }
     </script>
-    <link rel="stylesheet" href="css/style.css?v=42">
+    <link rel="stylesheet" href="css/style.css?v=43">
     <link rel="stylesheet" href="css/mmt.css?v=28">
     <link rel="stylesheet" href="css/flights.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -202,10 +202,10 @@
 <body class="hero-page">
     <!-- ── Top Brand Bar with Inline Icon Nav ───────────────── -->
     <header class="topbar">
-        <div class="topbar-logo">
+        <a href="/" class="topbar-logo" style="text-decoration:none">
             <img src="images/logo-white.png" alt="Bharat Tours and Travels logo">
-            <span class="brand-text"><span class="brand-line1">Bharat Tours</span><span class="brand-line2">&amp; Travels</span></span>
-        </div>
+            <span class="brand-text"><span class="brand-line1">Bharat Tours &amp; Travels</span><span class="brand-line2">Andaman Specialists</span></span>
+        </a>
         <nav class="topnav" id="topnav">
         <a href="#home" class="topnav-item">
             <i class="fas fa-home"></i><span>Home</span>
@@ -310,15 +310,15 @@
             <div class="mmt-searchbar mmt-searchbar-hero">
                 <div class="mmt-search-fields">
                     <div class="mmt-field">
-                        <span class="mmt-field-label">From</span>
+                        <span class="mmt-field-label">Travelling From</span>
                         <select class="mmt-field-value" id="mmtFrom" data-cities data-default="Bangalore (Bengaluru)"></select>
                     </div>
                     <div class="mmt-field">
-                        <span class="mmt-field-label">To</span>
+                        <span class="mmt-field-label">Going To</span>
                         <input class="mmt-field-value" id="mmtTo" type="text" value="Andaman" readonly>
                     </div>
                     <div class="mmt-field">
-                        <span class="mmt-field-label">Date</span>
+                        <span class="mmt-field-label">Travel Date</span>
                         <input class="mmt-field-value" id="mmtDate" type="date">
                     </div>
                     <div class="mmt-field">
