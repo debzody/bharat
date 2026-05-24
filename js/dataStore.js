@@ -54,6 +54,88 @@
         try { await authMod.setPersistence(auth, authMod.browserLocalPersistence); } catch (_) {}
         const db   = firestoreMod.getFirestore(app);
 
+        // ── Firestore READ tracer ─────────────────────────────────────
+        // Wraps the modular getDoc / getDocs / onSnapshot exports so every
+        // read is logged with a stack trace + collection name + estimated
+        // doc count. This lets you tail the browser console on each page
+        // and SEE every read that gets billed against the daily quota,
+        // pinning down any leak (auto-refresh loops, accidental retries).
+        //
+        // Counters live on `window.__fsReadStats` so the dev can inspect
+        // them at any time:
+        //     console.table(window.__fsReadStats.byCaller)
+        //     window.__fsReadStats.total      // total docs read this session
+        // The wrapper is silent unless verbose mode is on:
+        //     window.__fsReadStats.verbose = true   // before any read
+        // Set the global ONCE then refresh — every subsequent read prints.
+        try {
+            const stats = window.__fsReadStats = window.__fsReadStats || {
+                total: 0,
+                snapshots: 0,
+                byCaller: {},
+                verbose: (function () {
+                    try { return localStorage.getItem('__fsTrace') === '1'; } catch (_) { return false; }
+                })(),
+                reset: function () { this.total = 0; this.snapshots = 0; this.byCaller = {}; },
+                summary: function () {
+                    return { total: this.total, snapshots: this.snapshots, callers: Object.assign({}, this.byCaller) };
+                }
+            };
+            const projectId = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) || '?';
+            const origGetDoc  = firestoreMod.getDoc;
+            const origGetDocs = firestoreMod.getDocs;
+
+            // Try to extract a friendly description of the ref / query target.
+            function describe(target) {
+                try {
+                    if (!target) return '?';
+                    if (target.path) return target.path;                 // DocumentReference
+                    if (target.type === 'collection' && target.path) return target.path;
+                    if (target._query && target._query.path && target._query.path.canonicalString) {
+                        return target._query.path.canonicalString();      // Query
+                    }
+                    if (target._key && target._key.path && target._key.path.canonicalString) {
+                        return target._key.path.canonicalString();        // DocumentReference (older shape)
+                    }
+                } catch (_) {}
+                return target.constructor && target.constructor.name || '?';
+            }
+            // Capture a 3-frame stack trace excluding the wrapper itself.
+            // Use this to identify the call site responsible for the read.
+            function caller() {
+                try {
+                    const lines = (new Error()).stack.split('\n');
+                    // Skip 0=Error,1=caller,2=wrapper,3=…go a few past us.
+                    const sliced = lines.slice(3, 6).map(s => s.trim()).join('\n  ');
+                    return sliced || '?';
+                } catch (_) { return '?'; }
+            }
+            function tally(label, docs) {
+                stats.total += docs;
+                stats.byCaller[label] = (stats.byCaller[label] || 0) + docs;
+                if (stats.verbose) {
+                    // Only print to console if the user has explicitly opted in.
+                    console.log('%c[fs read]%c ' + label + ' (' + docs + ' doc' + (docs === 1 ? '' : 's') + ')',
+                        'color:#0d7a8a;font-weight:bold', 'color:inherit');
+                    console.log('  caller:\n  ' + caller());
+                }
+            }
+
+            firestoreMod.getDoc = async function (ref) {
+                const out = await origGetDoc.call(this, ref);
+                tally('getDoc:' + projectId + ':' + describe(ref), 1);
+                return out;
+            };
+            firestoreMod.getDocs = async function (qOrRef) {
+                const out = await origGetDocs.call(this, qOrRef);
+                const n = (out && out.size) || 0;
+                tally('getDocs:' + projectId + ':' + describe(qOrRef), n);
+                return out;
+            };
+        } catch (traceErr) {
+            console.warn('[fs read] tracer install failed:', traceErr);
+        }
+
         // Wire auth-state listener so the cached profile stays in sync
         authMod.onAuthStateChanged(auth, async (authUser) => {
             if (!authUser) {
