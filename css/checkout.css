@@ -223,7 +223,12 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     font-size: 0.85rem;
     color: #5a6877;
 }
-.cxl-policy strong {
+/* Header label only — the > combinator targets the <strong> that's a
+   *direct* child of .cxl-policy, leaving any <strong> tags inside the
+   list items below as inline text. Without this scope the rule
+   `display:block` would fragment every bolded phrase inside the
+   policy bullets onto its own line and the bullets visually disappear. */
+.cxl-policy > strong {
     display: block;
     margin-bottom: 0.45rem;
     color: #2c3e50;
@@ -235,8 +240,12 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     list-style: disc;
 }
 .cxl-policy ul li {
-    margin: 0.18rem 0;
-    line-height: 1.5;
+    margin: 0.35rem 0;
+    line-height: 1.55;
+}
+.cxl-policy ul li strong {
+    color: #2c3e50;
+    font-weight: 700;
 }
 .cxl-policy ul li em {
     color: #888;
