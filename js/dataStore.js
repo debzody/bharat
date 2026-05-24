@@ -54,33 +54,76 @@
         try { await authMod.setPersistence(auth, authMod.browserLocalPersistence); } catch (_) {}
         const db   = firestoreMod.getFirestore(app);
 
-        // ── Firestore READ tracer ─────────────────────────────────────
-        // Wraps the modular getDoc / getDocs / onSnapshot exports so every
-        // read is logged with a stack trace + collection name + estimated
-        // doc count. This lets you tail the browser console on each page
-        // and SEE every read that gets billed against the daily quota,
-        // pinning down any leak (auto-refresh loops, accidental retries).
+        // ── Firestore READ tracer + daily cap ─────────────────────────
+        // Wraps the modular getDoc / getDocs exports so every read is:
+        //   1. counted (per-caller, total, daily-rolling)
+        //   2. optionally logged with a stack trace
+        //   3. blocked once the daily count exceeds DAILY_READ_CAP
+        //      (a defensive guardrail to prevent accidental overruns
+        //      like the 761K-read incident on 24 May 2026).
         //
-        // Counters live on `window.__fsReadStats` so the dev can inspect
-        // them at any time:
+        // The daily counter is keyed by today's YYYY-MM-DD in localStorage
+        // and shared across ALL pages of the same Firebase project, so
+        // navigating dashboard → migrate → home all draws from the same
+        // budget. When the cap is hit, every getDoc/getDocs throws a
+        // friendly error — admin sees a Toast / console error instead of
+        // silently burning the free tier.
+        //
+        // Inspect at any time:
         //     console.table(window.__fsReadStats.byCaller)
-        //     window.__fsReadStats.total      // total docs read this session
-        // The wrapper is silent unless verbose mode is on:
-        //     window.__fsReadStats.verbose = true   // before any read
-        // Set the global ONCE then refresh — every subsequent read prints.
+        //     window.__fsReadStats.totalToday
+        //     window.__fsReadStats.summary()
+        // Verbose mode prints every read to the console:
+        //     localStorage.setItem('__fsTrace', '1'); location.reload();
         try {
+            const DAILY_READ_CAP = 40000;     // Firestore free tier = 50K/day; cap at 40K so we leave 10K buffer.
+            const todayKey = (function () {
+                const d = new Date();
+                return d.getFullYear() + '-' +
+                    String(d.getMonth()+1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
+            })();
+            // localStorage-backed counter per project per day
+            const dailyKey  = '__fsReadDaily:' + (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId || '?') + ':' + todayKey;
+            function getDailyCount() {
+                try { return parseInt(localStorage.getItem(dailyKey) || '0', 10) || 0; }
+                catch (_) { return 0; }
+            }
+            function setDailyCount(n) {
+                try { localStorage.setItem(dailyKey, String(n)); } catch (_) {}
+            }
             const stats = window.__fsReadStats = window.__fsReadStats || {
                 total: 0,
+                totalToday: getDailyCount(),
                 snapshots: 0,
                 byCaller: {},
+                cap: DAILY_READ_CAP,
+                capHit: false,
                 verbose: (function () {
                     try { return localStorage.getItem('__fsTrace') === '1'; } catch (_) { return false; }
                 })(),
-                reset: function () { this.total = 0; this.snapshots = 0; this.byCaller = {}; },
+                reset: function () {
+                    this.total = 0; this.snapshots = 0; this.byCaller = {}; this.capHit = false;
+                },
+                resetDaily: function () {
+                    // Admin override — clear today's daily count to give
+                    // yourself another budget if you've intentionally hit
+                    // the cap (e.g. running a one-off mirror).
+                    setDailyCount(0); this.totalToday = 0; this.capHit = false;
+                },
                 summary: function () {
-                    return { total: this.total, snapshots: this.snapshots, callers: Object.assign({}, this.byCaller) };
+                    return {
+                        total: this.total,
+                        totalToday: this.totalToday,
+                        cap: this.cap,
+                        remainingToday: Math.max(0, this.cap - this.totalToday),
+                        snapshots: this.snapshots,
+                        callers: Object.assign({}, this.byCaller)
+                    };
                 }
             };
+            stats.totalToday = getDailyCount();
+            stats.capHit     = stats.totalToday >= DAILY_READ_CAP;
             const projectId = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) || '?';
             const origGetDoc  = firestoreMod.getDoc;
             const origGetDocs = firestoreMod.getDocs;
@@ -111,25 +154,55 @@
                 } catch (_) { return '?'; }
             }
             function tally(label, docs) {
-                stats.total += docs;
+                stats.total      += docs;
+                stats.totalToday += docs;
+                setDailyCount(stats.totalToday);
                 stats.byCaller[label] = (stats.byCaller[label] || 0) + docs;
+                if (stats.totalToday >= DAILY_READ_CAP && !stats.capHit) {
+                    stats.capHit = true;
+                    console.error('%c[fs read] DAILY CAP HIT — additional reads will be blocked', 'color:#c0392b;font-weight:bold;font-size:12px');
+                    console.error('  totalToday =', stats.totalToday, '  cap =', DAILY_READ_CAP);
+                    console.error('  Override: window.__fsReadStats.resetDaily()');
+                    if (window.Toast) {
+                        try { window.Toast.error('Daily Firestore read budget exhausted (' + DAILY_READ_CAP + ' reads). Further reads are blocked until midnight to protect the free tier.', { duration: 9000 }); } catch (_) {}
+                    }
+                }
                 if (stats.verbose) {
-                    // Only print to console if the user has explicitly opted in.
-                    console.log('%c[fs read]%c ' + label + ' (' + docs + ' doc' + (docs === 1 ? '' : 's') + ')',
+                    console.log('%c[fs read]%c ' + label + ' (' + docs + ' doc' + (docs === 1 ? '' : 's') +
+                        ', today=' + stats.totalToday + '/' + DAILY_READ_CAP + ')',
                         'color:#0d7a8a;font-weight:bold', 'color:inherit');
                     console.log('  caller:\n  ' + caller());
                 }
             }
+            // Pre-flight check — refuses the call once cap is hit so we
+            // never go ABOVE the cap, even on the read that would push
+            // us over it. (We accept that the call that pushes us over
+            // is allowed; everything after is blocked.)
+            function ensureBelowCap(label) {
+                if (stats.totalToday >= DAILY_READ_CAP) {
+                    const err = new Error(
+                        'Firestore daily read cap reached (' + DAILY_READ_CAP + '). ' +
+                        'This read (' + label + ') was BLOCKED to protect the free tier. ' +
+                        'Override: window.__fsReadStats.resetDaily()'
+                    );
+                    err.code = 'fs/daily-cap-exceeded';
+                    throw err;
+                }
+            }
 
             firestoreMod.getDoc = async function (ref) {
+                const label = 'getDoc:' + projectId + ':' + describe(ref);
+                ensureBelowCap(label);
                 const out = await origGetDoc.call(this, ref);
-                tally('getDoc:' + projectId + ':' + describe(ref), 1);
+                tally(label, 1);
                 return out;
             };
             firestoreMod.getDocs = async function (qOrRef) {
+                const label = 'getDocs:' + projectId + ':' + describe(qOrRef);
+                ensureBelowCap(label);
                 const out = await origGetDocs.call(this, qOrRef);
                 const n = (out && out.size) || 0;
-                tally('getDocs:' + projectId + ':' + describe(qOrRef), n);
+                tally(label, n);
                 return out;
             };
         } catch (traceErr) {
