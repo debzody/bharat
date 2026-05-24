@@ -305,12 +305,14 @@
             // Policy before any money changes hands; this is required by
             // Razorpay's merchant guidelines for travel/refund-eligible
             // bookings and protects us in any future dispute.
+            // The two links open inline modals (so the customer doesn't
+            // navigate away from the cart) — see openPolicyModal() below.
             '<label class="tnc-accept" for="tncAcceptBox">' +
                 '<input type="checkbox" id="tncAcceptBox">' +
                 '<span>I have read and agree to the ' +
-                    '<a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>' +
+                    '<a href="#" data-policy="terms">Terms &amp; Conditions</a>' +
                     ' and the ' +
-                    '<a href="/terms#cancellation" target="_blank" rel="noopener">Cancellation Policy</a>.' +
+                    '<a href="#" data-policy="cancel">Cancellation Policy</a>.' +
                 '</span>' +
             '</label>' +
 
@@ -395,6 +397,123 @@
                 pay.disabled = !tncBox.checked;
             });
         }
+
+        // Wire the T&C / Cancellation policy inline-modal links. We
+        // intentionally use data-policy attributes (not target="_blank")
+        // so the customer never leaves the cart page.
+        document.querySelectorAll('.tnc-accept a[data-policy]').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();         // don't toggle the checkbox
+                openPolicyModal(a.dataset.policy);
+            });
+        });
+    }
+
+    // ── Policy modal — Terms & Conditions / Cancellation Policy ──────
+    // Inline modal so the customer doesn't lose their cart by navigating
+    // to /terms. Content is hard-coded here (single source of truth lives
+    // at /terms — but for the in-checkout summary we keep a tighter
+    // version that's faster to scan and matches what they're agreeing to).
+    var POLICY_HTML = {
+        terms: [
+            '<h3><i class="fas fa-file-contract"></i> Terms &amp; Conditions</h3>',
+            '<p style="color:#888;font-size:.85rem;margin:0 0 1rem;">Last updated: 22 May 2026 &middot; <a href="/terms" target="_blank" rel="noopener" style="color:#0a5a68;">View full terms in new tab →</a></p>',
+            '<h4>1. Booking &amp; Payment</h4>',
+            '<ul>',
+                '<li>To confirm a booking, a <strong>per-person booking advance</strong> is required:',
+                    '<ul>',
+                        '<li>Budget &amp; Standard: <strong>₹6,000 / traveller</strong></li>',
+                        '<li>Luxury / Premium / Honeymoon: <strong>₹11,000 / traveller</strong></li>',
+                    '</ul>',
+                '</li>',
+                '<li>The remaining balance is paid directly to us <strong>during or after your trip</strong> — UPI, bank transfer or cash.</li>',
+                '<li>Booking is confirmed only after we send a written confirmation (email/WhatsApp).</li>',
+            '</ul>',
+            '<h4>2. Inclusions &amp; Exclusions</h4>',
+            '<p>Each package page lists exactly what\'s included. Anything not explicitly mentioned is treated as an exclusion. Common exclusions: airfare, lunch &amp; dinner, optional water sports, personal expenses, travel insurance.</p>',
+            '<h4>3. Travel Documents</h4>',
+            '<p>Indian citizens: valid government photo ID. Foreign nationals: valid passport + Restricted Area Permit (free on arrival at Port Blair airport).</p>',
+            '<h4>4. Force Majeure</h4>',
+            '<p>We are not liable for delays / cancellations caused by weather (cyclones, rough seas), flight or ferry cancellations, government restrictions, civil unrest, pandemics, strikes, or any acts of God. Best-effort alternative arrangements only.</p>',
+            '<h4>5. Behaviour &amp; Liability</h4>',
+            '<p>The Company is a tour operator and does not own/operate suppliers (hotels, ferries, dive operators). Liability is limited to the booking cost. Travel insurance is strongly advised.</p>',
+            '<h4>6. Governing Law</h4>',
+            '<p>Governed by the laws of India. Disputes are subject to the exclusive jurisdiction of the courts of Kolkata, West Bengal.</p>'
+        ].join(''),
+        cancel: [
+            '<h3><i class="fas fa-info-circle"></i> Cancellation &amp; Refund Policy</h3>',
+            '<p style="color:#888;font-size:.85rem;margin:0 0 1rem;">Last updated: 22 May 2026 &middot; <a href="/terms#cancellation" target="_blank" rel="noopener" style="color:#0a5a68;">View full policy in new tab →</a></p>',
+            '<p>Cancellations must be requested in writing at <a href="mailto:cancellation@andamanvoyages.in" style="color:#0a5a68;">cancellation@andamanvoyages.in</a> with your Booking Reference.</p>',
+            '<h4>Budget &amp; Standard packages — ₹6,000 / head advance</h4>',
+            '<ul>',
+                '<li><strong>Cancellation more than 7 days before travel:</strong> ₹4,000 / head retained as cancellation fee → <strong>₹2,000 / head refunded</strong>.</li>',
+                '<li><strong>Cancellation within 7 days of travel (or no-show):</strong> <strong>no refund</strong> — full advance &amp; any partial balance paid is forfeited.</li>',
+            '</ul>',
+            '<h4>Luxury, Premium &amp; Honeymoon packages — ₹11,000 / head advance</h4>',
+            '<ul>',
+                '<li><strong>Cancellation more than 7 days before travel:</strong> ₹7,000 / head retained as cancellation fee → <strong>₹4,000 / head refunded</strong>.</li>',
+                '<li><strong>Cancellation within 7 days of travel (or no-show):</strong> <strong>no refund</strong> — full advance &amp; any partial balance paid is forfeited.</li>',
+            '</ul>',
+            '<p style="margin-top:1rem;"><strong>Worked example:</strong> A family of 4 books a Standard package and pays ₹6,000 × 4 = ₹24,000 advance. If they cancel 30 days before travel, they receive ₹2,000 × 4 = ₹8,000 back. If they cancel 5 days before travel, no refund — full ₹24,000 forfeited.</p>',
+            '<p><strong>Note:</strong> Non-refundable third-party charges (flight tickets, peak-season ferry bookings, hotel pre-payment penalties) are deducted in addition to the above.</p>',
+            '<p>Approved refunds are processed within 7–10 working days to the original payment method.</p>'
+        ].join('')
+    };
+
+    function openPolicyModal(which) {
+        var html = POLICY_HTML[which];
+        if (!html) return;
+        // Lazy-create the overlay once, reuse it for both policies.
+        var modal = document.getElementById('policyModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'policyModal';
+            modal.className = 'policy-modal';
+            modal.innerHTML =
+                '<div class="policy-modal-card" role="dialog" aria-modal="true" aria-labelledby="policyModalTitle">' +
+                    '<button type="button" class="policy-modal-close" aria-label="Close">&times;</button>' +
+                    '<div class="policy-modal-body" id="policyModalBody"></div>' +
+                    '<div class="policy-modal-foot">' +
+                        '<button type="button" class="btn-pay" id="policyAcceptBtn" style="margin:0;">' +
+                            '<i class="fas fa-check"></i> I have read &amp; understood' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(modal);
+
+            // Click outside the card → close
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closePolicyModal();
+            });
+            modal.querySelector('.policy-modal-close').addEventListener('click', closePolicyModal);
+            modal.querySelector('#policyAcceptBtn').addEventListener('click', function () {
+                // Auto-tick the T&C checkbox when user clicks "I have read"
+                // and close the modal — saves them an extra click.
+                var box = document.getElementById('tncAcceptBox');
+                if (box) {
+                    box.checked = true;
+                    var pay = document.getElementById('payBtn');
+                    if (pay) pay.disabled = false;
+                }
+                closePolicyModal();
+            });
+            // ESC key closes
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal.classList.contains('open')) closePolicyModal();
+            });
+        }
+        document.getElementById('policyModalBody').innerHTML = html;
+        modal.classList.add('open');
+        // Trap scroll on body so the page behind doesn't move while the
+        // overlay is open (a common UX bug with iframe checkouts).
+        document.body.style.overflow = 'hidden';
+    }
+    function closePolicyModal() {
+        var modal = document.getElementById('policyModal');
+        if (!modal) return;
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
     }
 
     function applyCoupon() {

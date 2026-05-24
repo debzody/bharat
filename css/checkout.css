@@ -310,3 +310,126 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     margin-top: 0.4rem;
     line-height: 1.5;
 }
+
+/* ── Inline Terms / Cancellation policy modal ────────────────────
+   Triggered by the two links inside the .tnc-accept row. We render
+   the policy summary inside an overlay so the customer never leaves
+   the cart page (avoids losing form state + the cached cart). */
+.policy-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 31, 68, 0.62);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4vh 1rem;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s ease, visibility .18s ease;
+}
+.policy-modal.open {
+    opacity: 1;
+    visibility: visible;
+}
+.policy-modal-card {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 92vh;
+    box-shadow: 0 30px 80px rgba(10,31,68,.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(.96);
+    transition: transform .18s ease;
+}
+.policy-modal.open .policy-modal-card {
+    transform: scale(1);
+}
+.policy-modal-close {
+    position: absolute;
+    top: .55rem;
+    right: .8rem;
+    background: transparent;
+    border: 0;
+    color: #5a6877;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: .2rem .55rem;
+    border-radius: 8px;
+    transition: background .12s, color .12s;
+    z-index: 2;
+}
+.policy-modal-close:hover {
+    background: #eef2f5;
+    color: #0d2c3a;
+}
+.policy-modal-body {
+    padding: 1.4rem 1.6rem .25rem;
+    overflow-y: auto;
+    color: #2c3e50;
+    line-height: 1.6;
+    font-size: .92rem;
+}
+.policy-modal-body h3 {
+    margin: 0 0 .15rem;
+    color: var(--teal-d);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.policy-modal-body h3 i {
+    color: var(--teal);
+}
+.policy-modal-body h4 {
+    margin: 1.1rem 0 .35rem;
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 700;
+}
+.policy-modal-body p {
+    margin: 0 0 .65rem;
+}
+.policy-modal-body ul {
+    margin: 0 0 .65rem;
+    padding-left: 1.25rem;
+}
+.policy-modal-body ul li {
+    margin: .25rem 0;
+}
+.policy-modal-body ul ul {
+    margin-top: .25rem;
+    margin-bottom: 0;
+    padding-left: 1.1rem;
+}
+.policy-modal-body strong {
+    color: #0d2c3a;
+}
+.policy-modal-foot {
+    padding: 1rem 1.6rem 1.4rem;
+    border-top: 1px solid #eef2f5;
+    background: #fafbfc;
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+}
+.policy-modal-foot .btn-pay {
+    width: auto;
+    padding: .65rem 1.4rem;
+    margin: 0;
+    font-size: .92rem;
+}
+@media (max-width: 600px) {
+    .policy-modal { padding: 2vh .5rem; }
+    .policy-modal-card { max-height: 95vh; }
+    .policy-modal-body { padding: 1.1rem 1.1rem .15rem; font-size: .9rem; }
+    .policy-modal-foot { padding: .8rem 1.1rem 1.1rem; }
+    .policy-modal-foot .btn-pay { width: 100%; }
+}
