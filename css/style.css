@@ -992,3 +992,10 @@ body.hero-page .hero{padding-top:7rem}
         grid-template-columns:1fr !important;
     }
 }
+
+/* The floating phone/email pill strip is duplicated by the new hero trust
+   strip — hide it everywhere. */
+.contact-strip-floating{display:none !important}
+
+/* Hide the eyebrow pill above the hero h1 (mockup doesn't use one) */
+.hero-eyebrow{display:none !important}
