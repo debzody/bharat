@@ -264,15 +264,19 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
 .hero-cta-secondary:hover{opacity:1;gap:.65rem;color:#f7c948}
 .hero-cta-secondary i{font-size:.8rem}
 
-/* ─── Trust strip below CTA ──────────────────────────────────── */
-.hero-trust{display:flex;align-items:center;gap:1.3rem;flex-wrap:wrap;padding:.95rem 1.2rem;background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);border-radius:12px;max-width:1100px;color:#fff}
-.hero-trust__label{font-size:.7rem;text-transform:uppercase;letter-spacing:.18em;opacity:.75;font-weight:600}
-.hero-trust__row{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap}
-.hero-trust__item{display:inline-flex;align-items:center;gap:.45rem;font-size:.85rem;font-weight:500;opacity:.92;color:#fff}
-.hero-trust__item i{color:#f7c948;font-size:.95rem}
-.hero-trust__contact{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .9rem;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;font-size:.84rem;font-weight:600;text-decoration:none;transition:background .15s,transform .15s}
-.hero-trust__contact:hover{background:rgba(255,255,255,.24);transform:translateY(-1px);color:#fff}
-.hero-trust__contact i{color:#f7c948}
+/* ─── Trust strip below CTA — slim & airy ─────────────────────── */
+.hero-trust{display:flex;align-items:center;gap:1rem 1.4rem;flex-wrap:wrap;padding:.55rem .95rem;background:rgba(255,255,255,.06);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:999px;max-width:1100px;color:#fff;font-size:.78rem}
+.hero-trust__label{font-size:.62rem;text-transform:uppercase;letter-spacing:.18em;opacity:.7;font-weight:700;flex-shrink:0}
+.hero-trust__row{display:flex;align-items:center;gap:.4rem 1.1rem;flex-wrap:wrap;flex:1}
+.hero-trust__item{display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;font-weight:500;opacity:.88;color:#fff;white-space:nowrap}
+.hero-trust__item i{color:#f7c948;font-size:.78rem}
+.hero-trust__contact{display:inline-flex;align-items:center;gap:.4rem;padding:.32rem .7rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;font-size:.74rem;font-weight:600;text-decoration:none;transition:background .15s,transform .15s;white-space:nowrap}
+.hero-trust__contact:hover{background:rgba(255,255,255,.2);transform:translateY(-1px);color:#fff}
+.hero-trust__contact i{color:#f7c948;font-size:.7rem}
+
+/* Tighten the gap between hero blocks for a more spacious, breathable
+   layout (less crammed). */
+.hero-content{gap:.9rem !important}
 
 @media (max-width:768px){
   .hero{min-height:auto;padding:5.25rem 0 2rem}
