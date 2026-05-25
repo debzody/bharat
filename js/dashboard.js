@@ -893,16 +893,18 @@ document.addEventListener('DOMContentLoaded', function () {
             const safeEmail = String(u.email || '').replace(/'/g, "\\'");
             const safeUsername = String(u.username || '').replace(/'/g, "\\'");
 
-            // Per-user advance rate override badge (if set)
-            const hasAdvOverride = (typeof u.advanceRate === 'number' && isFinite(u.advanceRate));
-            const advBtnLabel = hasAdvOverride ? (u.advanceRate + '%') : 'default';
-            const advBtnTitle = hasAdvOverride
-                ? 'This user pays ' + u.advanceRate + '% advance (override). Click to change or clear.'
-                : 'Set a per-user advance % override for this customer.';
-            const advBtnStyle = hasAdvOverride
-                ? 'background:#e8f8f5;color:#0d7a8a;border:1px solid #b7dcd0;'
+            // Per-user DISCOUNT badge (admin-configured, applied at checkout).
+            // Replaces the old "advance rate" override — the advance is now a
+            // flat per-head amount and is no longer customer-overridable.
+            const hasDiscount = (typeof u.discountPercent === 'number' && isFinite(u.discountPercent) && u.discountPercent > 0);
+            const discBtnLabel = hasDiscount ? (u.discountPercent + '% off') : 'Discount';
+            const discBtnTitle = hasDiscount
+                ? 'This customer gets ' + u.discountPercent + '% discount on every booking. Click to change or clear.'
+                : 'Set a personal discount % for this customer (auto-applied at checkout).';
+            const discBtnStyle = hasDiscount
+                ? 'background:#fff5e6;color:#a04000;border:1px solid #f1c27d;'
                 : '';
-            const advCurrentVal = hasAdvOverride ? u.advanceRate : '';
+            const discCurrentVal = hasDiscount ? u.discountPercent : '';
 
             return `
                 <tr>
@@ -919,10 +921,10 @@ document.addEventListener('DOMContentLoaded', function () {
                             <i class="fas fa-key"></i> Reset
                         </button>
                         <button class="action-btn"
-                                style="${advBtnStyle}"
-                                title="${advBtnTitle}"
-                                onclick="window._adminPromptAdvanceRate('${u.uid}', '${advCurrentVal}')">
-                            <i class="fas fa-percent"></i> Adv: ${advBtnLabel}
+                                style="${discBtnStyle}"
+                                title="${discBtnTitle}"
+                                onclick="window._adminPromptCustomerDiscount('${u.uid}', '${discCurrentVal}')">
+                            <i class="fas fa-tags"></i> ${discBtnLabel}
                         </button>
                         <button class="action-btn ${isDisabled ? 'action-btn-cancel' : ''}"
                                 title="${isDisabled ? 'Re-enable account' : 'Disable login for this account'}"
@@ -1229,39 +1231,51 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Per-user advance rate override (Customers tab) ──────────
-    window._adminPromptAdvanceRate = async function (uid, currentValue) {
+    // ── Per-customer DISCOUNT (Customers tab) ──────────
+    // Admins can set a percentage discount that gets auto-applied at
+    // checkout for this specific customer (loyalty / VIP / corporate).
+    window._adminPromptCustomerDiscount = async function (uid, currentValue) {
         if (!uid) return;
         const cur = (currentValue !== undefined && currentValue !== null && currentValue !== '')
             ? String(currentValue) : '';
         const input = prompt(
-            'Set advance rate (%) for this user.\n\n' +
-            '• Enter a number between 0 and 100 to override the global rate.\n' +
-            '• Leave blank or enter "default" to clear the override and fall back to the global rate.',
+            'Set personal discount (%) for this customer.\n\n' +
+            '• Enter a number between 0 and 100. Example: 10 = 10% off every booking.\n' +
+            '• Leave blank or enter "0" to remove the discount.\n' +
+            '• Discount is auto-applied at checkout, on top of any coupon code.',
             cur
         );
         if (input === null) return; // cancelled
         const trimmed = String(input).trim();
         let valueToSave = null;
-        if (trimmed !== '' && trimmed.toLowerCase() !== 'default') {
+        if (trimmed !== '' && trimmed !== '0') {
             const n = Number(trimmed);
             if (!isFinite(n) || n < 0 || n > 100) {
-                alert('❌ Please enter a number between 0 and 100, or leave blank for default.');
+                alert('❌ Please enter a number between 0 and 100, or leave blank to clear.');
                 return;
             }
-            valueToSave = n;
+            if (n > 0) valueToSave = n;
         }
         try {
-            await window.UsersStore.adminSetUserAdvanceRate(uid, valueToSave);
+            await window.UsersStore.adminSetUserDiscount(uid, valueToSave);
             if (window.Toast) {
                 window.Toast.success(valueToSave === null
-                    ? 'Override cleared — user now uses global advance rate.'
-                    : 'Per-user advance rate set to ' + valueToSave + '%.');
+                    ? 'Discount cleared for this customer.'
+                    : 'Customer discount set to ' + valueToSave + '%. It will auto-apply at checkout.');
             }
             await refreshCustomers();
         } catch (err) {
-            alert('❌ ' + (err.message || 'Failed to update advance rate.'));
+            alert('❌ ' + (err.message || 'Failed to update discount.'));
         }
+    };
+
+    // Backwards-compat: the old "Adv: %" button was renamed to a per-customer
+    // discount in 2026 because the booking advance is now a flat per-head
+    // amount (₹6,000 / ₹11,000) and is no longer customer-overridable. If
+    // any cached HTML still calls _adminPromptAdvanceRate, route it to the
+    // new discount prompt so it doesn't throw a ReferenceError.
+    window._adminPromptAdvanceRate = function (uid, currentValue) {
+        return window._adminPromptCustomerDiscount(uid, currentValue);
     };
 
     // ── Developer Console Lock toggle (Firestore-backed) ─────────
