@@ -39,14 +39,16 @@
     #ck-urgency-bar .ck-urgency-timer { font-size: .78rem; padding: 2px 7px; }
 }
 
-/* 2. WhatsApp floating button */
+/* 2. WhatsApp floating button — sits ABOVE the chat widget (which lives
+   at bottom:28px / right:28px). 100px = 28 (chat bottom) + 60 (chat
+   button) + 12 (gap), so the two FABs stack neatly without overlap. */
 #ck-wa-fab {
     position: fixed;
-    bottom: 18px;
-    right: 18px;
+    bottom: 100px;
+    right: 28px;
     z-index: 999997;
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: #25d366;
     display: flex;
@@ -74,8 +76,10 @@
     70%  { box-shadow: 0 0 0 18px rgba(37,211,102,0); }
     100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
 }
+/* On phones the chat widget shifts to bottom:20px / right:16px, so we
+   stack at 92px above it on the same right rail. */
 @media (max-width: 600px) {
-    #ck-wa-fab { width: 54px; height: 54px; bottom: 14px; right: 14px; }
+    #ck-wa-fab { width: 50px; height: 50px; bottom: 92px; right: 16px; }
 }
 
 /* 3. Exit-intent coupon popup */
