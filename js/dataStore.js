@@ -928,6 +928,39 @@
         return 5;
     }
 
+    // ── Per-customer DISCOUNT (admin-set, percentage of trip cost) ──
+    // Set or clear a per-user discount percentage. Logged-in customers
+    // with a discount value will see it auto-applied at checkout
+    // (computed as discount% of subtotal, before GST). Pass null /
+    // undefined / '' to clear the discount and remove the field.
+    async function adminSetUserDiscount(uid, discountPercentOrNull) {
+        ensureAdmin();
+        if (!uid) throw new Error('uid is required.');
+        const { db, firestore } = await window.__firebaseReady;
+
+        let payload;
+        if (discountPercentOrNull === null || discountPercentOrNull === undefined || discountPercentOrNull === '') {
+            payload = { discountPercent: firestore.deleteField() };
+        } else {
+            const n = Number(discountPercentOrNull);
+            if (!isFinite(n) || n < 0 || n > 100) {
+                throw new Error('Discount must be a number between 0 and 100 (percent).');
+            }
+            payload = { discountPercent: n };
+        }
+        await firestore.setDoc(firestore.doc(db, 'users', uid), payload, { merge: true });
+    }
+
+    // Returns the discount % that should apply to a given user profile,
+    // or 0 if none is configured. Used by checkout.js to auto-apply a
+    // logged-in customer's loyalty / VIP discount on top of any coupon.
+    function getEffectiveDiscount(profile) {
+        if (profile && typeof profile.discountPercent === 'number' && isFinite(profile.discountPercent)) {
+            return Math.max(0, Math.min(100, profile.discountPercent));
+        }
+        return 0;
+    }
+
     window.UsersStore = {
         login:                    loginUser,
         register:                 registerUser,
@@ -952,6 +985,8 @@
         adminSendPasswordReset:   adminSendPasswordReset,
         adminSetUserAdvanceRate:  adminSetUserAdvanceRate,
         getEffectiveAdvanceRate:  getEffectiveAdvanceRate,
+        adminSetUserDiscount:     adminSetUserDiscount,
+        getEffectiveDiscount:     getEffectiveDiscount,
         // expose so checkout.js can grab the latest profile (incl. advanceRate)
         fetchUserDoc: async function (uid) {
             return fetchUserDoc(uid);
