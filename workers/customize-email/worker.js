@@ -24,9 +24,18 @@
 import { EmailMessage } from 'cloudflare:email';
 import { createMimeMessage } from 'mimetext/browser';
 
-const FROM_EMAIL = 'enquiries@andamanvoyages.in';
-const FROM_NAME  = 'Andaman Voyages Enquiries';
-const TO_EMAIL   = 'booking@andamanvoyages.in';
+// Defaults — overridable via env.FROM_EMAIL / env.FROM_NAME / env.TO_EMAIL
+// (set in wrangler.toml [vars] block).
+//
+// IMPORTANT — Cloudflare's send_email binding requires that FROM_EMAIL is
+// either:
+//   (a) a verified Email Routing "destination address", OR
+//   (b) on a domain you have Email Routing enabled for (sender address).
+// If sending fails with 'destination address not verified', go to
+// Email Routing → Destination Addresses and verify the FROM address.
+const DEFAULT_FROM_EMAIL = 'enquiries@andamanvoyages.in';
+const DEFAULT_FROM_NAME  = 'Andaman Voyages Enquiries';
+const DEFAULT_TO_EMAIL   = 'booking@andamanvoyages.in';
 
 export default {
     async fetch(request, env, ctx) {
@@ -65,20 +74,24 @@ export default {
 
         // Build + send the email
         try {
+            const fromEmail = (env.FROM_EMAIL || DEFAULT_FROM_EMAIL).trim();
+            const fromName  = (env.FROM_NAME  || DEFAULT_FROM_NAME).trim();
+            const toEmail   = (env.TO_EMAIL   || DEFAULT_TO_EMAIL).trim();
+
             const subject  = `Custom Andaman Trip Enquiry - ${body.traveller.name} (${body.ref})`;
             const textBody = buildText(body);
             const htmlBody = buildHtml(body);
 
             const msg = createMimeMessage();
-            msg.setSender({ name: FROM_NAME, addr: FROM_EMAIL });
-            msg.setRecipient(TO_EMAIL);
+            msg.setSender({ name: fromName, addr: fromEmail });
+            msg.setRecipient(toEmail);
             if (body.traveller.email) msg.setHeader('Reply-To', body.traveller.email);
             if (body.traveller.email) msg.setCc(body.traveller.email);
             msg.setSubject(subject);
             msg.addMessage({ contentType: 'text/plain', data: textBody });
             msg.addMessage({ contentType: 'text/html',  data: htmlBody });
 
-            const email = new EmailMessage(FROM_EMAIL, TO_EMAIL, msg.asRaw());
+            const email = new EmailMessage(fromEmail, toEmail, msg.asRaw());
             await env.SEND_EMAIL.send(email);
 
             return cors(json({ ok: true, ref: body.ref }, 200), origin, allowed);
