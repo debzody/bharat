@@ -736,24 +736,35 @@
                 </div>
             </div>
 
-            <!-- Advance / Commission % -->
-            <div class="settings-card" style="margin-top:1.5rem;">
+            <!-- Booking Advance — informational only; advance is now a flat per-head amount, not a % -->
+            <div class="settings-card" style="margin-top:1.5rem;background:#f8fcfd;border-left:3px solid #0d7a8a;">
                 <div class="settings-row">
                     <div class="settings-label-block">
-                        <h3><i class="fas fa-percent"></i> Booking Advance / Commission Rate</h3>
-                        <p>The percentage of total trip cost charged via Razorpay to confirm a booking. The remaining balance is collected at the end of the trip. Default is <strong>5%</strong>. Each customer can have their own override (set in the <em>Customers</em> tab) which takes priority over this global value.</p>
+                        <h3><i class="fas fa-rupee-sign"></i> Booking Advance &mdash; <strong>Flat per-head</strong> (no longer a percentage)</h3>
+                        <p>The booking advance charged via Razorpay is now a <strong>flat amount per traveller</strong> &mdash; not a percentage of the trip cost. The values are hard-coded in <code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">js/checkout.js</code> in the <code>ADVANCE_BY_PKG</code> map:</p>
+                        <ul style="margin:.6rem 0 .6rem 1.1rem;color:#3a4a55;line-height:1.7;">
+                            <li><strong>Budget &amp; Standard packages:</strong> ₹6,000 per traveller</li>
+                            <li><strong>Luxury, Premium &amp; Honeymoon packages:</strong> ₹11,000 per traveller</li>
+                        </ul>
+                        <p style="margin-top:.5rem;">To run a per-customer <strong>discount</strong> instead, open the <em>Customers</em> tab and click the <i class="fas fa-tags"></i> <strong>Discount</strong> button on the customer's row &mdash; that discount auto-applies on top of any coupon code at checkout.</p>
+                        <p style="margin-top:.5rem;color:#7a8b96;font-size:.88rem;">The legacy global &ldquo;advance percentage&rdquo; setting below is kept for reference only &mdash; <strong>changing it has no effect</strong> on what customers actually pay.</p>
+                    </div>
+                </div>
+                <div class="settings-row" style="margin-top:1rem;align-items:center;">
+                    <div class="settings-label-block">
+                        <h4 style="margin:0;color:#7a8b96;font-size:.95rem;">Legacy: global advance % (no longer used)</h4>
                     </div>
                     <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
                         <input type="number" id="advanceRateInput" min="0" max="100" step="0.1" value="5"
-                               style="width:90px;padding:.55rem .7rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:1rem;font-weight:600;text-align:center;">
-                        <span style="font-weight:700;color:#0d7a8a;font-size:1.1rem;">%</span>
+                               style="width:90px;padding:.55rem .7rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:1rem;font-weight:600;text-align:center;color:#7a8b96;">
+                        <span style="font-weight:700;color:#7a8b96;font-size:1.1rem;">%</span>
                     </div>
                 </div>
-                <div class="settings-actions" style="margin-top:1.2rem;display:flex;gap:.6rem;align-items:center;">
-                    <button class="btn-save-packages" id="saveAdvanceRateBtn">
-                        <i class="fas fa-save"></i> Save Advance Rate
+                <div class="settings-actions" style="margin-top:.8rem;display:flex;gap:.6rem;align-items:center;">
+                    <button class="btn-save-packages" id="saveAdvanceRateBtn" style="opacity:.7;">
+                        <i class="fas fa-save"></i> Save (legacy &mdash; not applied at checkout)
                     </button>
-                    <span id="advanceRateInfo" style="color:#666;font-size:.9rem;"></span>
+                    <span id="advanceRateInfo" style="color:#7a8b96;font-size:.9rem;"></span>
                 </div>
             </div>
 
@@ -849,9 +860,9 @@
     </div>
 
     <script src="js/firebase-config.js?v=18"></script>
-    <script src="js/dataStore.js?v=21"></script>
+    <script src="js/dataStore.js?v=22"></script>
     <script src="js/toast.js?v=1"></script>
-    <script src="js/dashboard.js?v=20"></script>
+    <script src="js/dashboard.js?v=21"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/security.js?v=2"></script>
     <script>

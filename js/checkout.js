@@ -78,7 +78,7 @@
         { id: 'seawalk',     name: 'Sea Walk',           price: 2500 }
     ];
 
-    var state = { cart: null, coupon: null };
+    var state = { cart: null, coupon: null, customerDiscount: 0, customerName: '' };
     var R = '\u20B9';
 
     // ── Firebase auth ──
@@ -167,12 +167,25 @@
         var addons = (c.addons || []).reduce(function (s, a) { return s + (a.price || 0); }, 0);
         return Math.round(c.price * people + addons);
     }
-    function calcDiscount(sub) {
+    // Coupon discount (entered via the coupon input)
+    function calcCouponDiscount(sub) {
         if (!state.coupon) return 0;
         var co = state.coupon;
         if (sub < (co.min || 0)) return 0;
         var d = co.type === 'flat' ? co.value : Math.round(sub * co.value / 100);
         if (co.cap) d = Math.min(d, co.cap);
+        return Math.min(d, sub);
+    }
+    // Per-customer discount % (admin-configured, applied to the subtotal
+    // BEFORE GST, separate from any coupon code).
+    function calcCustomerDiscount(sub) {
+        var pct = Number(state.customerDiscount) || 0;
+        if (!pct || pct <= 0) return 0;
+        return Math.min(sub, Math.round(sub * pct / 100));
+    }
+    // Combined discount (used by the rest of the pipeline)
+    function calcDiscount(sub) {
+        var d = calcCouponDiscount(sub) + calcCustomerDiscount(sub);
         return Math.min(d, sub);
     }
     function calcGst(t) { return Math.round(t * GST_RATE); }
@@ -266,7 +279,12 @@
     }
 
     function summaryCard() {
-        var s = calcSubtotal(), d = calcDiscount(s), taxable = s - d, gst = calcGst(taxable), total = taxable + gst;
+        var s = calcSubtotal();
+        var couponD   = calcCouponDiscount(s);
+        var customerD = calcCustomerDiscount(s);
+        var d = couponD + customerD;
+        if (d > s) d = s;
+        var taxable = s - d, gst = calcGst(taxable), total = taxable + gst;
         var advance = calcAdvance();
         var balance = Math.max(0, total - advance);
         var c = state.cart;
@@ -289,7 +307,8 @@
                 couponHtml +
             '</div></div>' +
             '<div class="row"><span>Base price (' + people + ' traveler' + (people !== 1 ? 's' : '') + ')</span><span>' + R + fmt(s) + '</span></div>' +
-            (d > 0 ? '<div class="row" style="color:#0a5a68;"><span>Coupon discount</span><span>- ' + R + fmt(d) + '</span></div>' : '') +
+            (couponD > 0 ? '<div class="row" style="color:#0a5a68;"><span>Coupon discount</span><span>- ' + R + fmt(couponD) + '</span></div>' : '') +
+            (customerD > 0 ? '<div class="row" style="color:#a04000;"><span><i class="fas fa-tags"></i> Loyalty discount (' + state.customerDiscount + '%' + (state.customerName ? ' &middot; ' + esc(state.customerName) : '') + ')</span><span>- ' + R + fmt(customerD) + '</span></div>' : '') +
             '<div class="row"><span>GST (5%)</span><span>' + R + fmt(gst) + '</span></div>' +
             '<div class="row total"><span>Total Trip Cost</span><span class="val">' + R + fmt(total) + '</span></div>' +
 
@@ -769,6 +788,47 @@
     // existing init code below can still call it without breaking.
     function resolveAdvanceRate() { return Promise.resolve(); }
 
+    // Pull the logged-in customer's admin-configured discount % (if any)
+    // from their Firestore user doc and stash it on `state` so calcDiscount()
+    // can include it in the order summary. Re-runs whenever auth state
+    // changes (login / logout) or on initial page load.
+    function resolveCustomerDiscount() {
+        return new Promise(function (resolve) {
+            try {
+                if (!window.__firebaseReady || !window.__firebaseReady.then) {
+                    state.customerDiscount = 0; state.customerName = '';
+                    return resolve();
+                }
+                window.__firebaseReady.then(function (fb) {
+                    var u = fb.auth && fb.auth.currentUser;
+                    if (!u || !window.UsersStore || !window.UsersStore.fetchUserDoc) {
+                        state.customerDiscount = 0; state.customerName = '';
+                        return resolve();
+                    }
+                    window.UsersStore.fetchUserDoc(u.uid).then(function (profile) {
+                        if (window.UsersStore.getEffectiveDiscount) {
+                            state.customerDiscount = window.UsersStore.getEffectiveDiscount(profile);
+                        } else {
+                            state.customerDiscount = (profile && typeof profile.discountPercent === 'number')
+                                ? profile.discountPercent : 0;
+                        }
+                        state.customerName = (profile && (profile.fullName || profile.username)) || '';
+                        resolve();
+                    }).catch(function () {
+                        state.customerDiscount = 0; state.customerName = '';
+                        resolve();
+                    });
+                }).catch(function () {
+                    state.customerDiscount = 0; state.customerName = '';
+                    resolve();
+                });
+            } catch (_) {
+                state.customerDiscount = 0; state.customerName = '';
+                resolve();
+            }
+        });
+    }
+
     // ── Init ──
     document.addEventListener('DOMContentLoaded', function () {
         state.cart = loadCart();
@@ -777,13 +837,17 @@
         // checked for a per-user override). Auth may resolve a moment later,
         // so we also re-resolve when the auth state changes.
         render();
-        resolveAdvanceRate().then(function () { render(); });
+        // Resolve the logged-in customer's admin-set discount % (if any)
+        // and any legacy advance-rate override, then re-render so the
+        // order summary shows the discount line and the lower total.
+        Promise.all([resolveAdvanceRate(), resolveCustomerDiscount()]).then(function () { render(); });
         if (window.__firebaseReady && window.__firebaseReady.then) {
             window.__firebaseReady.then(function (fb) {
                 if (fb.firebaseAuth && fb.firebaseAuth.onAuthStateChanged) {
                     fb.firebaseAuth.onAuthStateChanged(fb.auth, function () {
-                        // Re-fetch user-specific override (if any) and re-render
-                        resolveAdvanceRate().then(function () { render(); });
+                        // Re-fetch user-specific override + discount and re-render
+                        Promise.all([resolveAdvanceRate(), resolveCustomerDiscount()])
+                            .then(function () { render(); });
                     });
                 }
             }).catch(function () {});
