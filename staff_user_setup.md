@@ -14,7 +14,7 @@ The current staff allowlist contains exactly one address:
 ```js
 // js/firebase-config.js
 window.STAFF_EMAILS = [
-    "staff@andamanvoyages.in"
+    "pittu.das2@gmail.com"
 ];
 ```
 
@@ -24,7 +24,7 @@ window.STAFF_EMAILS = [
 function isStaff() {
   return request.auth != null
     && request.auth.token.email in [
-      "staff@andamanvoyages.in"
+      "pittu.das2@gmail.com"
     ];
 }
 ```
@@ -38,7 +38,7 @@ If you change the staff email, change it in BOTH files and re-publish the rules.
 Because Firebase Auth doesn't allow client-side admin SDK calls, the staff user is created the
 exact same way a customer is — by signing up via the website's "Register" form.
 
-### Step 1 — Make sure mail can reach `staff@andamanvoyages.in`
+### Step 1 — Make sure mail can reach `pittu.das2@gmail.com`
 
 Firebase will send an **email-verification link** to the staff address as soon as you register
 the account. So you need that mailbox to actually deliver mail to a real inbox first:
@@ -49,7 +49,7 @@ the account. So you need that mailbox to actually deliver mail to a real inbox f
    - **Action:** *Send to an email address*
    - **Destination address:** any inbox you control (e.g. your existing Gmail). It must be a
      **Verified** destination — if it isn't, click **Destination addresses** first and verify it.
-3. Save. Test by sending yourself an email to `staff@andamanvoyages.in` and confirming it lands.
+3. Save. Test by sending yourself an email to `pittu.das2@gmail.com` and confirming it lands.
 
 ### Step 2 — Register the account on the website
 
@@ -59,7 +59,7 @@ the account. So you need that mailbox to actually deliver mail to a real inbox f
 3. Fill in the form:
    - **Full name:** `Andaman Voyages Staff` (or whatever you like)
    - **Username:** `staff` (3+ characters; this is what they'll log in with)
-   - **Email:** `staff@andamanvoyages.in`
+   - **Email:** `pittu.das2@gmail.com`
    - **Phone:** any valid number
    - **Password:** set a strong password and store it in a password manager
 4. Submit. You'll see *"Registration successful — verification email sent."*
@@ -88,7 +88,7 @@ likely cause is that the email allowlist drift between `js/firebase-config.js` a
 ## Day-to-day: rotating / removing the staff user
 
 - **Forgot password** — use the public *Forgot username or password?* link at login. The reset
-  link goes to `staff@andamanvoyages.in`.
+  link goes to `pittu.das2@gmail.com`.
 - **Disable the staff account** — log in as admin → **Customers** tab → find the staff row →
   click the **Disable** button. Their next login is rejected with *"This account has been
   disabled. Please contact support."*
