@@ -35,7 +35,10 @@ import { createMimeMessage } from 'mimetext/browser';
 // Email Routing → Destination Addresses and verify the FROM address.
 const DEFAULT_FROM_EMAIL = 'enquiries@andamanvoyages.in';
 const DEFAULT_FROM_NAME  = 'Andaman Voyages Enquiries';
-const DEFAULT_TO_EMAIL   = 'booking@andamanvoyages.in';
+// NOTE: This MUST be a verified destination address in Cloudflare Email
+// Routing (Cloudflare → Email Routing → Destination Addresses → Verified).
+// You can override per-deploy via env.TO_EMAIL in wrangler.jsonc [vars].
+const DEFAULT_TO_EMAIL   = 'debjyoti.office@gmail.com';
 
 export default {
     async fetch(request, env, ctx) {
@@ -85,8 +88,10 @@ export default {
             const msg = createMimeMessage();
             msg.setSender({ name: fromName, addr: fromEmail });
             msg.setRecipient(toEmail);
-            if (body.traveller.email) msg.setHeader('Reply-To', body.traveller.email);
-            if (body.traveller.email) msg.setCc(body.traveller.email);
+            // We do NOT CC the user — Cloudflare's send_email binding only
+            // allows sending to verified destinations, and arbitrary user
+            // emails won't be on that list. The user's email is captured in
+            // the body of the message; the team replies manually to it.
             msg.setSubject(subject);
             msg.addMessage({ contentType: 'text/plain', data: textBody });
             msg.addMessage({ contentType: 'text/html',  data: htmlBody });
