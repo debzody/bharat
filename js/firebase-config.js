@@ -69,6 +69,21 @@ window.ADMIN_EMAILS = [
 // Back-compat: keep a single ADMIN_EMAIL pointing at the first admin.
 window.ADMIN_EMAIL = window.ADMIN_EMAILS[0];
 
+// ── Staff allowlist ───────────────────────────────────────────
+// Staff users have limited dashboard access:
+//   • Can see only the Packages and Gallery sections.
+//   • Can EDIT existing packages but cannot ADD or DELETE packages.
+//   • Can UPLOAD gallery photos (with all metadata fields mandatory)
+//     and edit existing photos, but cannot DELETE them.
+// Anything else falls through to "customer" (no dashboard access).
+//
+// IMPORTANT: this list MUST be kept in sync with the corresponding
+// allowlist inside firestore.rules — that's where the rules are
+// actually enforced. The browser-side checks are UX guards only.
+window.STAFF_EMAILS = [
+    "staff@andamanvoyages.in"
+];
+
 // ── Cloudinary configuration (for the photo gallery uploads) ──
 // Sign up free at https://cloudinary.com (no credit card needed) and
 // create an Unsigned upload preset. Then fill in these two values:

@@ -23,21 +23,44 @@ service cloud.firestore {
           "admin@admin.com"
         ];
     }
+    // Staff allowlist — must mirror window.STAFF_EMAILS in
+    // js/firebase-config.js. Staff users can edit existing packages
+    // (update only — no create / no delete), and can upload + edit
+    // gallery photos (no delete). They cannot touch any other
+    // collection beyond their own profile / bookings.
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email in [
+          "staff@andamanvoyages.in"
+        ];
+    }
+    function isAdminOrStaff() {
+      return isAdmin() || isStaff();
+    }
     function isSelf(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
 
     // Public packages collection
+    //   • Anyone can READ.
+    //   • Staff can UPDATE existing packages (price tweaks, itinerary
+    //     edits) but cannot CREATE new ones or DELETE existing ones.
+    //   • Admin can do anything.
     match /packages/{pkgId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read:           if true;
+      allow update:         if isAdminOrStaff();
+      allow create, delete: if isAdmin();
     }
 
     // Public gallery collection — image metadata (URLs in Storage).
-    // Anyone can read; only admins can write.
+    //   • Anyone can READ.
+    //   • Staff can CREATE (upload new photos) and UPDATE existing
+    //     photo metadata, but cannot DELETE.
+    //   • Admin can do anything.
     match /gallery/{photoId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read:           if true;
+      allow create, update: if isAdminOrStaff();
+      allow delete:         if isAdmin();
     }
 
     // Site-wide settings (e.g. payments toggle, maintenance mode).

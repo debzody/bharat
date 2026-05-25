@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="css/mmt.css?v=24">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="js/firebase-config.js?v=18"></script>
+    <script src="js/firebase-config.js?v=19"></script>
     <script src="js/analytics.js?v=1"></script>
     <script src="js/travelpayouts-init.js?v=1"></script>
 </head>
@@ -37,7 +37,7 @@
 
     <main class="main-content" style="padding:2rem 1.5rem 4rem;max-width:880px;margin:0 auto;line-height:1.7;color:#333;">
         <h1 style="margin-top:1.5rem;color:#0d7a8a;">Terms &amp; Conditions</h1>
-        <p style="color:#888;font-size:0.92rem;">Last updated: 22 May 2026</p>
+        <p style="color:#888;font-size:0.92rem;">Last updated: 25 May 2026</p>
 
         <p>Please read these Terms &amp; Conditions ("Terms") carefully before booking with <strong>Bharat Transport and Tourism</strong> ("the Company", "we", "us"). By booking a tour package, you agree to be bound by these Terms.</p>
 
@@ -54,23 +54,40 @@
             <li>A booking is considered confirmed only after we send a written confirmation (email/WhatsApp) acknowledging receipt of the booking advance.</li>
         </ul>
 
-        <h2>2. Cancellation &amp; Refund Policy</h2>
-        <p>If you need to cancel a confirmed booking, please email us in writing at <a href="mailto:cancellation@andamanvoyages.in">cancellation@andamanvoyages.in</a> with your Booking Reference. The cancellation fee is a <strong>flat amount per traveller</strong>, deducted from the advance you have already paid:</p>
+        <h2 id="cancellation">2. Cancellation &amp; Refund Policy</h2>
+        <p>If you need to cancel a confirmed booking, please email us in writing at <a href="mailto:cancellation@andamanvoyages.in">cancellation@andamanvoyages.in</a> with your Booking Reference. The cancellation fee is a <strong>flat amount per traveller</strong>, calculated against the advance you have already paid, on the following sliding scale:</p>
 
-        <h3 style="margin-top:1rem;color:#0d2c3a;font-size:1.05rem;">Budget &amp; Standard packages — ₹6,000 / head advance</h3>
-        <ul>
-            <li><strong>Cancellation more than 7 days before travel:</strong> ₹4,000 / head retained as cancellation fee → <strong>₹2,000 / head refunded</strong>.</li>
-            <li><strong>Cancellation within 7 days of travel (or no-show):</strong> <strong>no refund</strong> — the full advance, and any partial balance already paid, is forfeited.</li>
-        </ul>
+        <div style="overflow-x:auto;margin:1rem 0;">
+        <table style="width:100%;border-collapse:collapse;font-size:.95rem;background:#fff;border:1px solid #e2e8ec;border-radius:8px;overflow:hidden;">
+            <thead style="background:#0d7a8a;color:#fff;">
+                <tr>
+                    <th style="text-align:left;padding:10px 12px;">Days before travel</th>
+                    <th style="text-align:left;padding:10px 12px;">Budget / Standard<br><span style="font-weight:400;opacity:.85;">(₹6,000 advance / head)</span></th>
+                    <th style="text-align:left;padding:10px 12px;">Luxury / Premium / Honeymoon<br><span style="font-weight:400;opacity:.85;">(₹11,000 advance / head)</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-top:1px solid #e2e8ec;">
+                    <td style="padding:10px 12px;"><strong>30 days or more</strong></td>
+                    <td style="padding:10px 12px;">₹4,000 / head retained →<br><strong style="color:#0d7a8a;">₹2,000 / head refunded</strong></td>
+                    <td style="padding:10px 12px;">₹7,000 / head retained →<br><strong style="color:#0d7a8a;">₹4,000 / head refunded</strong></td>
+                </tr>
+                <tr style="border-top:1px solid #e2e8ec;background:#fafbfc;">
+                    <td style="padding:10px 12px;"><strong>8 – 29 days</strong></td>
+                    <td style="padding:10px 12px;">50% of advance retained →<br><strong style="color:#0d7a8a;">₹3,000 / head refunded</strong></td>
+                    <td style="padding:10px 12px;">50% of advance retained →<br><strong style="color:#0d7a8a;">₹5,500 / head refunded</strong></td>
+                </tr>
+                <tr style="border-top:1px solid #e2e8ec;">
+                    <td style="padding:10px 12px;"><strong>0 – 7 days</strong> or no-show</td>
+                    <td style="padding:10px 12px;color:#b94a48;"><strong>No refund</strong> — full advance forfeited</td>
+                    <td style="padding:10px 12px;color:#b94a48;"><strong>No refund</strong> — full advance forfeited</td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
 
-        <h3 style="margin-top:1rem;color:#0d2c3a;font-size:1.05rem;">Luxury, Premium &amp; Honeymoon packages — ₹11,000 / head advance</h3>
-        <ul>
-            <li><strong>Cancellation more than 7 days before travel:</strong> ₹7,000 / head retained as cancellation fee → <strong>₹4,000 / head refunded</strong>.</li>
-            <li><strong>Cancellation within 7 days of travel (or no-show):</strong> <strong>no refund</strong> — the full advance, and any partial balance already paid, is forfeited.</li>
-        </ul>
-
-        <p style="margin-top:1rem;"><strong>Worked example:</strong> A family of 4 books a Standard package and pays ₹6,000 × 4 = ₹24,000 advance. If they cancel 30 days before travel, they receive ₹2,000 × 4 = ₹8,000 back (₹4,000 × 4 = ₹16,000 cancellation fee retained). If they cancel 5 days before travel, they receive nothing — the full ₹24,000 is forfeited.</p>
-        <p><strong>Note:</strong> Non-refundable third-party charges (flight tickets booked on your behalf, ferry bookings during peak season, hotel pre-payment penalties) are deducted in addition to the above.</p>
+        <p style="margin-top:1rem;"><strong>Worked example:</strong> A family of 4 books a Standard package and pays ₹6,000 × 4 = ₹24,000 advance. If they cancel 30 days before travel, they receive ₹2,000 × 4 = ₹8,000 back (₹16,000 cancellation fee retained). If they cancel 20 days before travel, they receive ₹3,000 × 4 = ₹12,000 back (50% retained). If they cancel 5 days before travel, they receive nothing — the full ₹24,000 is forfeited.</p>
+        <p><strong>Note:</strong> Non-refundable third-party charges (flight tickets booked on your behalf, ferry bookings during peak season, hotel pre-payment penalties) are deducted in addition to the above. Cancellations within the 0–7 day window are also treated as no-show — any partial balance already paid is forfeited as well.</p>
         <p>Approved refunds are processed within 7–10 working days to the original payment method.</p>
 
         <h2>3. Inclusions &amp; Exclusions</h2>
@@ -117,7 +134,24 @@
         <h2>10. Governing Law &amp; Jurisdiction</h2>
         <p>These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts of Kolkata, West Bengal, India.</p>
 
-        <h2>11. Contact</h2>
+        <h2>11. Tour Operator Conditions</h2>
+        <p>The following operating conditions apply to every confirmed tour. They supplement (and do not override) the booking, payment, cancellation and force-majeure clauses above:</p>
+        <ol>
+            <li>The tour schedule may change under unavoidable circumstances such as bad weather, sea conditions, ferry/flight cancellations or other operational issues outside our control.</li>
+            <li>Any <strong>balance amount</strong> remaining after the online advance must be paid on Day 1, immediately after check-in to the hotel — by UPI, bank transfer or cash.</li>
+            <li>Standard hotel <strong>check-in is from 1:00 PM and check-out by 11:00 AM</strong> (as per Section 6 above). Early check-in / late check-out is subject to availability.</li>
+            <li>Once the itinerary is confirmed, additions or alterations cannot be guaranteed and may incur additional charges, depending on hotel and ferry availability.</li>
+            <li>Group package rates (where advertised) apply to the standard occupancy mentioned on each package page. For smaller groups or single occupancy, rates will be re-quoted accordingly.</li>
+            <li>Resort accommodation will typically be ₹1,500 / night higher than equivalent hotel accommodation on the same package cost.</li>
+            <li>Personal car, A/C car, A/C room and additional optional tours / activities are charged extra unless explicitly listed in the package inclusions.</li>
+            <li>Package costs are calculated on a <strong>Port Blair to Port Blair</strong> basis. Airfare to/from Port Blair is not included unless explicitly bundled.</li>
+            <li>The Company will not be liable for any loss, claim or damage to life, property, accident, theft/robbery or any other situation occurring during travel — travellers are strongly advised to take comprehensive travel insurance.</li>
+            <li>If a single guest occupies a double-bed room, the resulting single-occupancy supplement is borne by the guest.</li>
+            <li>All applicable taxes are <strong>included</strong> in the package price quoted on the website. Any tax revision mandated by the Government of India after booking will be passed on at actuals.</li>
+            <li>Sightseeing covers only the places explicitly listed in the itinerary; any extra place visited at the guest's request may incur additional cost.</li>
+        </ol>
+
+        <h2>12. Contact</h2>
         <p>
             <strong>Bharat Transport and Tourism</strong><br>
             Email: <a href="mailto:info@andamanvoyages.in">info@andamanvoyages.in</a> · <a href="mailto:booking@andamanvoyages.in">booking@andamanvoyages.in</a> · <a href="mailto:cancellation@andamanvoyages.in">cancellation@andamanvoyages.in</a><br>

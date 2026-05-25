@@ -24,15 +24,21 @@
     <link rel="stylesheet" href="css/gallery.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="js/firebase-config.js?v=18"></script>
+    <script src="js/firebase-config.js?v=19"></script>
     <script>
-        // Access guard — only admin users may view this page.
-        // Admin emails come from window.ADMIN_EMAILS (set in firebase-config.js).
+        // Access guard — admin OR staff may view this page.
+        //   • Admin emails come from window.ADMIN_EMAILS (firebase-config.js).
+        //   • Staff emails come from window.STAFF_EMAILS (firebase-config.js).
         // The real authority is Firebase Auth + Firestore rules; this is a UX block.
+        // The staff role is then carried into the body classlist as "is-staff"
+        // so CSS/JS gating below can hide admin-only sections and buttons.
         (function() {
             var ADMIN_EMAILS = (Array.isArray(window.ADMIN_EMAILS) && window.ADMIN_EMAILS.length)
                 ? window.ADMIN_EMAILS.map(function (e) { return String(e).toLowerCase(); })
                 : [String(window.ADMIN_EMAIL || 'deb@andamanvoyages.in').toLowerCase()];
+            var STAFF_EMAILS = (Array.isArray(window.STAFF_EMAILS) && window.STAFF_EMAILS.length)
+                ? window.STAFF_EMAILS.map(function (e) { return String(e).toLowerCase(); })
+                : [];
             var ADMIN_USERNAME = 'deb';
             var token = localStorage.getItem('token');
             var raw   = localStorage.getItem('currentUser');
@@ -44,21 +50,86 @@
             try {
                 var user = JSON.parse(raw);
                 var email = (user && user.email) ? String(user.email).toLowerCase() : '';
-                var isAdmin = user && (
+                var isAdmin = !!user && (
                     ADMIN_EMAILS.indexOf(email) >= 0 ||
                     user.role === 'admin' ||
                     (user.username || '').toLowerCase() === ADMIN_USERNAME
                 );
-                if (!isAdmin) {
+                var isStaff = !!user && (
+                    STAFF_EMAILS.indexOf(email) >= 0 ||
+                    user.role === 'staff'
+                );
+                if (!isAdmin && !isStaff) {
                     alert('⛔ Access denied. This dashboard is restricted.');
                     window.location.replace('/');
+                    return;
                 }
+                // Tag the role on <html> early so styles below apply on first paint
+                // (we'll move it to <body> in DOMContentLoaded for compatibility).
+                window.__dashRole = isAdmin ? 'admin' : 'staff';
+                document.documentElement.setAttribute('data-dashboard-role', window.__dashRole);
             } catch(e) {
                 window.location.replace('/');
             }
         })();
     </script>
     <script src="js/travelpayouts-init.js?v=1"></script>
+
+    <!-- ── Staff role gating CSS ─────────────────────────────
+         Hides admin-only sections / buttons when the current user is
+         a staff member (window.__dashRole === 'staff'). The role was
+         tagged on <html data-dashboard-role="..."> by the access guard
+         above, BEFORE first paint, so these rules apply with zero flicker.
+         Staff can see only Packages and Gallery. Inside those, they can
+         edit existing items and upload new gallery photos, but they
+         cannot ADD or DELETE packages, and cannot DELETE gallery photos.
+         All gallery upload-form fields are required for staff. -->
+    <style>
+        /* Hide every sidebar link except Packages + Gallery for staff */
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="overview"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="bookings"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="analytics"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="customers"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="revenue"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="settings"] {
+            display: none !important;
+        }
+        /* Hide admin-only controls in the Packages section */
+        html[data-dashboard-role="staff"] #addPackageBtn,
+        html[data-dashboard-role="staff"] #seedPackagesBtn,
+        html[data-dashboard-role="staff"] #publishBtn,
+        html[data-dashboard-role="staff"] .btn-del-pkg {
+            display: none !important;
+        }
+        /* Hide gallery photo-card delete buttons for staff (edit + view stay) */
+        html[data-dashboard-role="staff"] .admin-gallery-card-actions .btn-del,
+        html[data-dashboard-role="staff"] .gal-edit-modal .gal-edit-delete {
+            display: none !important;
+        }
+        /* Highlight required upload fields in red so staff can't miss them */
+        html[data-dashboard-role="staff"] .agf-field input[required],
+        html[data-dashboard-role="staff"] .agf-field input.staff-required {
+            border-color: #e6b1b1 !important;
+            background: #fffafa;
+        }
+        html[data-dashboard-role="staff"] .agf-field input[required]:invalid {
+            box-shadow: 0 0 0 2px rgba(231,76,60,0.18);
+        }
+        /* Show a "Staff" badge next to the username in the topbar */
+        html[data-dashboard-role="staff"] #topbarUser::after {
+            content: 'STAFF';
+            display: inline-block;
+            margin-left: .45rem;
+            padding: .12rem .5rem;
+            font-size: .68rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            color: #fff;
+            background: linear-gradient(135deg,#3498db,#0d7a8a);
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+    </style>
 </head>
 <body class="dashboard-body dashboard-page">
     <!-- ── Theme bootstrap (FOUC-safe) ──────────────────────────
@@ -914,8 +985,8 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js?v=18"></script>
-    <script src="js/dataStore.js?v=22"></script>
+    <script src="js/firebase-config.js?v=19"></script>
+    <script src="js/dataStore.js?v=24"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=22"></script>
     <script src="js/gallery.js?v=3"></script>
@@ -1721,6 +1792,99 @@
             .looker-range-label { width: 100%; margin-bottom: .25rem; }
         }
     </style>
+    <!-- ── Staff role bootstrap ──────────────────────────────
+         Runs after dashboard.js / gallery.js so it can override their
+         behaviour. For staff users:
+           • Default-selected sidebar tab becomes "Packages" (since
+             Overview is hidden).
+           • The per-package delete callback is short-circuited (the
+             button is also CSS-hidden, but this is belt-and-braces
+             in case the page state is restored from cache).
+           • Gallery upload form fields are marked `required` so the
+             native form validation prevents submission unless every
+             field is filled. Caption + Order remain optional. -->
+    <script>
+    (function () {
+        if (window.__dashRole !== 'staff') return;
+
+        // 1) Default to the Packages tab on first paint
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                document.querySelectorAll('.sidebar-link.active').forEach(function (el) {
+                    el.classList.remove('active');
+                });
+                document.querySelectorAll('.dashboard-section.active').forEach(function (el) {
+                    el.classList.remove('active');
+                });
+                var pkgLink = document.querySelector('.sidebar-link[data-section="packages"]');
+                var pkgSection = document.getElementById('section-packages');
+                if (pkgLink) pkgLink.classList.add('active');
+                if (pkgSection) pkgSection.classList.add('active');
+                var pageTitle = document.getElementById('pageTitle');
+                if (pageTitle) pageTitle.textContent = 'Manage Packages';
+            } catch (e) {}
+        });
+
+        // 2) Block the per-package delete callback as defence-in-depth.
+        //    js/dashboard.js exposes window._pkgDelete for inline onclick.
+        function patchPkgDelete() {
+            if (typeof window._pkgDelete === 'function' && !window._pkgDelete.__staffPatched) {
+                var orig = window._pkgDelete;
+                window._pkgDelete = function () {
+                    alert('Staff users cannot delete packages.\n\nPlease ask an admin to remove a package on your behalf.');
+                    return false;
+                };
+                window._pkgDelete.__staffPatched = true;
+            }
+        }
+        // dashboard.js runs at DOMContentLoaded; patch immediately and
+        // again on next tick to cover both load orders.
+        patchPkgDelete();
+        document.addEventListener('DOMContentLoaded', patchPkgDelete);
+        setTimeout(patchPkgDelete, 200);
+
+        // 3) Mark gallery upload-form fields required for staff so the
+        //    metadata is always populated before the photo lands in
+        //    the public gallery. Caption + Order stay optional.
+        document.addEventListener('DOMContentLoaded', function () {
+            var REQUIRED_FOR_STAFF = ['galTitle', 'galCategory', 'galDate', 'galPlace', 'galPackage'];
+            REQUIRED_FOR_STAFF.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.required = true;
+                    el.classList.add('staff-required');
+                    // Re-validate the upload button on input
+                    el.addEventListener('input', maybeEnableUpload);
+                    el.addEventListener('change', maybeEnableUpload);
+                }
+            });
+            // Initial pass
+            setTimeout(maybeEnableUpload, 100);
+        });
+
+        function maybeEnableUpload() {
+            var btn = document.getElementById('galUploadBtn');
+            var fileInput = document.getElementById('galFileInput');
+            if (!btn) return;
+            // Mirror the page's existing rule: enabled only when files chosen
+            var hasFiles = !!(fileInput && fileInput.files && fileInput.files.length);
+            // …AND every required field is filled
+            var allFilled = ['galTitle', 'galCategory', 'galDate', 'galPlace', 'galPackage']
+                .every(function (id) {
+                    var el = document.getElementById(id);
+                    return el && String(el.value || '').trim() !== '';
+                });
+            btn.disabled = !(hasFiles && allFilled);
+            btn.title = !hasFiles
+                ? 'Choose one or more images to upload'
+                : !allFilled
+                    ? 'Please fill all required fields (Title, Category, Date, Place, Package).'
+                    : 'Upload selected images';
+        }
+        // Expose so the inline gallery wiring can call it after a file is chosen
+        window.__staffMaybeEnableUpload = maybeEnableUpload;
+    })();
+    </script>
     <script src="js/user-menu.js?v=11"></script>
 </body>
 </html>
