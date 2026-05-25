@@ -133,21 +133,21 @@
 </head>
 <body class="dashboard-body dashboard-page">
     <!-- ── Theme bootstrap (FOUC-safe) ──────────────────────────
-         Apply the admin's saved theme class to body BEFORE first paint
-         so the dashboard never flashes the default theme. The theme
-         choice is stored in localStorage as 'adminDashboardTheme';
-         valid values: hacker (default), light, ocean, sunset, midnight,
-         cyberpunk. The picker UI in Settings → Appearance updates the
-         class live and persists it here. -->
+         Apply the saved theme class to body BEFORE first paint so the
+         dashboard never flashes the default theme. The theme choice is
+         stored in localStorage as 'adminDashboardTheme'.
+         Valid values: hacker, light (Clean SaaS — default), ocean, sunset,
+         midnight, cyberpunk. The picker UI in Settings → Appearance
+         updates the class live and persists it here. -->
     <script>
     (function(){
         try{
             var THEMES = ['hacker','light','ocean','sunset','midnight','cyberpunk'];
-            var t = localStorage.getItem('adminDashboardTheme') || 'hacker';
-            if (THEMES.indexOf(t) < 0) t = 'hacker';
+            var t = localStorage.getItem('adminDashboardTheme') || 'light';
+            if (THEMES.indexOf(t) < 0) t = 'light';
             document.body.classList.add('theme-' + t);
         }catch(e){
-            document.body.classList.add('theme-hacker');
+            document.body.classList.add('theme-light');
         }
     })();
     </script>
