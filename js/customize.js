@@ -1,17 +1,14 @@
 /* customize.js - powers /customize page (login-gated builder + email enquiry)
    Send order:
-     1. EmailJS  (zero-backend, works on static GitHub Pages, default)
-     2. Firestore "mail" collection (Trigger Email extension), if EmailJS
-        is not configured.
-     3. mailto:  (last-resort fallback)
-   Configure EmailJS by setting window.EMAILJS_CONFIG before this script
-   loads, e.g. in customize.html:
+     1. Cloudflare Worker (default — POST to window.CZ_WORKER_URL)
+     2. EmailJS              (alternative — uses window.EMAILJS_CONFIG)
+     3. Firestore "mail/{ref}" (alternative — Trigger Email extension)
+     4. mailto:              (last-resort fallback)
+   Configure the Worker by setting window.CZ_WORKER_URL in customize.html:
      <script>
-       window.EMAILJS_CONFIG = {
-         publicKey:  "abcd1234",
-         serviceId:  "service_xxx",
-         templateId: "template_yyy"
-       };
+       window.CZ_WORKER_URL = "https://customize-email.YOURNAME.workers.dev";
+       // Optional: matches SHARED_TOKEN secret you set on the Worker
+       window.CZ_WORKER_TOKEN = "";
      </script>
    The page also writes an audit copy to customEnquiries/{ref} in Firestore
    (best-effort, ignored if rules/permissions block it).
@@ -287,6 +284,39 @@
         } catch (e) {}
     }
 
+    /* ─── Cloudflare Worker sender (preferred path) ────────────
+       POSTs the enquiry JSON to window.CZ_WORKER_URL — which is a
+       Cloudflare Email Worker that dispatches the email via the
+       SEND_EMAIL binding. See workers/customize-email/. */
+    function sendViaWorker(d) {
+        return new Promise(function (resolve) {
+            var url = window.CZ_WORKER_URL;
+            if (!url) return resolve(false);
+            try {
+                var headers = { 'Content-Type': 'application/json' };
+                if (window.CZ_WORKER_TOKEN) headers['x-cz-token'] = window.CZ_WORKER_TOKEN;
+                fetch(url, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: headers,
+                    body: JSON.stringify(d)
+                }).then(function (r) {
+                    if (r.ok) return resolve(true);
+                    r.text().then(function (t) {
+                        console.warn('[customize] Worker error:', r.status, t);
+                        resolve(false);
+                    });
+                }).catch(function (err) {
+                    console.warn('[customize] Worker network:', err && err.message);
+                    resolve(false);
+                });
+            } catch (e) {
+                console.warn('[customize] Worker threw:', e && e.message);
+                resolve(false);
+            }
+        });
+    }
+
     /* ─── EmailJS sender (preferred path) ──────────────────────
        Uses the public EmailJS REST API — no SDK download needed.
        Configure by setting window.EMAILJS_CONFIG with publicKey,
@@ -460,14 +490,18 @@
         persistEnquiry(d);
         setSubmitting(true);
 
-        // Try senders in order: EmailJS → Firestore mail → mailto fallback.
+        // Try senders in order:
+        //   Cloudflare Worker → EmailJS → Firestore mail → mailto fallback.
         // The first one that's configured AND succeeds wins. No mail-client
         // window opens unless every server-side option fails.
-        sendViaEmailJS(d).then(function (ok) {
-            if (ok) return finish('emailjs', d);
-            return sendViaFirestoreMail(d).then(function (ok2) {
-                if (ok2) return finish('firestore', d);
-                return finish('mailto', d);
+        sendViaWorker(d).then(function (ok) {
+            if (ok) return finish('worker', d);
+            return sendViaEmailJS(d).then(function (ok2) {
+                if (ok2) return finish('emailjs', d);
+                return sendViaFirestoreMail(d).then(function (ok3) {
+                    if (ok3) return finish('firestore', d);
+                    return finish('mailto', d);
+                });
             });
         });
     }
