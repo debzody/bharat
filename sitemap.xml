@@ -27,6 +27,17 @@
     </url>
 
     <url>
+        <loc>https://andamanvoyages.in/cabs</loc>
+        <lastmod>2026-05-23</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+        <image:image>
+            <image:loc>https://andamanvoyages.in/images/beach1.jpg</image:loc>
+            <image:title>Andaman Cab Hire</image:title>
+        </image:image>
+    </url>
+
+    <url>
         <loc>https://andamanvoyages.in/gallery</loc>
         <lastmod>2026-05-23</lastmod>
         <changefreq>weekly</changefreq>
@@ -44,7 +55,7 @@
         <priority>0.6</priority>
         <image:image>
             <image:loc>https://andamanvoyages.in/images/logo.png</image:loc>
-            <image:title>About Bharat Tours and Travels</image:title>
+            <image:title>About Bharat Transport and Tourism</image:title>
         </image:image>
     </url>
 

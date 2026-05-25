@@ -248,8 +248,36 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
 .hero-heading{max-width:820px}
 .hero-eyebrow{display:inline-block;margin-bottom:.65rem;padding:.45rem .95rem;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
 .hero-heading h1{font-size:clamp(2.6rem,5.8vw,4.8rem);font-weight:800;margin:0;line-height:1.02;letter-spacing:-.04em;text-shadow:0 2px 20px rgba(0,0,0,.35)}
+.hero-heading h1 em{font-style:normal;color:#f7c948;white-space:nowrap}
 .hero-subtext{max-width:640px}
 .hero-subtext p{font-size:1.02rem;margin:0;opacity:.95;line-height:1.65;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+
+/* ─── Hero price callout (was/now/save) ──────────────────────── */
+.hero-price{display:inline-flex;align-items:baseline;gap:.7rem;flex-wrap:wrap}
+.hero-price-was{text-decoration:line-through;opacity:.55;font-size:1.2rem;font-weight:500;color:#fff}
+.hero-price-now{font-size:clamp(1.8rem,3vw,2.4rem);font-weight:800;color:#f7c948;line-height:1;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+.hero-price-pp{font-size:.85rem;font-weight:500;opacity:.9;color:#fff}
+.hero-price-save{background:#ff6b5b;color:#fff;padding:.25rem .65rem;border-radius:4px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;box-shadow:0 2px 8px rgba(255,107,91,.4)}
+
+/* ─── Secondary CTA below search ─────────────────────────────── */
+.hero-cta-secondary{display:inline-flex;align-items:center;gap:.4rem;color:#fff;padding:.55rem 0;font-size:.92rem;font-weight:500;opacity:.9;align-self:flex-start;transition:opacity .15s,gap .15s;text-decoration:none}
+.hero-cta-secondary:hover{opacity:1;gap:.65rem;color:#f7c948}
+.hero-cta-secondary i{font-size:.8rem}
+
+/* ─── Trust strip below CTA — slim & airy ─────────────────────── */
+.hero-trust{display:flex;align-items:center;gap:1rem 1.4rem;flex-wrap:wrap;padding:.55rem .95rem;background:rgba(255,255,255,.06);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:999px;max-width:1100px;color:#fff;font-size:.78rem}
+.hero-trust__label{font-size:.62rem;text-transform:uppercase;letter-spacing:.18em;opacity:.7;font-weight:700;flex-shrink:0}
+.hero-trust__row{display:flex;align-items:center;gap:.4rem 1.1rem;flex-wrap:wrap;flex:1}
+.hero-trust__item{display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;font-weight:500;opacity:.88;color:#fff;white-space:nowrap}
+.hero-trust__item i{color:#f7c948;font-size:.78rem}
+.hero-trust__contact{display:inline-flex;align-items:center;gap:.4rem;padding:.32rem .7rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;font-size:.74rem;font-weight:600;text-decoration:none;transition:background .15s,transform .15s;white-space:nowrap}
+.hero-trust__contact:hover{background:rgba(255,255,255,.2);transform:translateY(-1px);color:#fff}
+.hero-trust__contact i{color:#f7c948;font-size:.7rem}
+
+/* Tighten the gap between hero blocks for a more spacious, breathable
+   layout (less crammed). */
+.hero-content{gap:.9rem !important}
+
 @media (max-width:768px){
   .hero{min-height:auto;padding:5.25rem 0 2rem}
   .hero-content{padding:0 1rem}
@@ -257,6 +285,11 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
   .hero-eyebrow{font-size:.74rem;padding:.38rem .78rem}
   .hero-heading h1{font-size:2.15rem}
   .hero-subtext p{font-size:.92rem}
+  .hero-price{justify-content:center}
+  .hero-price-now{font-size:1.6rem}
+  .hero-cta-secondary{align-self:center}
+  .hero-trust{justify-content:center;text-align:center}
+  .hero-trust__row{justify-content:center}
 }
 .search-box{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem}
 .search-box input,.search-box button{padding:.8rem 1rem;border:none;border-radius:5px;font-family:inherit;font-size:.95rem}
@@ -567,4 +600,1055 @@ footer{
 .user-menu-dropdown-floating::before{
     /* Move the arrow to point at the avatar regardless of body anchoring */
     right:14px;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ MOCKUP-INSPIRED SECTION SYSTEM ═══════════════════════════════
+   New section header + Destinations / How-it-works / Testimonials /
+   FOMO ticker / rich Footer styles, ported from hero-mockup.html.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Shared section header (eyebrow + title + sub) */
+.m-section-head{display:flex;align-items:end;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2.5rem;max-width:1280px;padding:0 .25rem}
+.m-section-head--center{justify-content:center;text-align:center}
+.m-section-head--center > div{width:100%;max-width:780px;margin:0 auto}
+.m-eyebrow{font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;color:var(--primary-teal);font-weight:700;margin-bottom:.5rem}
+.m-title{font-size:clamp(1.8rem,3.2vw,2.6rem);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0;color:var(--primary-dark)}
+.m-title em{font-style:normal;color:var(--primary-teal)}
+.m-sub{margin:.5rem 0 0;color:#5a6877;font-size:1rem;max-width:48ch}
+.m-section-head--center .m-sub{margin-left:auto;margin-right:auto}
+
+/* ─── Destinations grid ──────────────────────────────────────── */
+.dest-section{padding:5rem 2rem;max-width:1280px;margin:0 auto}
+.dest-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:2rem}
+.dest-card{position:relative;isolation:isolate;border-radius:18px;overflow:hidden;cursor:pointer;color:#fff;min-height:240px;display:flex;align-items:flex-end;padding:1.4rem;transition:transform .3s ease;background:#0a4f5c;text-decoration:none}
+.dest-card::before{content:"";position:absolute;inset:0;background-size:cover;background-position:center;transition:transform .6s ease;z-index:0}
+.dest-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.75));z-index:1}
+.dest-card>div{position:relative;z-index:2}
+.dest-card:hover{transform:translateY(-4px);color:#fff}
+.dest-card:hover::before{transform:scale(1.08)}
+.dest-card--lg{grid-column:span 6;min-height:380px}
+.dest-card--md{grid-column:span 6;min-height:240px}
+.dest-card--sm{grid-column:span 4;min-height:240px}
+.dest-card__title{font-size:1.5rem;font-weight:800;margin:0;letter-spacing:-.01em;line-height:1.1;color:#fff}
+.dest-card--lg .dest-card__title{font-size:2.2rem}
+.dest-card__meta{display:flex;align-items:center;gap:.6rem;margin-top:.4rem;font-size:.82rem;opacity:.92;flex-wrap:wrap}
+.dest-card__meta .pill{background:rgba(255,255,255,.2);backdrop-filter:blur(8px);padding:.2rem .6rem;border-radius:999px;font-weight:600;font-size:.72rem}
+.dest-card[data-dest="havelock"]::before{background-image:url('../images/beach2.jpg')}
+.dest-card[data-dest="neil"]::before{background-image:url('../images/neil2.jpg')}
+.dest-card[data-dest="portblair"]::before{background-image:url('../images/ross2.jpg')}
+.dest-card[data-dest="baratang"]::before{background-image:url('../images/beach3.jpg')}
+.dest-card[data-dest="diglipur"]::before{background-image:url('../images/neil4.jpg')}
+.dest-card[data-dest="rosssmith"]::before{background-image:url('../images/ross3.jpg')}
+@media(max-width:680px){
+  .dest-section{padding:3rem 1rem}
+  .dest-card{grid-column:span 12 !important;min-height:200px}
+  .dest-card--lg{min-height:280px}
+}
+
+/* ─── How it works ────────────────────────────────────────────── */
+.how-section{padding:5rem 2rem;background:linear-gradient(180deg,#fff,#f4f8f9)}
+.how-inner{max-width:1280px;margin:0 auto}
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-top:3rem;position:relative}
+.how-grid::before{content:"";position:absolute;top:38px;left:8%;right:8%;height:2px;background:repeating-linear-gradient(90deg,var(--primary-teal) 0 8px,transparent 8px 16px);z-index:0}
+@media(max-width:980px){.how-grid::before{display:none}}
+.how-step{position:relative;text-align:center;padding:0 1rem;z-index:1}
+.how-step__num{width:78px;height:78px;margin:0 auto 1.2rem;background:#fff;border:3px solid var(--primary-teal);border-radius:50%;display:grid;place-items:center;color:var(--primary-teal);box-shadow:0 8px 24px rgba(13,122,138,.15)}
+.how-step__num i{font-size:1.4rem}
+.how-step__title{font-size:1.1rem;font-weight:700;color:var(--primary-dark);margin:0 0 .5rem;letter-spacing:-.01em}
+.how-step__desc{font-size:.9rem;color:#5a6877;line-height:1.55;margin:0}
+
+/* ─── Testimonials + Stats ───────────────────────────────────── */
+.tst-section{padding:5rem 2rem;max-width:1280px;margin:0 auto}
+.tst-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin:2rem 0 3rem;padding:2rem;background:linear-gradient(135deg,var(--primary-teal-dark),var(--primary-teal));border-radius:20px;color:#fff}
+.tst-stat{text-align:center}
+.tst-stat__num{font-size:2.4rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:#f7c948}
+.tst-stat__label{font-size:.85rem;opacity:.9;margin-top:.4rem;font-weight:500}
+.tst-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:1.5rem}
+.tst-card{background:#fff;border:1px solid #eef1f4;border-radius:18px;padding:1.8rem;display:flex;flex-direction:column;gap:1rem;box-shadow:0 4px 16px rgba(10,31,68,.04);transition:transform .2s,box-shadow .2s}
+.tst-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(10,31,68,.10)}
+.tst-card__head{display:flex;align-items:center;gap:.9rem}
+.tst-card__avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--primary-teal),var(--primary-teal-soft));color:#fff;display:grid;place-items:center;font-weight:700;font-size:1.05rem;flex-shrink:0}
+.tst-card__name{font-weight:700;color:var(--primary-dark);font-size:.98rem;margin:0}
+.tst-card__meta{font-size:.78rem;color:#5a6877;margin:2px 0 0}
+.tst-card__stars{color:#f7c948;font-size:.85rem;letter-spacing:1px;margin-left:auto}
+.tst-card__quote{font-size:.92rem;color:var(--primary-dark);line-height:1.6;margin:0;flex:1}
+.tst-card__pkg{font-size:.72rem;color:var(--primary-teal);background:rgba(13,122,138,.08);padding:.3rem .7rem;border-radius:5px;font-weight:700;align-self:flex-start;text-transform:uppercase;letter-spacing:.06em}
+.tst-source{display:flex;align-items:center;gap:.5rem;justify-content:center;margin-top:2rem;font-size:.85rem;color:#5a6877}
+
+/* ─── FOMO recent-bookings ticker ────────────────────────────── */
+.fomo-section{padding:3rem 2rem;background:#0c1c24;color:#fff}
+.fomo-inner{max-width:1280px;margin:0 auto}
+.fomo-head{text-align:center;margin-bottom:1.5rem}
+.fomo-head h2{font-size:1.4rem;font-weight:700;margin:0;letter-spacing:-.01em;color:#fff}
+.fomo-head h2 i{color:#ff6b5b;margin-right:.5rem;animation:fomo-pulse 1.5s infinite;font-size:.55em;vertical-align:middle}
+.fomo-head p{color:rgba(255,255,255,.6);font-size:.85rem;margin:.4rem 0 0}
+.fomo-track-wrap{position:relative;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.fomo-track{display:flex;gap:1rem;animation:fomo-scroll 40s linear infinite;width:max-content}
+@keyframes fomo-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.fomo-pill{flex-shrink:0;display:flex;align-items:center;gap:.6rem;padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;font-size:.85rem;white-space:nowrap}
+.fomo-pill > i{color:#f7c948;font-size:.55em}
+.fomo-pill b{color:#fff;font-weight:600}
+.fomo-pill span{color:rgba(255,255,255,.6);font-size:.78rem}
+@keyframes fomo-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ RICH MULTI-COLUMN FOOTER ═════════════════════════════════════
+   The .ft / .ft-* classes scope this footer separately from the legacy
+   <footer>/.footer-content rules above so both can coexist if needed.
+   ════════════════════════════════════════════════════════════════════ */
+footer.ft{
+    background:#0a1419;
+    color:rgba(255,255,255,.85);
+    padding:4rem 2rem 2rem;
+    text-align:left;
+}
+.ft-inner{
+    max-width:1280px;margin:0 auto;
+    display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;
+    padding-bottom:3rem;
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+.ft-brand{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem}
+.ft-mark{
+    width:36px;height:36px;
+    background:linear-gradient(135deg,var(--primary-teal-soft),var(--primary-teal));
+    border-radius:11px;display:grid;place-items:center;color:#fff;font-size:1rem;
+    box-shadow:0 4px 14px rgba(13,122,138,.45);
+}
+.ft-brand-name{font-weight:800;font-size:1.1rem;color:#fff;letter-spacing:-.01em}
+.ft-about{font-size:.88rem;line-height:1.6;color:rgba(255,255,255,.65);max-width:34ch;margin:0 0 1.4rem}
+.ft-social{display:flex;gap:.5rem}
+.ft-social a{
+    width:38px;height:38px;
+    background:rgba(255,255,255,.06);border-radius:10px;
+    display:grid;place-items:center;color:#fff;font-size:.95rem;
+    transition:all .15s;text-decoration:none;border:0;
+}
+.ft-social a:hover{background:var(--primary-teal);transform:translateY(-2px);color:#fff}
+.ft-col h4{
+    font-size:.78rem;font-weight:700;color:#fff;margin:0 0 1rem;
+    letter-spacing:.18em;text-transform:uppercase;
+}
+.ft-col ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.65rem}
+.ft-col a{color:rgba(255,255,255,.65);font-size:.88rem;transition:color .15s;text-decoration:none}
+.ft-col a:hover{color:#fff}
+.ft-contact{display:flex;align-items:flex-start;gap:.7rem;font-size:.85rem;color:rgba(255,255,255,.65);margin-bottom:.85rem;line-height:1.5}
+.ft-contact i{color:var(--primary-teal-soft);margin-top:3px;flex-shrink:0;width:14px;text-align:center}
+.ft-contact a{color:rgba(255,255,255,.85);text-decoration:none}
+.ft-contact a:hover{color:#fff;text-decoration:underline}
+.ft-muted{font-size:.75rem;color:rgba(255,255,255,.5)}
+.ft-bottom{
+    max-width:1280px;margin:0 auto;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+    padding-top:2rem;
+    font-size:.8rem;color:rgba(255,255,255,.5);
+}
+.ft-bottom-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+.ft-bottom-links a{color:rgba(255,255,255,.5);transition:color .15s;text-decoration:none}
+.ft-bottom-links a:hover{color:#fff}
+.ft-license{
+    max-width:1280px;margin:1rem auto 0;
+    display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+    padding-top:1rem;
+    border-top:1px solid rgba(255,255,255,.05);
+    font-size:.75rem;color:rgba(255,255,255,.4);
+}
+.ft-license-badge{
+    background:rgba(255,255,255,.05);
+    padding:.3rem .65rem;border-radius:5px;
+    color:rgba(255,255,255,.7);font-weight:600;
+    display:inline-flex;align-items:center;gap:.4rem;
+}
+.ft-license-badge i{color:var(--primary-teal-soft)}
+.ft-license-tag{margin-left:auto;font-size:.72rem;color:rgba(255,255,255,.4)}
+
+@media (max-width:880px){
+    .ft-inner{grid-template-columns:1fr 1fr;gap:2rem}
+    .ft-license-tag{margin-left:0;width:100%;margin-top:.4rem}
+}
+@media (max-width:480px){
+    footer.ft{padding:3rem 1rem 1.5rem}
+    .ft-inner{grid-template-columns:1fr;gap:2rem;padding-bottom:2rem}
+    .ft-bottom{flex-direction:column;align-items:flex-start;gap:.6rem}
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ TOPBAR — MOCKUP MATCH ════════════════════════════════════════
+   Replaces the icon-stacked nav with simple text links to match the
+   hero-mockup. Uses the existing .topbar / .topnav / .topnav-item DOM
+   so existing JS (active-link, hamburger toggle, login wiring) keeps
+   working — we only restyle the visual layer.
+   ════════════════════════════════════════════════════════════════════ */
+body.hero-page .topbar,
+.topbar{
+    background:rgba(255,255,255,.06);
+    backdrop-filter:saturate(160%) blur(14px);
+    -webkit-backdrop-filter:saturate(160%) blur(14px);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:0;             /* edge-to-edge like mockup */
+    box-shadow:none;
+    top:0;left:0;right:0;
+    height:auto;
+    padding:.85rem 2rem;
+    gap:.5rem;
+}
+.topbar.scrolled,
+.topbar.is-scrolled{
+    background:rgba(12,28,36,.96) !important;
+    backdrop-filter:saturate(180%) blur(12px) !important;
+    -webkit-backdrop-filter:saturate(180%) blur(12px) !important;
+    border-color:rgba(255,255,255,.06) !important;
+    box-shadow:0 4px 20px rgba(0,0,0,.18) !important;
+    padding-top:.7rem !important;padding-bottom:.7rem !important;
+}
+/* Fade the brand-line2 ("Andaman Specialists") on scroll for visual hierarchy
+   like the mockup, and keep brand-line1 fully white & legible. */
+.topbar.scrolled .brand-line2,
+.topbar.is-scrolled .brand-line2{opacity:.6}
+
+/* Brand: circular emblem + 2-line block (Bharat Transport & Tourism /
+   Andaman Specialists). The new logo PNG already has a circular badge
+   with transparent corners — DON'T crop it with border-radius (that would
+   chop the inner emblem). Just size it cleanly with a soft drop-shadow. */
+.topbar-logo img{
+    width:64px !important;height:64px !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    object-fit:contain !important;
+    filter:drop-shadow(0 3px 10px rgba(0,0,0,.45)) !important;
+    box-shadow:none !important;
+    padding:0 !important;
+}
+@media (max-width:768px){
+    .topbar-logo img{
+        width:52px !important;height:52px !important;
+    }
+}
+.topbar-logo .brand-line1,
+.topbar .brand-line1{
+    background:none !important;background-image:none !important;
+    -webkit-background-clip:initial !important;background-clip:initial !important;
+    -webkit-text-fill-color:#fff !important;color:#fff !important;
+    font-family:'Poppins',sans-serif !important;font-weight:800 !important;font-size:1.05rem !important;
+    letter-spacing:-.01em !important;line-height:1.05 !important;
+    margin-left:0 !important;
+}
+.topbar-logo .brand-line2,
+.topbar .brand-line2{
+    background:none !important;background-image:none !important;
+    -webkit-background-clip:initial !important;background-clip:initial !important;
+    -webkit-text-fill-color:rgba(255,255,255,.75) !important;color:rgba(255,255,255,.75) !important;
+    font-family:'Poppins',sans-serif !important;font-weight:500 !important;font-size:.65rem !important;
+    letter-spacing:.25em !important;text-transform:uppercase !important;
+    margin:4px 0 0 0 !important;line-height:1 !important;
+}
+.topbar-logo .brand-line1 .bl,
+.topbar-logo .brand-line2 .bl{
+    background:none !important;background-image:none !important;
+    -webkit-background-clip:initial !important;background-clip:initial !important;
+    -webkit-text-fill-color:inherit !important;color:inherit !important;
+}
+/* Disable the letter-pop hover anim — mockup is calm & clean */
+.topbar-logo:hover .brand-line1,.topbar-logo:hover .brand-line2{
+    animation:none;letter-spacing:inherit;filter:none;
+}
+.topbar-logo:hover .bl{animation:none}
+.topbar-logo:hover img{transform:none;filter:none}
+
+/* Nav: simple horizontal text links, no icon column */
+.topnav{justify-content:flex-end;gap:.15rem;padding:0}
+.topnav-item{
+    flex-direction:row;
+    height:auto;min-width:0;
+    padding:.55rem 1rem;
+    color:rgba(255,255,255,.9);
+    background:transparent;
+    border-radius:8px;
+    font-size:.92rem;font-weight:500;letter-spacing:0;
+}
+.topnav-item i{display:none}             /* hide stacked icons */
+.topnav-item span{font-size:.92rem;font-weight:500;color:inherit}
+.topnav-item:hover{background:rgba(255,255,255,.12);color:#fff}
+.topnav-item:hover i{transform:none}
+.topnav-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
+.topnav-item.active::after{display:none}
+
+/* Login pill — white capsule */
+.topnav-item.topnav-cta{
+    background:#fff !important;
+    color:var(--primary-teal-dark) !important;
+    border-radius:999px;
+    padding:.55rem 1.2rem !important;
+    font-weight:700 !important;
+    box-shadow:0 4px 14px rgba(0,0,0,.15);
+    margin-left:1rem;
+}
+.topnav-item.topnav-cta span{color:var(--primary-teal-dark) !important;font-weight:700}
+.topnav-item.topnav-cta:hover{filter:brightness(.98);background:#fff !important}
+.nav.is-scrolled .topnav-item.topnav-cta,
+.topbar.scrolled .topnav-item.topnav-cta{
+    background:linear-gradient(135deg,var(--primary-teal-soft),var(--primary-teal)) !important;
+    color:#fff !important;box-shadow:0 4px 14px rgba(13,122,138,.4);
+}
+.topbar.scrolled .topnav-item.topnav-cta span{color:#fff !important}
+
+/* Hide the contact strip inside the topbar (mockup has no phone in nav row) */
+.topbar > .topbar-contact{display:none !important}
+body.hero-page .topbar{padding-left:1.25rem;padding-right:1.25rem}
+
+/* Hero now starts under the bar with extra room (mockup leaves big breathing room) */
+body.hero-page .hero{padding-top:7rem}
+
+@media (max-width:980px){
+    .topbar{padding:.7rem 1rem}
+    .topnav{display:none}        /* mobile uses hamburger */
+}
+@media (max-width:768px){
+    .topbar{border-radius:0}
+    .topbar-logo .brand-line2{font-size:.6rem}
+    /* Mobile logo size handled by the dedicated rule above (52×52) */
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ SEARCH BAR — MOCKUP MATCH ═════════════════════════════════════
+   Replaces the dark teal glass searchbar with the white-card 6-cell
+   dense layout from hero-mockup.html. Same DOM (.mmt-searchbar.hero +
+   .mmt-search-fields + .mmt-field + .mmt-search-btn) so JS still works.
+   ════════════════════════════════════════════════════════════════════ */
+.mmt-searchbar.mmt-searchbar-hero{
+    background:rgba(255,255,255,.97) !important;
+    box-shadow:0 24px 60px -20px rgba(10,31,68,.55) !important;
+    border:0 !important;
+    border-radius:14px !important;
+    padding:.45rem !important;
+    width:min(calc(100% - 3rem),1100px) !important;
+    margin:.8rem 0 0 !important;     /* left-aligned in hero column, like mockup */
+    display:grid !important;
+    grid-template-columns:1.3fr 1.1fr 1fr .9fr .9fr auto !important;
+    gap:.25rem !important;
+    color:var(--primary-dark);
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-search-fields{
+    /* The grid above places fields directly — let the .mmt-search-fields
+       wrapper become a "display:contents" container so its children
+       become grid items of .mmt-searchbar. */
+    display:contents !important;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-field{
+    background:transparent !important;
+    border:0 !important;
+    border-radius:10px !important;
+    padding:.55rem .85rem !important;
+    min-height:56px !important;
+    cursor:pointer !important;
+    transition:background .15s !important;
+    backdrop-filter:none !important;
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-field:hover{
+    background:rgba(13,122,138,.07) !important;
+    box-shadow:none !important;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-field-label{
+    color:#4a5d6a !important;
+    font-size:.62rem !important;
+    font-weight:700 !important;
+    letter-spacing:.14em !important;
+    text-transform:uppercase !important;
+    margin-bottom:2px !important;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-field-value{
+    color:var(--primary-dark) !important;
+    font-size:.95rem !important;
+    font-weight:600 !important;
+    line-height:1.2 !important;
+    background:transparent !important;
+    border:0 !important;
+    padding:0 !important;
+    width:100% !important;
+}
+.mmt-searchbar.mmt-searchbar-hero select.mmt-field-value{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='%234a5d6a'><path d='M6 8L0 0h12z'/></svg>") !important;
+    background-repeat:no-repeat !important;
+    background-position:right 0 center !important;
+    background-size:8px 6px !important;
+    padding-right:1rem !important;
+    color-scheme:light;
+}
+.mmt-searchbar.mmt-searchbar-hero select.mmt-field-value option{
+    color:var(--primary-dark);background:#fff;
+}
+.mmt-searchbar.mmt-searchbar-hero input.mmt-field-value{
+    color-scheme:light;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-search-btn{
+    background:linear-gradient(135deg,var(--primary-teal-soft),var(--primary-teal)) !important;
+    color:#fff !important;
+    border:0 !important;
+    border-radius:10px !important;
+    padding:0 1.8rem !important;
+    font-weight:700 !important;
+    font-size:.95rem !important;
+    letter-spacing:.04em !important;
+    text-transform:uppercase !important;
+    box-shadow:0 6px 18px rgba(13,122,138,.35) !important;
+    align-self:stretch !important;
+    display:inline-flex !important;
+    align-items:center;justify-content:center;
+    gap:.5rem;
+    white-space:nowrap;
+}
+.mmt-searchbar.mmt-searchbar-hero .mmt-search-btn:hover{
+    transform:translateY(-1px);
+    filter:brightness(1.05);
+}
+
+@media (max-width:980px){
+    .mmt-searchbar.mmt-searchbar-hero{
+        grid-template-columns:1fr 1fr !important;
+        gap:.4rem !important;
+    }
+    .mmt-searchbar.mmt-searchbar-hero .mmt-search-btn{
+        grid-column:1 / -1 !important;
+        padding:.9rem !important;
+    }
+}
+@media (max-width:600px){
+    .mmt-searchbar.mmt-searchbar-hero{
+        width:calc(100% - 1.5rem) !important;
+        grid-template-columns:1fr !important;
+    }
+}
+
+/* The floating phone/email pill strip is duplicated by the new hero trust
+   strip — hide it everywhere. */
+.contact-strip-floating{display:none !important}
+
+/* Hide the eyebrow pill above the hero h1 (mockup doesn't use one) */
+.hero-eyebrow{display:none !important}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ NON-HERO TOPBAR (solid dark) ════════════════════════════════
+   On pages without a hero photo (flights, bookings, profile, settings,
+   privacy, terms, etc.) the white-on-glass topbar is invisible against
+   the page's light background. Force a solid dark navy bar identical
+   to the scrolled state of the hero topbar.
+   ════════════════════════════════════════════════════════════════════ */
+body:not(.hero-page) .topbar{
+    background:rgba(12,28,36,.96) !important;
+    backdrop-filter:saturate(180%) blur(12px) !important;
+    -webkit-backdrop-filter:saturate(180%) blur(12px) !important;
+    border-color:rgba(255,255,255,.06) !important;
+    box-shadow:0 4px 20px rgba(0,0,0,.18) !important;
+}
+/* On non-hero pages, brand-line2 stays muted so the brand name is
+   the visual anchor (matches scrolled hero behaviour). */
+body:not(.hero-page) .topbar .brand-line2{opacity:.6}
+/* Non-hero pages need padding to push content below the now-fixed bar. */
+body:not(.hero-page) .main-content{padding-top:calc(var(--tb-h) + 1rem)}
+
+/* Make the non-hero login pill use the teal gradient straight away
+   (matches scrolled state of hero pages). */
+body:not(.hero-page) .topnav-item.topnav-cta{
+    background:linear-gradient(135deg,var(--primary-teal-soft),var(--primary-teal)) !important;
+    color:#fff !important;
+    box-shadow:0 4px 14px rgba(13,122,138,.4) !important;
+}
+body:not(.hero-page) .topnav-item.topnav-cta span{color:#fff !important}
+
+/* Hide the .bookings-help / inline contact strip duplicates that JS
+   sometimes injects on non-hero pages too. */
+body:not(.hero-page) .contact-strip-floating{display:none !important}
+
+/* ════════════════════════════════════════════════════════════════════
+   ═══ ADMIN DASHBOARD — HACKER / TERMINAL THEME ═══════════════════
+   Triggered by <body class="dashboard-page"> (added in dashboard.html).
+   Pure black background, neon-green text, monospace, scanline overlay,
+   grid lines, cyber-blue accents. Real "Mr. Robot / Hackers" vibe.
+   ════════════════════════════════════════════════════════════════════ */
+body.dashboard-page{
+    background:#0a0e0a !important;
+    color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code','SF Mono','Menlo','Consolas',monospace !important;
+}
+/* Faint horizontal scanlines + green CRT glow overlay */
+body.dashboard-page::before{
+    content:"";
+    position:fixed;inset:0;
+    background:
+        repeating-linear-gradient(0deg,
+            rgba(126,255,143,.03) 0,
+            rgba(126,255,143,.03) 1px,
+            transparent 1px,
+            transparent 3px),
+        radial-gradient(ellipse at center,rgba(126,255,143,.06) 0%,transparent 70%);
+    pointer-events:none;z-index:1;
+    mix-blend-mode:screen;
+}
+/* Subtle grid lines on the body for a "code editor" feel */
+body.dashboard-page::after{
+    content:"";
+    position:fixed;inset:0;
+    background-image:
+        linear-gradient(rgba(126,255,143,.04) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(126,255,143,.04) 1px,transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;z-index:0;
+}
+body.dashboard-page > *{position:relative;z-index:2}
+
+/* Hacker topbar */
+body.dashboard-page .topbar{
+    background:rgba(0,8,4,.92) !important;
+    border:1px solid rgba(126,255,143,.18) !important;
+    border-radius:0 !important;
+    box-shadow:0 0 24px rgba(126,255,143,.12),0 4px 0 rgba(126,255,143,.05) !important;
+}
+body.dashboard-page .topbar-logo .brand-line1{
+    color:#7eff8f !important;-webkit-text-fill-color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-shadow:0 0 8px rgba(126,255,143,.5);
+    letter-spacing:0 !important;
+}
+body.dashboard-page .topbar-logo .brand-line2{
+    color:rgba(126,255,143,.6) !important;-webkit-text-fill-color:rgba(126,255,143,.6) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+}
+body.dashboard-page .topnav-item{
+    color:rgba(126,255,143,.75) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-transform:lowercase !important;
+}
+body.dashboard-page .topnav-item span{color:inherit !important;font-family:inherit !important}
+body.dashboard-page .topnav-item:hover{
+    background:rgba(126,255,143,.1) !important;color:#7eff8f !important;
+    text-shadow:0 0 6px rgba(126,255,143,.6);
+}
+body.dashboard-page .topnav-item.active{
+    background:rgba(126,255,143,.12) !important;color:#7eff8f !important;
+    box-shadow:inset 0 -2px 0 #7eff8f;
+}
+body.dashboard-page .topnav-item.topnav-cta{
+    background:#0a0e0a !important;color:#7eff8f !important;
+    border:1px solid #7eff8f !important;
+    border-radius:4px !important;
+    box-shadow:0 0 12px rgba(126,255,143,.3) !important;
+    text-transform:uppercase !important;
+    letter-spacing:.1em !important;
+}
+body.dashboard-page .topnav-item.topnav-cta span{color:#7eff8f !important}
+body.dashboard-page .topnav-item.topnav-cta:hover{
+    background:#7eff8f !important;color:#0a0e0a !important;
+}
+body.dashboard-page .topnav-item.topnav-cta:hover span{color:#0a0e0a !important}
+
+/* Dashboard cards / sections — bordered terminal panels */
+body.dashboard-page .container,
+body.dashboard-page .dashboard-section,
+body.dashboard-page .dashboard-content{color:#cdf5d3}
+body.dashboard-page h1,
+body.dashboard-page h2,
+body.dashboard-page h3,
+body.dashboard-page h4{
+    color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code',monospace;
+    text-shadow:0 0 8px rgba(126,255,143,.4);
+    letter-spacing:.02em;
+}
+body.dashboard-page h1::before,
+body.dashboard-page h2::before{
+    content:"> ";color:#46c95c;opacity:.7;
+}
+
+/* KPI / stat tiles */
+body.dashboard-page .kpi-card,
+body.dashboard-page .stat-card,
+body.dashboard-page .dashboard-card,
+body.dashboard-page .stat-block,
+body.dashboard-page .card,
+body.dashboard-page [class*="stat-"]{
+    background:rgba(8,16,10,.85) !important;
+    border:1px solid rgba(126,255,143,.25) !important;
+    border-radius:4px !important;
+    box-shadow:0 0 0 1px rgba(126,255,143,.05),0 4px 12px rgba(0,0,0,.5) !important;
+    color:#cdf5d3 !important;
+    backdrop-filter:blur(4px);
+}
+body.dashboard-page .kpi-card:hover,
+body.dashboard-page .dashboard-card:hover,
+body.dashboard-page .stat-block:hover{
+    border-color:#7eff8f !important;
+    box-shadow:0 0 24px rgba(126,255,143,.25) !important;
+}
+body.dashboard-page .kpi-num,
+body.dashboard-page .stat-num,
+body.dashboard-page .kpi-card .num,
+body.dashboard-page [class*="-num"]{
+    color:#7eff8f !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-shadow:0 0 14px rgba(126,255,143,.55);
+    letter-spacing:.02em;
+}
+body.dashboard-page .kpi-label,
+body.dashboard-page .stat-label,
+body.dashboard-page .kpi-card .label,
+body.dashboard-page [class*="-label"],
+body.dashboard-page [class*="-cap"]{
+    color:rgba(126,255,143,.55) !important;
+    text-transform:uppercase !important;
+    letter-spacing:.18em !important;
+    font-size:.7rem !important;
+}
+
+/* KPI icons go neon green */
+body.dashboard-page .kpi-icon,
+body.dashboard-page .stat-icon,
+body.dashboard-page .feature-icon,
+body.dashboard-page .card i:not(.fab):not(.um-item i){
+    color:#7eff8f !important;
+    background:rgba(126,255,143,.08) !important;
+    border:1px solid rgba(126,255,143,.2) !important;
+    border-radius:4px !important;
+    text-shadow:0 0 8px rgba(126,255,143,.5);
+}
+
+/* Tables & lists turn into terminal-style logs */
+body.dashboard-page table,
+body.dashboard-page .data-table{
+    background:rgba(8,16,10,.6) !important;
+    border:1px solid rgba(126,255,143,.2) !important;
+    color:#cdf5d3 !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    font-size:.85rem !important;
+}
+body.dashboard-page th{
+    background:rgba(126,255,143,.08) !important;
+    color:#7eff8f !important;
+    border-bottom:1px solid rgba(126,255,143,.3) !important;
+    text-transform:uppercase !important;letter-spacing:.1em !important;
+    font-size:.72rem !important;
+}
+body.dashboard-page td{
+    border-top:1px solid rgba(126,255,143,.08) !important;
+    color:#cdf5d3 !important;
+}
+body.dashboard-page tr:hover td{
+    background:rgba(126,255,143,.05) !important;
+    color:#7eff8f !important;
+}
+
+/* Buttons — terminal style */
+body.dashboard-page .btn-primary,
+body.dashboard-page button.btn,
+body.dashboard-page button[type="submit"]{
+    background:#0a0e0a !important;
+    color:#7eff8f !important;
+    border:1px solid #7eff8f !important;
+    border-radius:4px !important;
+    box-shadow:0 0 12px rgba(126,255,143,.25),inset 0 0 0 1px rgba(126,255,143,.08) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-transform:uppercase !important;
+    letter-spacing:.1em !important;
+    font-weight:700 !important;
+}
+body.dashboard-page .btn-primary:hover,
+body.dashboard-page button.btn:hover,
+body.dashboard-page button[type="submit"]:hover{
+    background:#7eff8f !important;color:#0a0e0a !important;
+    box-shadow:0 0 24px rgba(126,255,143,.6) !important;
+}
+
+/* Form inputs */
+body.dashboard-page input,
+body.dashboard-page select,
+body.dashboard-page textarea{
+    background:rgba(8,16,10,.7) !important;
+    color:#cdf5d3 !important;
+    border:1px solid rgba(126,255,143,.25) !important;
+    border-radius:3px !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    font-size:.88rem !important;
+}
+body.dashboard-page input:focus,
+body.dashboard-page select:focus,
+body.dashboard-page textarea:focus{
+    border-color:#7eff8f !important;
+    box-shadow:0 0 0 2px rgba(126,255,143,.2) !important;outline:none !important;
+}
+
+/* Charts / canvas containers — give them a terminal frame */
+body.dashboard-page canvas,
+body.dashboard-page .chart-container{
+    background:rgba(8,16,10,.5) !important;
+    border:1px solid rgba(126,255,143,.18) !important;
+    border-radius:4px !important;
+    padding:.5rem !important;
+}
+
+/* Status badges */
+body.dashboard-page .status,
+body.dashboard-page .badge{
+    background:rgba(126,255,143,.12) !important;
+    color:#7eff8f !important;
+    border:1px solid rgba(126,255,143,.3) !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    text-transform:uppercase !important;
+    letter-spacing:.1em !important;
+    font-size:.7rem !important;
+    border-radius:3px !important;
+}
+body.dashboard-page .status.confirmed{background:rgba(126,255,143,.2) !important;color:#7eff8f !important}
+body.dashboard-page .status.pending{background:rgba(247,201,72,.15) !important;color:#f7c948 !important;border-color:rgba(247,201,72,.4) !important}
+body.dashboard-page .status.cancelled{background:rgba(255,107,91,.15) !important;color:#ff6b5b !important;border-color:rgba(255,107,91,.4) !important}
+
+/* Footer on dashboard — keep it dark/terminal */
+body.dashboard-page footer.ft,
+body.dashboard-page footer{
+    background:#000 !important;
+    border-top:1px solid rgba(126,255,143,.18) !important;
+    color:rgba(126,255,143,.55) !important;
+}
+body.dashboard-page .ft-brand-name,
+body.dashboard-page .ft-col h4{
+    color:#7eff8f !important;font-family:'JetBrains Mono','Fira Code',monospace !important;
+}
+body.dashboard-page .ft-mark{
+    background:#7eff8f !important;color:#0a0e0a !important;box-shadow:0 0 12px rgba(126,255,143,.4) !important;
+}
+
+/* Optional blinking cursor at the end of dashboard h1 — pure flair */
+body.dashboard-page h1::after{
+    content:"_";
+    color:#7eff8f;
+    animation:hacker-cursor 1s steps(1) infinite;
+    margin-left:.2rem;
+}
+@keyframes hacker-cursor{50%{opacity:0}}
+/* ═══════════════════════════════════════════════════════════════
+   CABS PAGE — Andaman cab service
+   ═══════════════════════════════════════════════════════════════ */
+.cabs-hero{
+    position:relative;
+    padding:7rem 1.5rem 4rem;
+    background:
+        linear-gradient(135deg,rgba(8,30,42,.78),rgba(13,122,138,.65)),
+        url('../images/beach1.jpg') center/cover no-repeat;
+    color:#fff;
+    overflow:hidden;
+}
+.cabs-hero::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(60% 60% at 80% 20%,rgba(255,255,255,.08),transparent 70%);
+    pointer-events:none;
+}
+.cabs-hero-inner{
+    position:relative;z-index:2;
+    max-width:1100px;margin:0 auto;
+}
+.cabs-hero-eyebrow{
+    display:inline-block;
+    background:rgba(255,255,255,.14);
+    backdrop-filter:blur(6px);
+    padding:.4rem 1rem;
+    border-radius:999px;
+    font-size:.78rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    font-weight:600;
+    margin-bottom:1.4rem;
+}
+.cabs-hero-title{
+    font-size:clamp(2rem,5vw,3.6rem);
+    line-height:1.1;
+    font-weight:800;
+    margin:0 0 1rem;
+    max-width:900px;
+}
+.cabs-hero-title em{
+    font-style:normal;
+    background:linear-gradient(90deg,#ffd166,#ffa94d);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+.cabs-hero-sub{
+    font-size:1.1rem;
+    line-height:1.6;
+    max-width:720px;
+    color:rgba(255,255,255,.92);
+    margin:0 0 2rem;
+}
+.cabs-hero-ctas{
+    display:flex;flex-wrap:wrap;gap:.9rem;
+    margin-bottom:1.8rem;
+}
+.cabs-cta-primary,
+.cabs-cta-secondary{
+    display:inline-flex;align-items:center;gap:.55rem;
+    padding:.95rem 1.6rem;
+    border-radius:999px;
+    font-weight:600;
+    font-size:1rem;
+    text-decoration:none;
+    transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.cabs-cta-primary{
+    background:#ff7a45;
+    color:#fff;
+    box-shadow:0 8px 24px rgba(255,122,69,.35);
+}
+.cabs-cta-primary:hover{transform:translateY(-2px);background:#ff6526;}
+.cabs-cta-secondary{
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.32);
+    backdrop-filter:blur(6px);
+}
+.cabs-cta-secondary:hover{background:rgba(255,255,255,.22);transform:translateY(-2px);}
+.cabs-hero-trust{
+    display:flex;flex-wrap:wrap;gap:1.4rem;
+    font-size:.92rem;
+    color:rgba(255,255,255,.88);
+}
+.cabs-hero-trust span{display:inline-flex;align-items:center;gap:.45rem;}
+.cabs-hero-trust i{color:#7ee2c0;}
+
+/* Sections */
+.cabs-section{padding:4.5rem 1.5rem;background:#fff;}
+.cabs-section-alt{background:#f5fafb;}
+.cabs-section-head{
+    max-width:900px;margin:0 auto 2.5rem;text-align:center;
+}
+.cabs-section-head h2{
+    font-size:clamp(1.6rem,3.2vw,2.4rem);
+    font-weight:800;
+    color:#0d2b3a;
+    margin:0 0 .6rem;
+}
+.cabs-section-head h2 i{color:#0d7a8a;margin-right:.5rem;}
+.cabs-section-head p{
+    color:#516573;
+    font-size:1.05rem;
+    line-height:1.55;
+    margin:0;
+}
+
+/* Coverage area cards */
+.cabs-area-grid{
+    max-width:1180px;margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.2rem;
+}
+.cabs-area-card{
+    position:relative;
+    min-height:220px;
+    border-radius:18px;
+    background-size:cover;
+    background-position:center;
+    padding:1.4rem;
+    color:#fff;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    overflow:hidden;
+    box-shadow:0 10px 28px rgba(8,30,42,.18);
+    transition:transform .25s ease,box-shadow .25s ease;
+}
+.cabs-area-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(8,30,42,.28);}
+.cabs-area-card h3{
+    font-size:1.2rem;font-weight:700;margin:0 0 .35rem;
+    text-shadow:0 1px 6px rgba(0,0,0,.4);
+}
+.cabs-area-card p{
+    font-size:.92rem;line-height:1.45;margin:0;
+    color:rgba(255,255,255,.92);
+    text-shadow:0 1px 6px rgba(0,0,0,.4);
+}
+
+/* Fleet */
+.cabs-fleet-grid{
+    max-width:1180px;margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.5rem;
+}
+.cabs-fleet-card{
+    position:relative;
+    background:#fff;
+    border:1px solid #e6eef0;
+    border-radius:18px;
+    padding:2rem 1.6rem;
+    text-align:center;
+    box-shadow:0 6px 20px rgba(8,30,42,.06);
+    transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.cabs-fleet-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 14px 30px rgba(8,30,42,.12);
+    border-color:#bfe5ec;
+}
+.cabs-fleet-card--featured{
+    border-color:#0d7a8a;
+    box-shadow:0 12px 30px rgba(13,122,138,.18);
+}
+.cabs-fleet-badge{
+    position:absolute;top:-.7rem;left:50%;transform:translateX(-50%);
+    background:#ff7a45;color:#fff;
+    font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:.3rem .8rem;border-radius:999px;
+    box-shadow:0 6px 14px rgba(255,122,69,.4);
+}
+.cabs-fleet-icon{
+    width:62px;height:62px;border-radius:50%;
+    background:linear-gradient(135deg,#0d7a8a,#1aa4b8);
+    color:#fff;font-size:1.6rem;
+    display:inline-flex;align-items:center;justify-content:center;
+    margin-bottom:1rem;
+    box-shadow:0 8px 18px rgba(13,122,138,.3);
+}
+.cabs-fleet-card h3{
+    font-size:1.25rem;font-weight:700;color:#0d2b3a;margin:0 0 .25rem;
+}
+.cabs-fleet-cap{
+    color:#0d7a8a;font-weight:600;font-size:.95rem;margin:0 0 1.2rem;
+}
+.cabs-fleet-card ul{
+    list-style:none;padding:0;margin:0;text-align:left;
+}
+.cabs-fleet-card ul li{
+    padding:.45rem 0;font-size:.95rem;color:#3a4a55;
+    display:flex;gap:.55rem;align-items:flex-start;
+}
+.cabs-fleet-card ul li i{color:#1aa4b8;margin-top:.25rem;flex-shrink:0;}
+
+/* Services grid */
+.cabs-services-grid{
+    max-width:1180px;margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:1rem;
+}
+.cabs-service{
+    background:#fff;
+    border:1px solid #e6eef0;
+    border-radius:14px;
+    padding:1.5rem 1.2rem;
+    text-align:center;
+    transition:transform .22s ease,box-shadow .22s ease;
+}
+.cabs-service:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(8,30,42,.08);}
+.cabs-service i{
+    font-size:1.8rem;color:#0d7a8a;margin-bottom:.7rem;
+    display:inline-block;
+}
+.cabs-service h4{
+    font-size:1rem;font-weight:700;color:#0d2b3a;margin:0 0 .35rem;
+}
+.cabs-service p{
+    font-size:.88rem;color:#516573;margin:0;line-height:1.45;
+}
+
+/* Rates table */
+.cabs-rates-wrap{max-width:1100px;margin:0 auto;}
+.cabs-rates-table{
+    width:100%;
+    border-collapse:separate;border-spacing:0;
+    background:#fff;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(8,30,42,.08);
+    font-size:.95rem;
+}
+.cabs-rates-table thead th{
+    background:#0d2b3a;color:#fff;
+    text-align:left;font-weight:600;
+    padding:.95rem 1rem;
+    font-size:.92rem;letter-spacing:.02em;
+}
+.cabs-rates-table tbody td{
+    padding:.85rem 1rem;
+    border-top:1px solid #edf2f4;
+    color:#2c3e4a;
+}
+.cabs-rates-table tbody tr:nth-child(even){background:#f9fcfd;}
+.cabs-rates-table tbody td:first-child{font-weight:600;color:#0d2b3a;}
+.cabs-rates-note{
+    margin:1rem .2rem 0;
+    font-size:.88rem;color:#516573;
+}
+.cabs-rates-note i{color:#0d7a8a;margin-right:.4rem;}
+
+/* FAQ */
+.cabs-faq{max-width:880px;margin:0 auto;}
+.cabs-faq-item{
+    background:#fff;
+    border:1px solid #e6eef0;
+    border-radius:12px;
+    padding:1rem 1.2rem;
+    margin-bottom:.8rem;
+    transition:box-shadow .2s ease,border-color .2s ease;
+}
+.cabs-faq-item[open]{
+    box-shadow:0 8px 22px rgba(8,30,42,.08);
+    border-color:#bfe5ec;
+}
+.cabs-faq-item summary{
+    cursor:pointer;
+    list-style:none;
+    font-weight:600;
+    color:#0d2b3a;
+    font-size:1rem;
+    position:relative;
+    padding-right:2rem;
+}
+.cabs-faq-item summary::-webkit-details-marker{display:none;}
+.cabs-faq-item summary::after{
+    content:"+";
+    position:absolute;right:0;top:50%;transform:translateY(-50%);
+    font-size:1.4rem;
+    color:#0d7a8a;
+    font-weight:300;
+    transition:transform .2s ease;
+}
+.cabs-faq-item[open] summary::after{transform:translateY(-50%) rotate(45deg);}
+.cabs-faq-item p{
+    margin:.8rem 0 0;
+    color:#516573;
+    line-height:1.6;
+    font-size:.95rem;
+}
+.cabs-faq-item a{color:#0d7a8a;font-weight:600;}
+
+/* CTA strip */
+.cabs-cta-strip{
+    background:linear-gradient(135deg,#0d2b3a,#0d7a8a);
+    color:#fff;
+    padding:3rem 1.5rem;
+}
+.cabs-cta-strip-inner{
+    max-width:1100px;margin:0 auto;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:1.5rem;
+}
+.cabs-cta-strip h2{
+    font-size:clamp(1.4rem,2.6vw,2rem);
+    font-weight:800;margin:0 0 .4rem;
+}
+.cabs-cta-strip p{
+    margin:0;color:rgba(255,255,255,.85);font-size:1rem;
+}
+.cabs-cta-strip-actions{
+    display:flex;flex-wrap:wrap;gap:.7rem;
+}
+
+/* Mobile */
+@media (max-width:768px){
+    .cabs-hero{padding:5rem 1.2rem 3rem;}
+    .cabs-section{padding:3rem 1.2rem;}
+    .cabs-rates-table{font-size:.85rem;}
+    .cabs-rates-table thead th,
+    .cabs-rates-table tbody td{padding:.7rem .6rem;}
+    .cabs-cta-strip-inner{flex-direction:column;align-items:flex-start;}
 }

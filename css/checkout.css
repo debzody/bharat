@@ -109,6 +109,50 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
 }
 .summary .row.total .val { color:var(--teal); }
 
+/* T&C / Cancellation acceptance row — sits between the advance-split
+   block and the Pay button. Has to be visually obvious (has a tinted
+   border) so admin can see it was missed if a customer complains the
+   Pay button is greyed out. */
+.tnc-accept {
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    padding: .65rem .8rem;
+    margin: .85rem 0 0;
+    background: #fff8e7;
+    border: 1px solid #f0d685;
+    border-radius: 8px;
+    font-size: .85rem;
+    color: #5a4500;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+.tnc-accept:hover {
+    background: #fff3d3;
+}
+.tnc-accept input[type="checkbox"] {
+    margin: .2rem 0 0;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--teal);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.tnc-accept span { flex: 1; }
+.tnc-accept a {
+    color: var(--teal-d);
+    font-weight: 600;
+    text-decoration: underline;
+}
+.tnc-accept a:hover { color: var(--teal); }
+/* Subtle "all good" visual once ticked — turns the row green/quiet. */
+.tnc-accept:has(input:checked) {
+    background: #e8f8f5;
+    border-color: #a0d8c8;
+    color: #0a5a68;
+}
+
 .btn-pay {
     width:100%; background:var(--teal); color:#fff; border:0;
     padding:.95rem 1rem; border-radius:8px; font-weight:700; font-size:1rem;
@@ -116,7 +160,14 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     font-weight:700;
 }
 .btn-pay:hover { background:var(--teal-d); }
-.btn-pay:disabled { background:#bdc3c7; cursor:not-allowed; }
+.btn-pay:disabled {
+    background:#bdc3c7;
+    cursor:not-allowed;
+    opacity: .7;
+}
+.btn-pay:disabled:hover {
+    background:#bdc3c7;
+}
 
 .btn-secondary {
     width:100%; background:#ecf0f1; color:var(--ink); border:0;
@@ -223,7 +274,12 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     font-size: 0.85rem;
     color: #5a6877;
 }
-.cxl-policy strong {
+/* Header label only — the > combinator targets the <strong> that's a
+   *direct* child of .cxl-policy, leaving any <strong> tags inside the
+   list items below as inline text. Without this scope the rule
+   `display:block` would fragment every bolded phrase inside the
+   policy bullets onto its own line and the bullets visually disappear. */
+.cxl-policy > strong {
     display: block;
     margin-bottom: 0.45rem;
     color: #2c3e50;
@@ -235,8 +291,12 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     list-style: disc;
 }
 .cxl-policy ul li {
-    margin: 0.18rem 0;
-    line-height: 1.5;
+    margin: 0.35rem 0;
+    line-height: 1.55;
+}
+.cxl-policy ul li strong {
+    color: #2c3e50;
+    font-weight: 700;
 }
 .cxl-policy ul li em {
     color: #888;
@@ -249,4 +309,127 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     font-size: 0.8rem;
     margin-top: 0.4rem;
     line-height: 1.5;
+}
+
+/* ── Inline Terms / Cancellation policy modal ────────────────────
+   Triggered by the two links inside the .tnc-accept row. We render
+   the policy summary inside an overlay so the customer never leaves
+   the cart page (avoids losing form state + the cached cart). */
+.policy-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 31, 68, 0.62);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4vh 1rem;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s ease, visibility .18s ease;
+}
+.policy-modal.open {
+    opacity: 1;
+    visibility: visible;
+}
+.policy-modal-card {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 92vh;
+    box-shadow: 0 30px 80px rgba(10,31,68,.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(.96);
+    transition: transform .18s ease;
+}
+.policy-modal.open .policy-modal-card {
+    transform: scale(1);
+}
+.policy-modal-close {
+    position: absolute;
+    top: .55rem;
+    right: .8rem;
+    background: transparent;
+    border: 0;
+    color: #5a6877;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: .2rem .55rem;
+    border-radius: 8px;
+    transition: background .12s, color .12s;
+    z-index: 2;
+}
+.policy-modal-close:hover {
+    background: #eef2f5;
+    color: #0d2c3a;
+}
+.policy-modal-body {
+    padding: 1.4rem 1.6rem .25rem;
+    overflow-y: auto;
+    color: #2c3e50;
+    line-height: 1.6;
+    font-size: .92rem;
+}
+.policy-modal-body h3 {
+    margin: 0 0 .15rem;
+    color: var(--teal-d);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.policy-modal-body h3 i {
+    color: var(--teal);
+}
+.policy-modal-body h4 {
+    margin: 1.1rem 0 .35rem;
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 700;
+}
+.policy-modal-body p {
+    margin: 0 0 .65rem;
+}
+.policy-modal-body ul {
+    margin: 0 0 .65rem;
+    padding-left: 1.25rem;
+}
+.policy-modal-body ul li {
+    margin: .25rem 0;
+}
+.policy-modal-body ul ul {
+    margin-top: .25rem;
+    margin-bottom: 0;
+    padding-left: 1.1rem;
+}
+.policy-modal-body strong {
+    color: #0d2c3a;
+}
+.policy-modal-foot {
+    padding: 1rem 1.6rem 1.4rem;
+    border-top: 1px solid #eef2f5;
+    background: #fafbfc;
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+}
+.policy-modal-foot .btn-pay {
+    width: auto;
+    padding: .65rem 1.4rem;
+    margin: 0;
+    font-size: .92rem;
+}
+@media (max-width: 600px) {
+    .policy-modal { padding: 2vh .5rem; }
+    .policy-modal-card { max-height: 95vh; }
+    .policy-modal-body { padding: 1.1rem 1.1rem .15rem; font-size: .9rem; }
+    .policy-modal-foot { padding: .8rem 1.1rem 1.1rem; }
+    .policy-modal-foot .btn-pay { width: 100%; }
 }

@@ -54,6 +54,161 @@
         try { await authMod.setPersistence(auth, authMod.browserLocalPersistence); } catch (_) {}
         const db   = firestoreMod.getFirestore(app);
 
+        // ── Firestore READ tracer + daily cap ─────────────────────────
+        // Wraps the modular getDoc / getDocs exports so every read is:
+        //   1. counted (per-caller, total, daily-rolling)
+        //   2. optionally logged with a stack trace
+        //   3. blocked once the daily count exceeds DAILY_READ_CAP
+        //      (a defensive guardrail to prevent accidental overruns
+        //      like the 761K-read incident on 24 May 2026).
+        //
+        // The daily counter is keyed by today's YYYY-MM-DD in localStorage
+        // and shared across ALL pages of the same Firebase project, so
+        // navigating dashboard → migrate → home all draws from the same
+        // budget. When the cap is hit, every getDoc/getDocs throws a
+        // friendly error — admin sees a Toast / console error instead of
+        // silently burning the free tier.
+        //
+        // Inspect at any time:
+        //     console.table(window.__fsReadStats.byCaller)
+        //     window.__fsReadStats.totalToday
+        //     window.__fsReadStats.summary()
+        // Verbose mode prints every read to the console:
+        //     localStorage.setItem('__fsTrace', '1'); location.reload();
+        try {
+            const DAILY_READ_CAP = 40000;     // Firestore free tier = 50K/day; cap at 40K so we leave 10K buffer.
+            const todayKey = (function () {
+                const d = new Date();
+                return d.getFullYear() + '-' +
+                    String(d.getMonth()+1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
+            })();
+            // localStorage-backed counter per project per day
+            const dailyKey  = '__fsReadDaily:' + (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId || '?') + ':' + todayKey;
+            function getDailyCount() {
+                try { return parseInt(localStorage.getItem(dailyKey) || '0', 10) || 0; }
+                catch (_) { return 0; }
+            }
+            function setDailyCount(n) {
+                try { localStorage.setItem(dailyKey, String(n)); } catch (_) {}
+            }
+            const stats = window.__fsReadStats = window.__fsReadStats || {
+                total: 0,
+                totalToday: getDailyCount(),
+                snapshots: 0,
+                byCaller: {},
+                cap: DAILY_READ_CAP,
+                capHit: false,
+                verbose: (function () {
+                    try { return localStorage.getItem('__fsTrace') === '1'; } catch (_) { return false; }
+                })(),
+                reset: function () {
+                    this.total = 0; this.snapshots = 0; this.byCaller = {}; this.capHit = false;
+                },
+                resetDaily: function () {
+                    // Admin override — clear today's daily count to give
+                    // yourself another budget if you've intentionally hit
+                    // the cap (e.g. running a one-off mirror).
+                    setDailyCount(0); this.totalToday = 0; this.capHit = false;
+                },
+                summary: function () {
+                    return {
+                        total: this.total,
+                        totalToday: this.totalToday,
+                        cap: this.cap,
+                        remainingToday: Math.max(0, this.cap - this.totalToday),
+                        snapshots: this.snapshots,
+                        callers: Object.assign({}, this.byCaller)
+                    };
+                }
+            };
+            stats.totalToday = getDailyCount();
+            stats.capHit     = stats.totalToday >= DAILY_READ_CAP;
+            const projectId = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) || '?';
+            const origGetDoc  = firestoreMod.getDoc;
+            const origGetDocs = firestoreMod.getDocs;
+
+            // Try to extract a friendly description of the ref / query target.
+            function describe(target) {
+                try {
+                    if (!target) return '?';
+                    if (target.path) return target.path;                 // DocumentReference
+                    if (target.type === 'collection' && target.path) return target.path;
+                    if (target._query && target._query.path && target._query.path.canonicalString) {
+                        return target._query.path.canonicalString();      // Query
+                    }
+                    if (target._key && target._key.path && target._key.path.canonicalString) {
+                        return target._key.path.canonicalString();        // DocumentReference (older shape)
+                    }
+                } catch (_) {}
+                return target.constructor && target.constructor.name || '?';
+            }
+            // Capture a 3-frame stack trace excluding the wrapper itself.
+            // Use this to identify the call site responsible for the read.
+            function caller() {
+                try {
+                    const lines = (new Error()).stack.split('\n');
+                    // Skip 0=Error,1=caller,2=wrapper,3=…go a few past us.
+                    const sliced = lines.slice(3, 6).map(s => s.trim()).join('\n  ');
+                    return sliced || '?';
+                } catch (_) { return '?'; }
+            }
+            function tally(label, docs) {
+                stats.total      += docs;
+                stats.totalToday += docs;
+                setDailyCount(stats.totalToday);
+                stats.byCaller[label] = (stats.byCaller[label] || 0) + docs;
+                if (stats.totalToday >= DAILY_READ_CAP && !stats.capHit) {
+                    stats.capHit = true;
+                    console.error('%c[fs read] DAILY CAP HIT — additional reads will be blocked', 'color:#c0392b;font-weight:bold;font-size:12px');
+                    console.error('  totalToday =', stats.totalToday, '  cap =', DAILY_READ_CAP);
+                    console.error('  Override: window.__fsReadStats.resetDaily()');
+                    if (window.Toast) {
+                        try { window.Toast.error('Daily Firestore read budget exhausted (' + DAILY_READ_CAP + ' reads). Further reads are blocked until midnight to protect the free tier.', { duration: 9000 }); } catch (_) {}
+                    }
+                }
+                if (stats.verbose) {
+                    console.log('%c[fs read]%c ' + label + ' (' + docs + ' doc' + (docs === 1 ? '' : 's') +
+                        ', today=' + stats.totalToday + '/' + DAILY_READ_CAP + ')',
+                        'color:#0d7a8a;font-weight:bold', 'color:inherit');
+                    console.log('  caller:\n  ' + caller());
+                }
+            }
+            // Pre-flight check — refuses the call once cap is hit so we
+            // never go ABOVE the cap, even on the read that would push
+            // us over it. (We accept that the call that pushes us over
+            // is allowed; everything after is blocked.)
+            function ensureBelowCap(label) {
+                if (stats.totalToday >= DAILY_READ_CAP) {
+                    const err = new Error(
+                        'Firestore daily read cap reached (' + DAILY_READ_CAP + '). ' +
+                        'This read (' + label + ') was BLOCKED to protect the free tier. ' +
+                        'Override: window.__fsReadStats.resetDaily()'
+                    );
+                    err.code = 'fs/daily-cap-exceeded';
+                    throw err;
+                }
+            }
+
+            firestoreMod.getDoc = async function (ref) {
+                const label = 'getDoc:' + projectId + ':' + describe(ref);
+                ensureBelowCap(label);
+                const out = await origGetDoc.call(this, ref);
+                tally(label, 1);
+                return out;
+            };
+            firestoreMod.getDocs = async function (qOrRef) {
+                const label = 'getDocs:' + projectId + ':' + describe(qOrRef);
+                ensureBelowCap(label);
+                const out = await origGetDocs.call(this, qOrRef);
+                const n = (out && out.size) || 0;
+                tally(label, n);
+                return out;
+            };
+        } catch (traceErr) {
+            console.warn('[fs read] tracer install failed:', traceErr);
+        }
+
         // Wire auth-state listener so the cached profile stays in sync
         authMod.onAuthStateChanged(auth, async (authUser) => {
             if (!authUser) {
@@ -347,12 +502,27 @@
         var emailVerifSent = false;
         var emailVerifError = null;
         if (!isAdminEmail(email)) {
+            // Helper: detect the "domain not authorised for continue URL"
+            // error in either the v8 (err.code) OR v9-modular shape (the
+            // SDK sometimes only sets err.message). When this fires it
+            // means the customer's redirect URL isn't on the project's
+            // Authorized Domains list yet — we silently retry without
+            // the continue URL so the email still goes out.
+            function isUnauthorizedContinueUri(err) {
+                if (!err) return false;
+                if (err.code === 'auth/unauthorized-continue-uri') return true;
+                var msg = String(err.message || err || '').toLowerCase();
+                return msg.indexOf('unauthorized-continue-uri') >= 0
+                    || msg.indexOf('domain not allowlisted') >= 0
+                    || msg.indexOf('domain not whitelisted') >= 0;
+            }
             try {
-                // The redirect URL must be on your Firebase Authorized Domains
-                // list (Firebase Console → Authentication → Settings →
-                // Authorized domains). If it isn't, the call fails with
-                // 'auth/unauthorized-continue-uri'. As a fallback we omit
-                // the continue URL (Firebase then uses its default page).
+                // First attempt: send WITH a redirect URL pointing back to
+                // the site. The redirect URL must be on your Firebase
+                // Authorized Domains list (Firebase Console → Authentication
+                // → Settings → Authorized domains). If it isn't, we fall
+                // back to a no-redirect send (Firebase's default landing
+                // page is used instead).
                 try {
                     await firebaseAuth.sendEmailVerification(cred.user, {
                         url: window.location.origin + '/?verified=1',
@@ -360,8 +530,11 @@
                     });
                     emailVerifSent = true;
                 } catch (innerErr) {
-                    if (innerErr && innerErr.code === 'auth/unauthorized-continue-uri') {
-                        console.warn('Continue URL not authorized, retrying without redirect…');
+                    if (isUnauthorizedContinueUri(innerErr)) {
+                        console.warn('[Firebase] Continue URL not authorized — retrying without redirect…');
+                        // No `actionCodeSettings` arg → Firebase uses its
+                        // own default landing page, which doesn't require
+                        // any domain to be allowlisted.
                         await firebaseAuth.sendEmailVerification(cred.user);
                         emailVerifSent = true;
                     } else {
@@ -373,7 +546,7 @@
                 console.error('[Firebase] sendEmailVerification FAILED:', err);
                 console.error('  → code:', err && err.code);
                 console.error('  → message:', err && err.message);
-                console.error('  → If code is auth/unauthorized-continue-uri:');
+                console.error('  → If this is auth/unauthorized-continue-uri:');
                 console.error('     Add your domain at https://console.firebase.google.com/project/' +
                     (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) +
                     '/authentication/settings (Authorized domains).');
