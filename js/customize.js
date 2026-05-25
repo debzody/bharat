@@ -1,5 +1,7 @@
 /* customize.js - powers /customize page (login-gated builder + email enquiry)
-   Sends a pre-filled mailto: to booking@andamanvoyages.in. No payment.
+   Sends the enquiry directly via Firestore "mail" collection (Trigger Email
+   extension delivers it). Falls back to a mailto: link if Firestore is
+   unreachable or the extension isn't yet enabled. No payment is taken.
 */
 (function () {
     'use strict';
@@ -199,6 +201,66 @@
         if (!d.trip.islands.length) errs.push('Please pick at least one island.');
         return errs;
     }
+    /* Build a friendlier HTML version of the email body for richer
+       rendering in the recipient's inbox. The plain-text fallback is
+       kept as well so any client can read it. */
+    function buildEmailHtml(d) {
+        function row(k, v) {
+            return '<tr><td style="padding:4px 12px;color:#777;white-space:nowrap;">' + escHtml(k) +
+                   '</td><td style="padding:4px 12px;color:#0d2b3a;font-weight:600;">' + escHtml(v || '—') + '</td></tr>';
+        }
+        function list(k, arr, fallback) {
+            return row(k, (arr && arr.length) ? arr.join(', ') : (fallback || '—'));
+        }
+        var notes = d.trip.notes
+            ? '<h3 style="margin:1.5rem 0 .5rem;color:#0d2b3a;">Notes from customer</h3>' +
+              '<p style="background:#f8fafb;padding:.8rem 1rem;border-left:3px solid #0d7a8a;color:#3d4f5a;">' +
+              escHtml(d.trip.notes).replace(/\n/g, '<br>') + '</p>'
+            : '';
+        return '' +
+        '<div style="font-family:Arial,Helvetica,sans-serif;background:#f0f4f7;padding:24px;">' +
+            '<div style="max-width:640px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 6px 20px rgba(8,30,42,.08);">' +
+                '<div style="background:linear-gradient(135deg,#0d7a8a,#16a085);color:#fff;padding:22px 28px;">' +
+                    '<div style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;">New custom-trip enquiry</div>' +
+                    '<h1 style="margin:.3rem 0 0;font-size:24px;">' + escHtml(d.traveller.name || 'New traveller') + '</h1>' +
+                    '<div style="opacity:.9;font-size:13px;margin-top:6px;">Reference: <strong>' + escHtml(d.ref) + '</strong> · ' + escHtml(d.createdAt) + '</div>' +
+                '</div>' +
+                '<div style="padding:24px 28px;">' +
+                    '<h3 style="margin:0 0 .5rem;color:#0d2b3a;font-size:16px;">Traveller</h3>' +
+                    '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+                        row('Name',      d.traveller.name) +
+                        row('Email',     d.traveller.email) +
+                        row('Phone',     d.traveller.phone) +
+                        row('Preferred', d.traveller.preferred) +
+                        row('Account',   (d.user.username || '(none)') + ' · ' + (d.user.email || '') + ' · uid ' + (d.user.uid || '?')) +
+                    '</table>' +
+                    '<h3 style="margin:1.4rem 0 .5rem;color:#0d2b3a;font-size:16px;">Trip</h3>' +
+                    '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+                        row('Dates',      (d.trip.start || '?') + ' to ' + (d.trip.end || '?')) +
+                        row('Travellers', d.trip.adults + ' adult(s) + ' + d.trip.children + ' child(ren)') +
+                        row('Departure',  d.trip.city || '(not specified)') +
+                        row('Budget',     d.trip.budget || '(flexible)') +
+                        list('Islands',    d.trip.islands,    '(any)') +
+                        list('Hotel',      d.trip.hotel,      '(not chosen)') +
+                        list('Vibe',       d.trip.vibe,       '(any)') +
+                        list('Inclusions', d.trip.inclusions, '(defaults)') +
+                        list('Activities', d.trip.activities, '(none)') +
+                    '</table>' +
+                    notes +
+                    '<div style="margin-top:1.6rem;padding:14px 16px;background:#fff8e1;border-radius:10px;color:#7a5400;font-size:13px;">' +
+                        '<strong>Reply target:</strong> ' + escHtml(d.traveller.email) +
+                        ' · WhatsApp ' + escHtml(d.traveller.phone) +
+                        ' · within 2 working hours please.' +
+                    '</div>' +
+                '</div>' +
+                '<div style="padding:14px 28px;background:#0d2b3a;color:#cdd9e0;font-size:12px;text-align:center;">' +
+                    'Sent automatically from andamanvoyages.in /customize' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    /* Persist the audit copy of the enquiry. Best-effort; never blocks. */
     function persistEnquiry(d) {
         try {
             if (window.firebase && firebase.firestore) {
@@ -211,6 +273,63 @@
             arr.push(d); localStorage.setItem(key, JSON.stringify(arr.slice(-20)));
         } catch (e) {}
     }
+
+    /* Send the email by writing to the Firestore "mail" collection that
+       the Firebase Trigger Email extension watches. Returns a Promise
+       that resolves true on success, false on failure. */
+    function sendViaFirestoreMail(d) {
+        return new Promise(function (resolve) {
+            try {
+                if (!window.firebase || !firebase.firestore) return resolve(false);
+                var db = firebase.firestore();
+                var doc = {
+                    to:  [TARGET_EMAIL],
+                    cc:  d.traveller.email ? [d.traveller.email] : [],
+                    replyTo: d.traveller.email || undefined,
+                    message: {
+                        subject: 'Custom Andaman Trip Enquiry - ' + (d.traveller.name || 'Guest') + ' (' + d.ref + ')',
+                        text:    buildEmailBody(d),
+                        html:    buildEmailHtml(d)
+                    },
+                    // Free-form metadata for our admin dashboard.
+                    meta: {
+                        ref: d.ref,
+                        type: 'customEnquiry',
+                        userUid: d.user.uid || '',
+                        createdAt: d.createdAt
+                    }
+                };
+                db.collection('mail').doc(d.ref).set(doc).then(function () {
+                    resolve(true);
+                }).catch(function (err) {
+                    console.warn('[customize] mail write failed:', err && err.message);
+                    resolve(false);
+                });
+            } catch (e) {
+                console.warn('[customize] mail send threw:', e && e.message);
+                resolve(false);
+            }
+        });
+    }
+
+    /* Last-resort fallback: open the user's mail client with a pre-filled
+       message. Only used if Firestore write fails. */
+    function fallbackMailto(d) {
+        var subject = 'Custom Andaman Trip Enquiry - ' + (d.traveller.name || 'Guest') + ' (' + d.ref + ')';
+        var body    = buildEmailBody(d);
+        var url = 'mailto:' + TARGET_EMAIL +
+                  '?subject=' + encodeURIComponent(subject) +
+                  '&body='    + encodeURIComponent(body);
+        try {
+            var a = document.createElement('a');
+            a.href = url; a.style.display = 'none';
+            document.body.appendChild(a); a.click();
+            setTimeout(function () { document.body.removeChild(a); }, 500);
+        } catch (e) {
+            window.location.href = url;
+        }
+    }
+
     function toast(msg, type) {
         if (window.Toast && typeof Toast.show === 'function') Toast.show(msg, type || 'success');
         else if (typeof window.alert === 'function') alert(msg);
@@ -230,6 +349,19 @@
         }
     }
 
+    function setSubmitting(submitting) {
+        var btn = document.getElementById('czSubmitBtn');
+        if (!btn) return;
+        if (submitting) {
+            btn.disabled = true;
+            btn.dataset.origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
+        }
+    }
+
     function sendEnquiry() {
         if (!readUser()) {
             toast('Please log in to send an enquiry.', 'warning');
@@ -241,27 +373,22 @@
         if (errs.length) { toast(errs[0], 'warning'); return; }
 
         persistEnquiry(d);
+        setSubmitting(true);
 
-        var subject = 'Custom Andaman Trip Enquiry - ' + (d.traveller.name || 'Guest') + ' (' + d.ref + ')';
-        var body    = buildEmailBody(d);
-        var mailto  = 'mailto:' + TARGET_EMAIL +
-                      '?subject=' + encodeURIComponent(subject) +
-                      '&body='    + encodeURIComponent(body);
-
-        // Open the user's mail client. Use a hidden anchor for best compatibility.
-        try {
-            var a = document.createElement('a');
-            a.href = mailto;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(function () { document.body.removeChild(a); }, 500);
-        } catch (e) {
-            window.location.href = mailto;
-        }
-
-        toast('Enquiry sent! Check your email client.', 'success');
-        showSuccess(d);
+        // Send via Firestore "mail" collection (Trigger Email extension).
+        // No mail-client window is opened — the email goes out server-side.
+        sendViaFirestoreMail(d).then(function (ok) {
+            setSubmitting(false);
+            if (ok) {
+                toast('Enquiry sent! We will reply within 2 hours.', 'success');
+                showSuccess(d);
+                return;
+            }
+            // Firestore unreachable / extension not yet configured -> fallback.
+            toast('Network issue — opening your email client as a backup.', 'warning');
+            fallbackMailto(d);
+            showSuccess(d);
+        });
     }
 
     /* Login button on the gate */
