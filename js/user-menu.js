@@ -17,7 +17,7 @@
 (function () {
     'use strict';
 
-    function readCurrentUser() {
+    function readCurrentUser() { 
         try {
             const cu  = JSON.parse(localStorage.getItem('currentUser') || 'null');
             const tok = localStorage.getItem('token');
@@ -70,6 +70,45 @@
         });
     }
 
+    // ── Canonical site navigation ─────────────────────────────
+    // Every page across the site should show the same nav order:
+    //   Home · Packages · Flights · Cabs · Gallery · Dashboard
+    // (Bookings / Customize / Profile / Settings / Contact / Help / Terms
+    //  all live inside the AD avatar dropdown — see build() below.)
+    // Anything else the page's own HTML put into #topnav is wiped, then
+    // the canonical list is injected. The matching item is highlighted
+    // as `.active` based on the current pathname.
+    var CANONICAL_NAV = [
+        { href: '/',         label: 'Home',      icon: 'fa-home',              match: ['/','/index'] },
+        { href: '/#packages', label: 'Packages',  icon: 'fa-suitcase-rolling', match: ['/#packages'] },
+        { href: '/flights',  label: 'Flights',   icon: 'fa-plane',             match: ['/flights'] },
+        { href: '/cabs',     label: 'Cabs',      icon: 'fa-taxi',              match: ['/cabs'] },
+        { href: '/gallery',  label: 'Gallery',   icon: 'fa-images',            match: ['/gallery'] },
+        { href: '/dashboard',label: 'Dashboard', icon: 'fa-th-large',          match: ['/dashboard'] }
+    ];
+    function normalizeTopnav(topnav) {
+        if (!topnav) return;
+        // Skip the dashboard's sidebar nav — it has different items + JS.
+        if (topnav.querySelector('.sidebar-link')) return;
+        var path = (location.pathname || '/').replace(/\/index(\.html)?$/i, '/').replace(/\.html$/i, '');
+        if (!path) path = '/';
+        var hash = location.hash || '';
+        var fullPath = path + hash;
+        function isActive(item) {
+            // Exact path-or-path+hash match
+            if (item.match.indexOf(fullPath) >= 0) return true;
+            // Special-case: "/" should be active for both "/" and "/index"
+            if (item.href === '/' && (path === '/' || path === '')) return !hash;
+            return false;
+        }
+        var html = CANONICAL_NAV.map(function (it) {
+            var active = isActive(it) ? ' active' : '';
+            return '<a href="' + it.href + '" class="topnav-item' + active + '">' +
+                   '<i class="fas ' + it.icon + '"></i><span>' + it.label + '</span></a>';
+        }).join('');
+        topnav.innerHTML = html;
+    }
+
     function build() {
         wrapBrandLetters();
         // Hide any old text "Admin" badge in the dashboard topbar
@@ -86,6 +125,10 @@
         const topbar = document.querySelector('.topbar');
         const topnav = document.getElementById('topnav');
         if (!topbar) return;
+        // Force every page to show the same nav items in the same order.
+        // Runs BEFORE the AD avatar is injected so the avatar always lands
+        // at the end of the bar.
+        normalizeTopnav(topnav);
         if (topbar.querySelector('.user-menu-wrap')) return;   // already built
 
         // Place the avatar DIRECTLY in the .topbar (not inside #topnav)
