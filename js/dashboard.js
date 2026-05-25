@@ -1341,4 +1341,58 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Auto-refresh when localStorage changes (e.g. from another tab)
     window.addEventListener('storage', refreshAll);
+
+    // ── Dashboard Theme Picker (Settings → Appearance) ──────────
+    // The theme is bootstrapped before paint by an inline script in
+    // dashboard.html that adds a 'theme-<name>' class to body. Here
+    // we wire the swatches to swap the class live and persist the
+    // choice in localStorage. Six themes ship: hacker (default),
+    // light, ocean, sunset, midnight, cyberpunk.
+    (function initThemePicker() {
+        var THEMES = ['hacker','light','ocean','sunset','midnight','cyberpunk'];
+        var picker = document.getElementById('themePickerGrid');
+        if (!picker) return;
+
+        function getActive() {
+            var t = (localStorage.getItem('adminDashboardTheme') || 'hacker').toLowerCase();
+            return THEMES.indexOf(t) >= 0 ? t : 'hacker';
+        }
+
+        function markActive(theme) {
+            picker.querySelectorAll('.theme-swatch').forEach(function (sw) {
+                sw.classList.toggle('active', sw.dataset.theme === theme);
+            });
+        }
+
+        function applyTheme(theme) {
+            if (THEMES.indexOf(theme) < 0) theme = 'hacker';
+            // Remove all theme-* classes, keep everything else intact.
+            THEMES.forEach(function (t) { document.body.classList.remove('theme-' + t); });
+            document.body.classList.add('theme-' + theme);
+            try { localStorage.setItem('adminDashboardTheme', theme); } catch (_) {}
+            markActive(theme);
+            // Friendly toast confirmation (when Toast is loaded)
+            if (window.Toast && window.Toast.success) {
+                var label = theme.charAt(0).toUpperCase() + theme.slice(1);
+                window.Toast.success('Theme switched to ' + label + '.', { duration: 2000 });
+            }
+        }
+
+        // Click + keyboard activation
+        picker.addEventListener('click', function (e) {
+            var sw = e.target.closest('.theme-swatch');
+            if (!sw) return;
+            applyTheme(sw.dataset.theme);
+        });
+        picker.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            var sw = e.target.closest('.theme-swatch');
+            if (!sw) return;
+            e.preventDefault();
+            applyTheme(sw.dataset.theme);
+        });
+
+        // Initial state — match the class that the FOUC bootstrapper applied
+        markActive(getActive());
+    })();
 });
