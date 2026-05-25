@@ -27,7 +27,13 @@
     };
 
     // Per-head advance for the package currently in the cart.
+    // If a "Launch advance" coupon is currently applied (admin-toggleable
+    // in Dashboard → Conversion Boosters), use the flat coupon amount
+    // (e.g. ₹2,000) instead of the package's normal ₹6K/₹11K.
     function advancePerHead() {
+        if (state.coupon && typeof state.coupon.advanceOverride === 'number' && state.coupon.advanceOverride > 0) {
+            return state.coupon.advanceOverride;
+        }
         if (!state.cart) return ADVANCE_STANDARD;
         // Test package — keep the smoke-test cheap (₹1).
         if (state.cart.pkgId === 'test' || state.cart.price <= 1) return 1;
@@ -541,6 +547,32 @@
         var code = (inp.value || '').trim().toUpperCase();
         if (!code) { window.Toast.warning('Please enter a coupon code.'); return; }
         var co = COUPONS[code];
+
+        // ── Dynamic LAUNCH coupon (admin-configured in SettingsStore) ──
+        // If the entered code matches the launch-advance coupon AND the
+        // admin has the toggle ON, fabricate a coupon object that:
+        //   • Doesn't discount the trip cost (type:flat, value:0)
+        //   • Sets advanceOverride so advancePerHead() returns the flat
+        //     amount (e.g. ₹2,000) instead of ₹6K/₹11K.
+        if (!co) {
+            try {
+                var settings = (window.SettingsStore && typeof window.SettingsStore.cached === 'function')
+                    ? window.SettingsStore.cached() : null;
+                if (settings &&
+                    settings.launchAdvanceCouponEnabled === true &&
+                    String(settings.launchAdvanceCouponCode || '').toUpperCase() === code) {
+                    var flat = Math.max(500, Number(settings.launchAdvanceCouponAmount) || 2000);
+                    co = {
+                        type: 'flat',
+                        value: 0,
+                        min: 0,
+                        label: '₹' + flat.toLocaleString('en-IN') + '/head advance — pay rest later',
+                        advanceOverride: flat
+                    };
+                }
+            } catch (_) {}
+        }
+
         if (!co) { window.Toast.error('Invalid coupon code.'); return; }
         var s = calcSubtotal();
         if (s < (co.min || 0)) { window.Toast.warning('This coupon needs a minimum order of ' + R + fmt(co.min) + '.'); return; }
