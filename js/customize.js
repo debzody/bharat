@@ -1,7 +1,20 @@
 /* customize.js - powers /customize page (login-gated builder + email enquiry)
-   Sends the enquiry directly via Firestore "mail" collection (Trigger Email
-   extension delivers it). Falls back to a mailto: link if Firestore is
-   unreachable or the extension isn't yet enabled. No payment is taken.
+   Send order:
+     1. EmailJS  (zero-backend, works on static GitHub Pages, default)
+     2. Firestore "mail" collection (Trigger Email extension), if EmailJS
+        is not configured.
+     3. mailto:  (last-resort fallback)
+   Configure EmailJS by setting window.EMAILJS_CONFIG before this script
+   loads, e.g. in customize.html:
+     <script>
+       window.EMAILJS_CONFIG = {
+         publicKey:  "abcd1234",
+         serviceId:  "service_xxx",
+         templateId: "template_yyy"
+       };
+     </script>
+   The page also writes an audit copy to customEnquiries/{ref} in Firestore
+   (best-effort, ignored if rules/permissions block it).
 */
 (function () {
     'use strict';
@@ -274,6 +287,78 @@
         } catch (e) {}
     }
 
+    /* ─── EmailJS sender (preferred path) ──────────────────────
+       Uses the public EmailJS REST API — no SDK download needed.
+       Configure by setting window.EMAILJS_CONFIG with publicKey,
+       serviceId and templateId. The template should reference the
+       same parameter names we send below (to_email, reply_to, subject,
+       message_html, message_text + the 14 enquiry fields). */
+    function emailjsConfig() {
+        var c = window.EMAILJS_CONFIG;
+        if (!c || !c.publicKey || !c.serviceId || !c.templateId) return null;
+        return c;
+    }
+    function sendViaEmailJS(d) {
+        return new Promise(function (resolve) {
+            var c = emailjsConfig();
+            if (!c) return resolve(false);
+            var payload = {
+                service_id:  c.serviceId,
+                template_id: c.templateId,
+                user_id:     c.publicKey,
+                template_params: {
+                    to_email:     TARGET_EMAIL,
+                    reply_to:     d.traveller.email || '',
+                    cc:           d.traveller.email || '',
+                    subject:      'Custom Andaman Trip Enquiry - ' + (d.traveller.name || 'Guest') + ' (' + d.ref + ')',
+                    message_html: buildEmailHtml(d),
+                    message_text: buildEmailBody(d),
+                    // Individual fields — handy if the user prefers to
+                    // template the email themselves in the EmailJS UI.
+                    ref:          d.ref,
+                    name:         d.traveller.name,
+                    email:        d.traveller.email,
+                    phone:        d.traveller.phone,
+                    preferred:    d.traveller.preferred,
+                    start:        d.trip.start,
+                    end:          d.trip.end,
+                    adults:       d.trip.adults,
+                    children:     d.trip.children,
+                    city:         d.trip.city,
+                    budget:       d.trip.budget,
+                    islands:      d.trip.islands.join(', '),
+                    hotel:        d.trip.hotel.join(', '),
+                    vibe:         d.trip.vibe.join(', '),
+                    inclusions:   d.trip.inclusions.join(', '),
+                    activities:   d.trip.activities.join(', '),
+                    notes:        d.trip.notes,
+                    user_uid:     d.user.uid || '',
+                    user_email:   d.user.email || '',
+                    user_username:d.user.username || ''
+                }
+            };
+            try {
+                fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(function (r) {
+                    if (r.ok) return resolve(true);
+                    r.text().then(function (t) {
+                        console.warn('[customize] EmailJS error:', r.status, t);
+                        resolve(false);
+                    });
+                }).catch(function (err) {
+                    console.warn('[customize] EmailJS network:', err && err.message);
+                    resolve(false);
+                });
+            } catch (e) {
+                console.warn('[customize] EmailJS threw:', e && e.message);
+                resolve(false);
+            }
+        });
+    }
+
     /* Send the email by writing to the Firestore "mail" collection that
        the Firebase Trigger Email extension watches. Returns a Promise
        that resolves true on success, false on failure. */
@@ -375,20 +460,27 @@
         persistEnquiry(d);
         setSubmitting(true);
 
-        // Send via Firestore "mail" collection (Trigger Email extension).
-        // No mail-client window is opened — the email goes out server-side.
-        sendViaFirestoreMail(d).then(function (ok) {
-            setSubmitting(false);
-            if (ok) {
-                toast('Enquiry sent! We will reply within 2 hours.', 'success');
-                showSuccess(d);
-                return;
-            }
-            // Firestore unreachable / extension not yet configured -> fallback.
+        // Try senders in order: EmailJS → Firestore mail → mailto fallback.
+        // The first one that's configured AND succeeds wins. No mail-client
+        // window opens unless every server-side option fails.
+        sendViaEmailJS(d).then(function (ok) {
+            if (ok) return finish('emailjs', d);
+            return sendViaFirestoreMail(d).then(function (ok2) {
+                if (ok2) return finish('firestore', d);
+                return finish('mailto', d);
+            });
+        });
+    }
+
+    function finish(via, d) {
+        setSubmitting(false);
+        if (via === 'mailto') {
             toast('Network issue — opening your email client as a backup.', 'warning');
             fallbackMailto(d);
-            showSuccess(d);
-        });
+        } else {
+            toast('Enquiry sent! We will reply within 2 hours.', 'success');
+        }
+        showSuccess(d);
     }
 
     /* Login button on the gate */
