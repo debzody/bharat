@@ -10,6 +10,11 @@ compatibility_flags = [ "nodejs_compat" ]
 
 # CORS allow-list (only this Origin can POST to the worker).
 # Empty = allow any (NOT recommended in production).
+#
+# Optional: override sender / recipient without editing worker.js.
+#   FROM_EMAIL = "enquiries@andamanvoyages.in"   # must be a verified Email Routing address
+#   FROM_NAME  = "Andaman Voyages Enquiries"
+#   TO_EMAIL   = "booking@andamanvoyages.in"
 [vars]
 ALLOWED_ORIGIN = "https://andamanvoyages.in"
 
