@@ -80,6 +80,31 @@ service cloud.firestore {
         && (isAdmin() || resource.data.userId == request.auth.uid);
     }
 
+    // Mail collection — used by the Firebase "Trigger Email" extension.
+    // Authenticated users can create their own mail docs (e.g. custom-trip
+    // enquiries from /customize). Reads are admin-only so users can't see
+    // what other users sent. Updates/deletes are admin-only too.
+    match /mail/{mailId} {
+      allow create: if request.auth != null
+        && request.resource.data.message != null;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Custom-trip enquiries (audit log for the admin dashboard).
+    // Logged-in users can create one tied to their uid; only admins
+    // (and the owning user) can read; only admins can update/delete.
+    match /customEnquiries/{ref} {
+      allow create: if request.auth != null
+        && (request.resource.data.user == null
+            || request.resource.data.user.uid == request.auth.uid
+            || isAdmin());
+      allow read: if isAdmin()
+        || (request.auth != null
+            && resource.data.user != null
+            && resource.data.user.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
     // Default deny everything else
     match /{document=**} {
       allow read, write: if false;
