@@ -1070,13 +1070,13 @@ body:not(.hero-page) .contact-strip-floating{display:none !important}
    Pure black background, neon-green text, monospace, scanline overlay,
    grid lines, cyber-blue accents. Real "Mr. Robot / Hackers" vibe.
    ════════════════════════════════════════════════════════════════════ */
-body.dashboard-page{
+body.dashboard-page.theme-hacker{
     background:#0a0e0a !important;
     color:#7eff8f !important;
     font-family:'JetBrains Mono','Fira Code','SF Mono','Menlo','Consolas',monospace !important;
 }
 /* Faint horizontal scanlines + green CRT glow overlay */
-body.dashboard-page::before{
+body.dashboard-page.theme-hacker::before{
     content:"";
     position:fixed;inset:0;
     background:
@@ -1090,7 +1090,7 @@ body.dashboard-page::before{
     mix-blend-mode:screen;
 }
 /* Subtle grid lines on the body for a "code editor" feel */
-body.dashboard-page::after{
+body.dashboard-page.theme-hacker::after{
     content:"";
     position:fixed;inset:0;
     background-image:
@@ -1099,40 +1099,40 @@ body.dashboard-page::after{
     background-size:40px 40px;
     pointer-events:none;z-index:0;
 }
-body.dashboard-page > *{position:relative;z-index:2}
+body.dashboard-page.theme-hacker > *{position:relative;z-index:2}
 
 /* Hacker topbar */
-body.dashboard-page .topbar{
+body.dashboard-page.theme-hacker .topbar{
     background:rgba(0,8,4,.92) !important;
     border:1px solid rgba(126,255,143,.18) !important;
     border-radius:0 !important;
     box-shadow:0 0 24px rgba(126,255,143,.12),0 4px 0 rgba(126,255,143,.05) !important;
 }
-body.dashboard-page .topbar-logo .brand-line1{
+body.dashboard-page.theme-hacker .topbar-logo .brand-line1{
     color:#7eff8f !important;-webkit-text-fill-color:#7eff8f !important;
     font-family:'JetBrains Mono','Fira Code',monospace !important;
     text-shadow:0 0 8px rgba(126,255,143,.5);
     letter-spacing:0 !important;
 }
-body.dashboard-page .topbar-logo .brand-line2{
+body.dashboard-page.theme-hacker .topbar-logo .brand-line2{
     color:rgba(126,255,143,.6) !important;-webkit-text-fill-color:rgba(126,255,143,.6) !important;
     font-family:'JetBrains Mono','Fira Code',monospace !important;
 }
-body.dashboard-page .topnav-item{
+body.dashboard-page.theme-hacker .topnav-item{
     color:rgba(126,255,143,.75) !important;
     font-family:'JetBrains Mono','Fira Code',monospace !important;
     text-transform:lowercase !important;
 }
-body.dashboard-page .topnav-item span{color:inherit !important;font-family:inherit !important}
-body.dashboard-page .topnav-item:hover{
+body.dashboard-page.theme-hacker .topnav-item span{color:inherit !important;font-family:inherit !important}
+body.dashboard-page.theme-hacker .topnav-item:hover{
     background:rgba(126,255,143,.1) !important;color:#7eff8f !important;
     text-shadow:0 0 6px rgba(126,255,143,.6);
 }
-body.dashboard-page .topnav-item.active{
+body.dashboard-page.theme-hacker .topnav-item.active{
     background:rgba(126,255,143,.12) !important;color:#7eff8f !important;
     box-shadow:inset 0 -2px 0 #7eff8f;
 }
-body.dashboard-page .topnav-item.topnav-cta{
+body.dashboard-page.theme-hacker .topnav-item.topnav-cta{
     background:#0a0e0a !important;color:#7eff8f !important;
     border:1px solid #7eff8f !important;
     border-radius:4px !important;
@@ -1140,37 +1140,37 @@ body.dashboard-page .topnav-item.topnav-cta{
     text-transform:uppercase !important;
     letter-spacing:.1em !important;
 }
-body.dashboard-page .topnav-item.topnav-cta span{color:#7eff8f !important}
-body.dashboard-page .topnav-item.topnav-cta:hover{
+body.dashboard-page.theme-hacker .topnav-item.topnav-cta span{color:#7eff8f !important}
+body.dashboard-page.theme-hacker .topnav-item.topnav-cta:hover{
     background:#7eff8f !important;color:#0a0e0a !important;
 }
-body.dashboard-page .topnav-item.topnav-cta:hover span{color:#0a0e0a !important}
+body.dashboard-page.theme-hacker .topnav-item.topnav-cta:hover span{color:#0a0e0a !important}
 
 /* Dashboard cards / sections — bordered terminal panels */
-body.dashboard-page .container,
-body.dashboard-page .dashboard-section,
-body.dashboard-page .dashboard-content{color:#cdf5d3}
-body.dashboard-page h1,
-body.dashboard-page h2,
-body.dashboard-page h3,
-body.dashboard-page h4{
+body.dashboard-page.theme-hacker .container,
+body.dashboard-page.theme-hacker .dashboard-section,
+body.dashboard-page.theme-hacker .dashboard-content{color:#cdf5d3}
+body.dashboard-page.theme-hacker h1,
+body.dashboard-page.theme-hacker h2,
+body.dashboard-page.theme-hacker h3,
+body.dashboard-page.theme-hacker h4{
     color:#7eff8f !important;
     font-family:'JetBrains Mono','Fira Code',monospace;
     text-shadow:0 0 8px rgba(126,255,143,.4);
     letter-spacing:.02em;
 }
-body.dashboard-page h1::before,
-body.dashboard-page h2::before{
+body.dashboard-page.theme-hacker h1::before,
+body.dashboard-page.theme-hacker h2::before{
     content:"> ";color:#46c95c;opacity:.7;
 }
 
 /* KPI / stat tiles */
-body.dashboard-page .kpi-card,
-body.dashboard-page .stat-card,
-body.dashboard-page .dashboard-card,
-body.dashboard-page .stat-block,
-body.dashboard-page .card,
-body.dashboard-page [class*="stat-"]{
+body.dashboard-page.theme-hacker .kpi-card,
+body.dashboard-page.theme-hacker .stat-card,
+body.dashboard-page.theme-hacker .dashboard-card,
+body.dashboard-page.theme-hacker .stat-block,
+body.dashboard-page.theme-hacker .card,
+body.dashboard-page.theme-hacker [class*="stat-"]{
     background:rgba(8,16,10,.85) !important;
     border:1px solid rgba(126,255,143,.25) !important;
     border-radius:4px !important;
@@ -1178,26 +1178,26 @@ body.dashboard-page [class*="stat-"]{
     color:#cdf5d3 !important;
     backdrop-filter:blur(4px);
 }
-body.dashboard-page .kpi-card:hover,
-body.dashboard-page .dashboard-card:hover,
-body.dashboard-page .stat-block:hover{
+body.dashboard-page.theme-hacker .kpi-card:hover,
+body.dashboard-page.theme-hacker .dashboard-card:hover,
+body.dashboard-page.theme-hacker .stat-block:hover{
     border-color:#7eff8f !important;
     box-shadow:0 0 24px rgba(126,255,143,.25) !important;
 }
-body.dashboard-page .kpi-num,
-body.dashboard-page .stat-num,
-body.dashboard-page .kpi-card .num,
-body.dashboard-page [class*="-num"]{
+body.dashboard-page.theme-hacker .kpi-num,
+body.dashboard-page.theme-hacker .stat-num,
+body.dashboard-page.theme-hacker .kpi-card .num,
+body.dashboard-page.theme-hacker [class*="-num"]{
     color:#7eff8f !important;
     font-family:'JetBrains Mono','Fira Code',monospace !important;
     text-shadow:0 0 14px rgba(126,255,143,.55);
     letter-spacing:.02em;
 }
-body.dashboard-page .kpi-label,
-body.dashboard-page .stat-label,
-body.dashboard-page .kpi-card .label,
-body.dashboard-page [class*="-label"],
-body.dashboard-page [class*="-cap"]{
+body.dashboard-page.theme-hacker .kpi-label,
+body.dashboard-page.theme-hacker .stat-label,
+body.dashboard-page.theme-hacker .kpi-card .label,
+body.dashboard-page.theme-hacker [class*="-label"],
+body.dashboard-page.theme-hacker [class*="-cap"]{
     color:rgba(126,255,143,.55) !important;
     text-transform:uppercase !important;
     letter-spacing:.18em !important;
@@ -1205,10 +1205,10 @@ body.dashboard-page [class*="-cap"]{
 }
 
 /* KPI icons go neon green */
-body.dashboard-page .kpi-icon,
-body.dashboard-page .stat-icon,
-body.dashboard-page .feature-icon,
-body.dashboard-page .card i:not(.fab):not(.um-item i){
+body.dashboard-page.theme-hacker .kpi-icon,
+body.dashboard-page.theme-hacker .stat-icon,
+body.dashboard-page.theme-hacker .feature-icon,
+body.dashboard-page.theme-hacker .card i:not(.fab):not(.um-item i){
     color:#7eff8f !important;
     background:rgba(126,255,143,.08) !important;
     border:1px solid rgba(126,255,143,.2) !important;
@@ -1217,34 +1217,34 @@ body.dashboard-page .card i:not(.fab):not(.um-item i){
 }
 
 /* Tables & lists turn into terminal-style logs */
-body.dashboard-page table,
-body.dashboard-page .data-table{
+body.dashboard-page.theme-hacker table,
+body.dashboard-page.theme-hacker .data-table{
     background:rgba(8,16,10,.6) !important;
     border:1px solid rgba(126,255,143,.2) !important;
     color:#cdf5d3 !important;
     font-family:'JetBrains Mono','Fira Code',monospace !important;
     font-size:.85rem !important;
 }
-body.dashboard-page th{
+body.dashboard-page.theme-hacker th{
     background:rgba(126,255,143,.08) !important;
     color:#7eff8f !important;
     border-bottom:1px solid rgba(126,255,143,.3) !important;
     text-transform:uppercase !important;letter-spacing:.1em !important;
     font-size:.72rem !important;
 }
-body.dashboard-page td{
+body.dashboard-page.theme-hacker td{
     border-top:1px solid rgba(126,255,143,.08) !important;
     color:#cdf5d3 !important;
 }
-body.dashboard-page tr:hover td{
+body.dashboard-page.theme-hacker tr:hover td{
     background:rgba(126,255,143,.05) !important;
     color:#7eff8f !important;
 }
 
 /* Buttons — terminal style */
-body.dashboard-page .btn-primary,
-body.dashboard-page button.btn,
-body.dashboard-page button[type="submit"]{
+body.dashboard-page.theme-hacker .btn-primary,
+body.dashboard-page.theme-hacker button.btn,
+body.dashboard-page.theme-hacker button[type="submit"]{
     background:#0a0e0a !important;
     color:#7eff8f !important;
     border:1px solid #7eff8f !important;
@@ -1255,17 +1255,17 @@ body.dashboard-page button[type="submit"]{
     letter-spacing:.1em !important;
     font-weight:700 !important;
 }
-body.dashboard-page .btn-primary:hover,
-body.dashboard-page button.btn:hover,
-body.dashboard-page button[type="submit"]:hover{
+body.dashboard-page.theme-hacker .btn-primary:hover,
+body.dashboard-page.theme-hacker button.btn:hover,
+body.dashboard-page.theme-hacker button[type="submit"]:hover{
     background:#7eff8f !important;color:#0a0e0a !important;
     box-shadow:0 0 24px rgba(126,255,143,.6) !important;
 }
 
 /* Form inputs */
-body.dashboard-page input,
-body.dashboard-page select,
-body.dashboard-page textarea{
+body.dashboard-page.theme-hacker input,
+body.dashboard-page.theme-hacker select,
+body.dashboard-page.theme-hacker textarea{
     background:rgba(8,16,10,.7) !important;
     color:#cdf5d3 !important;
     border:1px solid rgba(126,255,143,.25) !important;
@@ -1273,16 +1273,16 @@ body.dashboard-page textarea{
     font-family:'JetBrains Mono','Fira Code',monospace !important;
     font-size:.88rem !important;
 }
-body.dashboard-page input:focus,
-body.dashboard-page select:focus,
-body.dashboard-page textarea:focus{
+body.dashboard-page.theme-hacker input:focus,
+body.dashboard-page.theme-hacker select:focus,
+body.dashboard-page.theme-hacker textarea:focus{
     border-color:#7eff8f !important;
     box-shadow:0 0 0 2px rgba(126,255,143,.2) !important;outline:none !important;
 }
 
 /* Charts / canvas containers — give them a terminal frame */
-body.dashboard-page canvas,
-body.dashboard-page .chart-container{
+body.dashboard-page.theme-hacker canvas,
+body.dashboard-page.theme-hacker .chart-container{
     background:rgba(8,16,10,.5) !important;
     border:1px solid rgba(126,255,143,.18) !important;
     border-radius:4px !important;
@@ -1290,8 +1290,8 @@ body.dashboard-page .chart-container{
 }
 
 /* Status badges */
-body.dashboard-page .status,
-body.dashboard-page .badge{
+body.dashboard-page.theme-hacker .status,
+body.dashboard-page.theme-hacker .badge{
     background:rgba(126,255,143,.12) !important;
     color:#7eff8f !important;
     border:1px solid rgba(126,255,143,.3) !important;
@@ -1301,27 +1301,27 @@ body.dashboard-page .badge{
     font-size:.7rem !important;
     border-radius:3px !important;
 }
-body.dashboard-page .status.confirmed{background:rgba(126,255,143,.2) !important;color:#7eff8f !important}
-body.dashboard-page .status.pending{background:rgba(247,201,72,.15) !important;color:#f7c948 !important;border-color:rgba(247,201,72,.4) !important}
-body.dashboard-page .status.cancelled{background:rgba(255,107,91,.15) !important;color:#ff6b5b !important;border-color:rgba(255,107,91,.4) !important}
+body.dashboard-page.theme-hacker .status.confirmed{background:rgba(126,255,143,.2) !important;color:#7eff8f !important}
+body.dashboard-page.theme-hacker .status.pending{background:rgba(247,201,72,.15) !important;color:#f7c948 !important;border-color:rgba(247,201,72,.4) !important}
+body.dashboard-page.theme-hacker .status.cancelled{background:rgba(255,107,91,.15) !important;color:#ff6b5b !important;border-color:rgba(255,107,91,.4) !important}
 
 /* Footer on dashboard — keep it dark/terminal */
-body.dashboard-page footer.ft,
-body.dashboard-page footer{
+body.dashboard-page.theme-hacker footer.ft,
+body.dashboard-page.theme-hacker footer{
     background:#000 !important;
     border-top:1px solid rgba(126,255,143,.18) !important;
     color:rgba(126,255,143,.55) !important;
 }
-body.dashboard-page .ft-brand-name,
-body.dashboard-page .ft-col h4{
+body.dashboard-page.theme-hacker .ft-brand-name,
+body.dashboard-page.theme-hacker .ft-col h4{
     color:#7eff8f !important;font-family:'JetBrains Mono','Fira Code',monospace !important;
 }
-body.dashboard-page .ft-mark{
+body.dashboard-page.theme-hacker .ft-mark{
     background:#7eff8f !important;color:#0a0e0a !important;box-shadow:0 0 12px rgba(126,255,143,.4) !important;
 }
 
 /* Optional blinking cursor at the end of dashboard h1 — pure flair */
-body.dashboard-page h1::after{
+body.dashboard-page.theme-hacker h1::after{
     content:"_";
     color:#7eff8f;
     animation:hacker-cursor 1s steps(1) infinite;
@@ -1651,4 +1651,470 @@ body.dashboard-page h1::after{
     .cabs-rates-table thead th,
     .cabs-rates-table tbody td{padding:.7rem .6rem;}
     .cabs-cta-strip-inner{flex-direction:column;align-items:flex-start;}
+}/* ═══════════════════════════════════════════════════════════════
+   ADMIN DASHBOARD THEMES
+   Five themable looks for the admin dashboard. The base styles in
+   the rest of style.css are scoped to body.dashboard-page.theme-hacker
+   (the legacy look). Each theme below replaces that look with its
+   own colour palette + typography + decorations.
+
+   Theme is chosen by the admin via Settings → Appearance and stored
+   in localStorage. A tiny init script in dashboard.html applies the
+   class BEFORE first paint so there's no flash of wrong theme.
+
+   Available themes:
+     • theme-hacker     → green-on-black terminal (default)
+     • theme-light      → clean white SaaS dashboard
+     • theme-ocean      → deep teal + coral accents (matches site brand)
+     • theme-sunset     → warm peach + plum gradient
+     • theme-midnight   → deep navy + neon-violet (after-hours admin)
+     • theme-cyberpunk  → magenta + cyan + lime, bold neon
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Theme: LIGHT ─────────────────────────────────────────────── */
+body.dashboard-page.theme-light{
+    background:#f7f9fc !important;
+    color:#1a2233 !important;
+    font-family:'Inter','Poppins',-apple-system,'Helvetica Neue',Arial,sans-serif !important;
 }
+body.dashboard-page.theme-light .topbar,
+body.dashboard-page.theme-light .dashboard-topbar-merged{
+    background:#ffffff !important;
+    border-bottom:1px solid #e4e9f2 !important;
+    color:#1a2233 !important;
+    box-shadow:0 1px 3px rgba(15,23,42,.04) !important;
+}
+body.dashboard-page.theme-light .topnav-item,
+body.dashboard-page.theme-light .topbar-user,
+body.dashboard-page.theme-light .topbar-logo span{
+    color:#1a2233 !important;
+}
+body.dashboard-page.theme-light .topnav-item:hover{
+    background:#eef2f8 !important; color:#0d7a8a !important;
+}
+body.dashboard-page.theme-light .topnav-item.active,
+body.dashboard-page.theme-light .sidebar-link.active{
+    background:linear-gradient(135deg,#0d7a8a,#16a085) !important;
+    color:#fff !important;
+}
+body.dashboard-page.theme-light .dashboard-page-title h1,
+body.dashboard-page.theme-light h1,
+body.dashboard-page.theme-light h2,
+body.dashboard-page.theme-light h3{
+    color:#0d2b3a !important; font-family:inherit !important;
+}
+body.dashboard-page.theme-light .stat-card,
+body.dashboard-page.theme-light .chart-card,
+body.dashboard-page.theme-light .table-card,
+body.dashboard-page.theme-light .settings-card,
+body.dashboard-page.theme-light .pkg-edit-card{
+    background:#ffffff !important;
+    border:1px solid #e4e9f2 !important;
+    box-shadow:0 1px 3px rgba(15,23,42,.04) !important;
+    color:#1a2233 !important;
+}
+body.dashboard-page.theme-light .data-table th{
+    background:#f4f7fb !important; color:#3a4a55 !important;
+    border-bottom:1px solid #e4e9f2 !important;
+}
+body.dashboard-page.theme-light .data-table td{
+    color:#2c3e4a !important; border-bottom:1px solid #f0f3f8 !important;
+}
+body.dashboard-page.theme-light .data-table tr:hover td{ background:#f9fbfd !important; }
+body.dashboard-page.theme-light .stat-value{ color:#0d2b3a !important; }
+body.dashboard-page.theme-light .stat-label{ color:#7a8b96 !important; }
+body.dashboard-page.theme-light input,
+body.dashboard-page.theme-light textarea,
+body.dashboard-page.theme-light select{
+    background:#fff !important; border:1px solid #d6dee7 !important; color:#1a2233 !important;
+}
+body.dashboard-page.theme-light .btn-save-packages,
+body.dashboard-page.theme-light .btn-add-package{
+    background:linear-gradient(135deg,#0d7a8a,#16a085) !important; color:#fff !important; border:none !important;
+}
+body.dashboard-page.theme-light .badge,
+body.dashboard-page.theme-light .status{
+    background:#eef2f8 !important; color:#3a4a55 !important; border:1px solid #d6dee7 !important;
+}
+body.dashboard-page.theme-light .status.confirmed,
+body.dashboard-page.theme-light .badge.badge-confirmed{ background:#e8f6ef !important;color:#1a8a4d !important;border-color:#bce0c8 !important; }
+body.dashboard-page.theme-light .status.cancelled,
+body.dashboard-page.theme-light .badge.badge-cancelled{ background:#fdedec !important;color:#c0392b !important;border-color:#f1c5be !important; }
+body.dashboard-page.theme-light footer.ft,
+body.dashboard-page.theme-light footer{
+    background:#0d2b3a !important; color:rgba(255,255,255,.85) !important; border-top:none !important;
+}
+
+/* ── Theme: OCEAN ──────────────────────────────────────────────── */
+body.dashboard-page.theme-ocean{
+    background:linear-gradient(180deg,#062f3a 0%,#0a4a59 100%) !important;
+    color:#e8f4f7 !important;
+    font-family:'Inter','Poppins',sans-serif !important;
+}
+body.dashboard-page.theme-ocean::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+    background:radial-gradient(80% 60% at 80% 0%,rgba(255,184,123,.08),transparent 60%),
+               radial-gradient(60% 40% at 0% 100%,rgba(126,226,192,.1),transparent 60%);
+}
+body.dashboard-page.theme-ocean .topbar,
+body.dashboard-page.theme-ocean .dashboard-topbar-merged{
+    background:rgba(8,40,50,.85) !important;
+    backdrop-filter:blur(12px) !important;
+    border-bottom:1px solid rgba(126,226,192,.18) !important;
+    color:#e8f4f7 !important;
+}
+body.dashboard-page.theme-ocean .topnav-item,
+body.dashboard-page.theme-ocean .topbar-user,
+body.dashboard-page.theme-ocean .topbar-logo span{ color:#e8f4f7 !important; }
+body.dashboard-page.theme-ocean .topnav-item:hover{ background:rgba(126,226,192,.12) !important; color:#7ee2c0 !important; }
+body.dashboard-page.theme-ocean .topnav-item.active,
+body.dashboard-page.theme-ocean .sidebar-link.active{
+    background:linear-gradient(135deg,#0d7a8a,#1aa4b8) !important; color:#fff !important;
+    box-shadow:0 4px 14px rgba(13,122,138,.4) !important;
+}
+body.dashboard-page.theme-ocean h1,
+body.dashboard-page.theme-ocean h2,
+body.dashboard-page.theme-ocean h3{ color:#fff !important; font-family:inherit !important; }
+body.dashboard-page.theme-ocean .dashboard-page-title h1::after{ content:"" !important; animation:none !important; }
+body.dashboard-page.theme-ocean .stat-card,
+body.dashboard-page.theme-ocean .chart-card,
+body.dashboard-page.theme-ocean .table-card,
+body.dashboard-page.theme-ocean .settings-card,
+body.dashboard-page.theme-ocean .pkg-edit-card{
+    background:rgba(255,255,255,.05) !important;
+    border:1px solid rgba(126,226,192,.18) !important;
+    backdrop-filter:blur(8px) !important;
+    color:#e8f4f7 !important;
+}
+body.dashboard-page.theme-ocean .data-table th{
+    background:rgba(126,226,192,.08) !important; color:#7ee2c0 !important;
+    border-bottom:1px solid rgba(126,226,192,.2) !important;
+}
+body.dashboard-page.theme-ocean .data-table td{
+    color:#cfe5eb !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
+}
+body.dashboard-page.theme-ocean .data-table tr:hover td{ background:rgba(126,226,192,.05) !important; }
+body.dashboard-page.theme-ocean .stat-value{ color:#fff !important; }
+body.dashboard-page.theme-ocean .stat-label{ color:#9ec5cf !important; }
+body.dashboard-page.theme-ocean input,
+body.dashboard-page.theme-ocean textarea,
+body.dashboard-page.theme-ocean select{
+    background:rgba(0,0,0,.25) !important; border:1px solid rgba(126,226,192,.25) !important; color:#e8f4f7 !important;
+}
+body.dashboard-page.theme-ocean .btn-save-packages,
+body.dashboard-page.theme-ocean .btn-add-package{
+    background:linear-gradient(135deg,#ff7a45,#ff6526) !important; color:#fff !important; border:none !important;
+    box-shadow:0 6px 18px rgba(255,122,69,.35) !important;
+}
+body.dashboard-page.theme-ocean .badge,
+body.dashboard-page.theme-ocean .status{
+    background:rgba(126,226,192,.12) !important; color:#7ee2c0 !important; border:1px solid rgba(126,226,192,.3) !important;
+}
+body.dashboard-page.theme-ocean .status.cancelled,
+body.dashboard-page.theme-ocean .badge.badge-cancelled{ background:rgba(255,107,91,.15) !important;color:#ff9686 !important;border-color:rgba(255,107,91,.4) !important; }
+
+/* ── Theme: SUNSET ─────────────────────────────────────────────── */
+body.dashboard-page.theme-sunset{
+    background:linear-gradient(135deg,#2b1538 0%,#5e2152 50%,#a44b6e 100%) !important;
+    color:#fbe9e0 !important;
+    font-family:'Inter','Poppins',sans-serif !important;
+}
+body.dashboard-page.theme-sunset::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+    background:radial-gradient(70% 50% at 100% 100%,rgba(255,165,93,.18),transparent 60%);
+}
+body.dashboard-page.theme-sunset .topbar,
+body.dashboard-page.theme-sunset .dashboard-topbar-merged{
+    background:rgba(40,18,55,.7) !important;
+    backdrop-filter:blur(12px) !important;
+    border-bottom:1px solid rgba(255,165,93,.2) !important;
+    color:#fbe9e0 !important;
+}
+body.dashboard-page.theme-sunset .topnav-item,
+body.dashboard-page.theme-sunset .topbar-user,
+body.dashboard-page.theme-sunset .topbar-logo span{ color:#fbe9e0 !important; }
+body.dashboard-page.theme-sunset .topnav-item:hover{ background:rgba(255,165,93,.12) !important; color:#ffb87b !important; }
+body.dashboard-page.theme-sunset .topnav-item.active,
+body.dashboard-page.theme-sunset .sidebar-link.active{
+    background:linear-gradient(135deg,#ff7a45,#ff6585) !important; color:#fff !important;
+    box-shadow:0 4px 14px rgba(255,122,69,.35) !important;
+}
+body.dashboard-page.theme-sunset h1,
+body.dashboard-page.theme-sunset h2,
+body.dashboard-page.theme-sunset h3{ color:#fff !important; font-family:inherit !important; }
+body.dashboard-page.theme-sunset .dashboard-page-title h1::after{ content:"" !important; animation:none !important; }
+body.dashboard-page.theme-sunset .stat-card,
+body.dashboard-page.theme-sunset .chart-card,
+body.dashboard-page.theme-sunset .table-card,
+body.dashboard-page.theme-sunset .settings-card,
+body.dashboard-page.theme-sunset .pkg-edit-card{
+    background:rgba(255,255,255,.06) !important;
+    border:1px solid rgba(255,165,93,.2) !important;
+    backdrop-filter:blur(8px) !important;
+    color:#fbe9e0 !important;
+}
+body.dashboard-page.theme-sunset .data-table th{
+    background:rgba(255,165,93,.08) !important; color:#ffb87b !important;
+    border-bottom:1px solid rgba(255,165,93,.25) !important;
+}
+body.dashboard-page.theme-sunset .data-table td{
+    color:#fbe1d2 !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
+}
+body.dashboard-page.theme-sunset .data-table tr:hover td{ background:rgba(255,165,93,.06) !important; }
+body.dashboard-page.theme-sunset .stat-value{ color:#fff !important; }
+body.dashboard-page.theme-sunset .stat-label{ color:#e0b8b0 !important; }
+body.dashboard-page.theme-sunset input,
+body.dashboard-page.theme-sunset textarea,
+body.dashboard-page.theme-sunset select{
+    background:rgba(0,0,0,.25) !important; border:1px solid rgba(255,165,93,.3) !important; color:#fbe9e0 !important;
+}
+body.dashboard-page.theme-sunset .btn-save-packages,
+body.dashboard-page.theme-sunset .btn-add-package{
+    background:linear-gradient(135deg,#ff7a45,#ff6585) !important; color:#fff !important; border:none !important;
+    box-shadow:0 6px 18px rgba(255,107,142,.35) !important;
+}
+body.dashboard-page.theme-sunset .badge,
+body.dashboard-page.theme-sunset .status{
+    background:rgba(255,165,93,.15) !important; color:#ffb87b !important; border:1px solid rgba(255,165,93,.35) !important;
+}
+
+/* ── Theme: MIDNIGHT ───────────────────────────────────────────── */
+body.dashboard-page.theme-midnight{
+    background:linear-gradient(180deg,#0a0e26 0%,#10153d 100%) !important;
+    color:#dde0ff !important;
+    font-family:'Inter','Poppins',sans-serif !important;
+}
+body.dashboard-page.theme-midnight::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+    background:radial-gradient(60% 40% at 50% 0%,rgba(168,113,255,.15),transparent 60%),
+               radial-gradient(50% 40% at 100% 100%,rgba(54,210,255,.08),transparent 60%);
+}
+body.dashboard-page.theme-midnight .topbar,
+body.dashboard-page.theme-midnight .dashboard-topbar-merged{
+    background:rgba(13,18,46,.8) !important;
+    backdrop-filter:blur(14px) !important;
+    border-bottom:1px solid rgba(168,113,255,.2) !important;
+    color:#dde0ff !important;
+}
+body.dashboard-page.theme-midnight .topnav-item,
+body.dashboard-page.theme-midnight .topbar-user,
+body.dashboard-page.theme-midnight .topbar-logo span{ color:#dde0ff !important; }
+body.dashboard-page.theme-midnight .topnav-item:hover{ background:rgba(168,113,255,.14) !important; color:#c79fff !important; }
+body.dashboard-page.theme-midnight .topnav-item.active,
+body.dashboard-page.theme-midnight .sidebar-link.active{
+    background:linear-gradient(135deg,#7e3aff,#a871ff) !important; color:#fff !important;
+    box-shadow:0 4px 18px rgba(168,113,255,.5) !important;
+}
+body.dashboard-page.theme-midnight h1,
+body.dashboard-page.theme-midnight h2,
+body.dashboard-page.theme-midnight h3{ color:#fff !important; font-family:inherit !important; }
+body.dashboard-page.theme-midnight .dashboard-page-title h1::after{ content:"" !important; animation:none !important; }
+body.dashboard-page.theme-midnight .stat-card,
+body.dashboard-page.theme-midnight .chart-card,
+body.dashboard-page.theme-midnight .table-card,
+body.dashboard-page.theme-midnight .settings-card,
+body.dashboard-page.theme-midnight .pkg-edit-card{
+    background:rgba(255,255,255,.04) !important;
+    border:1px solid rgba(168,113,255,.18) !important;
+    backdrop-filter:blur(8px) !important;
+    color:#dde0ff !important;
+}
+body.dashboard-page.theme-midnight .data-table th{
+    background:rgba(168,113,255,.08) !important; color:#c79fff !important;
+    border-bottom:1px solid rgba(168,113,255,.25) !important;
+}
+body.dashboard-page.theme-midnight .data-table td{
+    color:#c5cae9 !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
+}
+body.dashboard-page.theme-midnight .data-table tr:hover td{ background:rgba(168,113,255,.06) !important; }
+body.dashboard-page.theme-midnight .stat-value{ color:#fff !important; }
+body.dashboard-page.theme-midnight .stat-label{ color:#9da4d3 !important; }
+body.dashboard-page.theme-midnight input,
+body.dashboard-page.theme-midnight textarea,
+body.dashboard-page.theme-midnight select{
+    background:rgba(0,0,0,.3) !important; border:1px solid rgba(168,113,255,.3) !important; color:#dde0ff !important;
+}
+body.dashboard-page.theme-midnight .btn-save-packages,
+body.dashboard-page.theme-midnight .btn-add-package{
+    background:linear-gradient(135deg,#7e3aff,#a871ff) !important; color:#fff !important; border:none !important;
+    box-shadow:0 6px 18px rgba(168,113,255,.45) !important;
+}
+body.dashboard-page.theme-midnight .badge,
+body.dashboard-page.theme-midnight .status{
+    background:rgba(168,113,255,.15) !important; color:#c79fff !important; border:1px solid rgba(168,113,255,.35) !important;
+}
+
+/* ── Theme: CYBERPUNK ──────────────────────────────────────────── */
+body.dashboard-page.theme-cyberpunk{
+    background:#0a0014 !important;
+    color:#f0f0ff !important;
+    font-family:'JetBrains Mono','Fira Code',monospace !important;
+    background-image:
+        linear-gradient(rgba(255,0,170,.04) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,224,255,.04) 1px,transparent 1px) !important;
+    background-size:32px 32px !important;
+}
+body.dashboard-page.theme-cyberpunk::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+    background:radial-gradient(50% 40% at 100% 0%,rgba(255,0,170,.12),transparent 60%),
+               radial-gradient(50% 40% at 0% 100%,rgba(0,224,255,.1),transparent 60%);
+}
+body.dashboard-page.theme-cyberpunk .topbar,
+body.dashboard-page.theme-cyberpunk .dashboard-topbar-merged{
+    background:rgba(15,2,30,.85) !important;
+    backdrop-filter:blur(10px) !important;
+    border-bottom:1px solid #ff00aa !important;
+    box-shadow:0 0 24px rgba(255,0,170,.2) !important;
+    color:#f0f0ff !important;
+}
+body.dashboard-page.theme-cyberpunk .topnav-item,
+body.dashboard-page.theme-cyberpunk .topbar-user,
+body.dashboard-page.theme-cyberpunk .topbar-logo span{ color:#f0f0ff !important; }
+body.dashboard-page.theme-cyberpunk .topnav-item:hover{ background:rgba(255,0,170,.15) !important; color:#ff66cc !important; text-shadow:0 0 8px rgba(255,0,170,.6) !important; }
+body.dashboard-page.theme-cyberpunk .topnav-item.active,
+body.dashboard-page.theme-cyberpunk .sidebar-link.active{
+    background:linear-gradient(135deg,#ff00aa,#00e0ff) !important; color:#0a0014 !important;
+    text-shadow:none !important;
+    box-shadow:0 0 24px rgba(255,0,170,.4),0 0 24px rgba(0,224,255,.4) !important;
+    font-weight:700 !important;
+}
+body.dashboard-page.theme-cyberpunk h1,
+body.dashboard-page.theme-cyberpunk h2,
+body.dashboard-page.theme-cyberpunk h3{
+    color:#fff !important; font-family:inherit !important;
+    text-shadow:0 0 8px rgba(0,224,255,.4) !important;
+    text-transform:uppercase !important; letter-spacing:.05em !important;
+}
+body.dashboard-page.theme-cyberpunk .dashboard-page-title h1::after{
+    content:"_" !important; color:#ff00aa !important;
+    text-shadow:0 0 8px rgba(255,0,170,.6) !important;
+    animation:hacker-cursor 1s steps(1) infinite !important;
+}
+body.dashboard-page.theme-cyberpunk .stat-card,
+body.dashboard-page.theme-cyberpunk .chart-card,
+body.dashboard-page.theme-cyberpunk .table-card,
+body.dashboard-page.theme-cyberpunk .settings-card,
+body.dashboard-page.theme-cyberpunk .pkg-edit-card{
+    background:rgba(15,2,30,.6) !important;
+    border:1px solid rgba(255,0,170,.3) !important;
+    box-shadow:0 0 20px rgba(255,0,170,.08) !important;
+    color:#f0f0ff !important;
+}
+body.dashboard-page.theme-cyberpunk .data-table th{
+    background:rgba(255,0,170,.1) !important; color:#ff66cc !important;
+    text-shadow:0 0 6px rgba(255,0,170,.6) !important;
+    border-bottom:1px solid rgba(255,0,170,.4) !important;
+    text-transform:uppercase !important; letter-spacing:.1em !important;
+}
+body.dashboard-page.theme-cyberpunk .data-table td{
+    color:#dcd0ff !important; border-bottom:1px solid rgba(0,224,255,.1) !important;
+}
+body.dashboard-page.theme-cyberpunk .data-table tr:hover td{ background:rgba(0,224,255,.06) !important; }
+body.dashboard-page.theme-cyberpunk .stat-value{
+    color:#00e0ff !important; text-shadow:0 0 10px rgba(0,224,255,.5) !important;
+}
+body.dashboard-page.theme-cyberpunk .stat-label{ color:#ff66cc !important; text-transform:uppercase !important; letter-spacing:.1em !important; font-size:.75rem !important; }
+body.dashboard-page.theme-cyberpunk input,
+body.dashboard-page.theme-cyberpunk textarea,
+body.dashboard-page.theme-cyberpunk select{
+    background:rgba(0,0,0,.4) !important; border:1px solid #ff00aa !important; color:#f0f0ff !important;
+    font-family:inherit !important;
+}
+body.dashboard-page.theme-cyberpunk input:focus,
+body.dashboard-page.theme-cyberpunk textarea:focus,
+body.dashboard-page.theme-cyberpunk select:focus{
+    box-shadow:0 0 0 2px rgba(255,0,170,.3),0 0 12px rgba(255,0,170,.4) !important;
+    border-color:#00e0ff !important;
+}
+body.dashboard-page.theme-cyberpunk .btn-save-packages,
+body.dashboard-page.theme-cyberpunk .btn-add-package{
+    background:linear-gradient(135deg,#ff00aa,#00e0ff) !important; color:#0a0014 !important; border:none !important;
+    font-family:inherit !important; font-weight:700 !important;
+    text-transform:uppercase !important; letter-spacing:.1em !important;
+    box-shadow:0 0 20px rgba(255,0,170,.4),0 0 20px rgba(0,224,255,.3) !important;
+}
+body.dashboard-page.theme-cyberpunk .badge,
+body.dashboard-page.theme-cyberpunk .status{
+    background:rgba(255,0,170,.15) !important; color:#ff66cc !important;
+    border:1px solid #ff00aa !important;
+    font-family:inherit !important; text-transform:uppercase !important; letter-spacing:.1em !important;
+    box-shadow:0 0 8px rgba(255,0,170,.3) !important;
+}
+body.dashboard-page.theme-cyberpunk .status.confirmed,
+body.dashboard-page.theme-cyberpunk .badge.badge-confirmed{
+    background:rgba(186,255,76,.15) !important; color:#bdff4c !important; border-color:#bdff4c !important;
+    box-shadow:0 0 8px rgba(186,255,76,.4) !important;
+}
+body.dashboard-page.theme-cyberpunk footer.ft,
+body.dashboard-page.theme-cyberpunk footer{
+    background:#000 !important; border-top:1px solid #ff00aa !important; color:rgba(240,240,255,.55) !important;
+}
+
+/* ── Theme Picker UI (Settings tab) ────────────────────────────── */
+.theme-picker-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:.9rem;
+    margin-top:1rem;
+}
+.theme-swatch{
+    cursor:pointer;
+    border:2px solid transparent;
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
+    transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+    position:relative;
+}
+.theme-swatch:hover{ transform:translateY(-3px); box-shadow:0 8px 20px rgba(15,23,42,.15); }
+.theme-swatch.active{
+    border-color:#0d7a8a;
+    box-shadow:0 0 0 3px rgba(13,122,138,.2),0 8px 18px rgba(13,122,138,.2);
+}
+.theme-swatch.active::after{
+    content:"\f00c"; font-family:"Font Awesome 6 Free"; font-weight:900;
+    position:absolute; top:.5rem; right:.5rem;
+    width:24px; height:24px; border-radius:50%;
+    background:#0d7a8a; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.75rem;
+    box-shadow:0 2px 8px rgba(13,122,138,.4);
+}
+.theme-swatch-preview{
+    height:90px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-weight:700;
+    letter-spacing:.05em;
+    font-size:.85rem;
+    text-transform:uppercase;
+    position:relative;
+    overflow:hidden;
+}
+.theme-swatch-preview::before{
+    content:""; position:absolute; inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:14px 14px; opacity:.7;
+}
+.theme-swatch-preview span{ position:relative; }
+.theme-swatch-preview-hacker   { background:#0a0e0a; color:#7eff8f; font-family:'JetBrains Mono',monospace; }
+.theme-swatch-preview-light    { background:#f7f9fc; color:#0d2b3a; }
+.theme-swatch-preview-ocean    { background:linear-gradient(135deg,#062f3a,#0a4a59); color:#7ee2c0; }
+.theme-swatch-preview-sunset   { background:linear-gradient(135deg,#2b1538,#a44b6e); color:#ffb87b; }
+.theme-swatch-preview-midnight { background:linear-gradient(135deg,#0a0e26,#10153d); color:#c79fff; }
+.theme-swatch-preview-cyberpunk{ background:#0a0014; color:#ff66cc; font-family:'JetBrains Mono',monospace;
+    background-image:linear-gradient(rgba(255,0,170,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(0,224,255,.15) 1px,transparent 1px);
+    background-size:14px 14px;
+}
+.theme-swatch-meta{
+    padding:.55rem .75rem;
+    background:#fff;
+    color:#1a2233;
+    font-size:.85rem;
+    text-align:center;
+    border-top:1px solid #eef2f8;
+}
+.theme-swatch-meta strong{ display:block; font-size:.92rem; color:#0d2b3a; }
+.theme-swatch-meta small{ color:#7a8b96; font-size:.75rem; }
