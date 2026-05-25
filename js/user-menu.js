@@ -122,6 +122,7 @@
                 '</div>' +
             '</div>' +
             '<a class="um-item" href="/bookings"><i class="fas fa-calendar-check"></i> My Bookings</a>' +
+            '<a class="um-item" href="/#customize"><i class="fas fa-sliders-h"></i> Customize Trip</a>' +
             '<a class="um-item" href="/profile"><i class="fas fa-user"></i> Profile</a>' +
             '<a class="um-item" href="/settings"><i class="fas fa-cog"></i> Settings</a>' +
             '<a class="um-item um-admin-only" href="/dashboard" style="display:none;"><i class="fas fa-th-large"></i> Admin Dashboard</a>' +
