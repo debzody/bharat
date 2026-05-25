@@ -25,7 +25,10 @@
   --mmt-yellow:#ffd166;
   --surface:#ffffff;
   --surface-alt:#f7fafc;
-  --tb-h:86px;
+  /* Site-wide topbar height. Reduced 10% (was 86px) per request to make
+     the floating header less visually heavy. The bar itself uses
+     calc(var(--tb-h) - …) for its actual height + spacing. */
+  --tb-h:77px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -45,18 +48,12 @@ button,input,select,textarea{font:inherit}
    the bar's bottom edge and visually float into the hero/content section. */
 .topbar{
   position:fixed;
-  /* Centered topbar — 90% of the viewport width (10% narrower than the
-     previous edge-to-edge bar) so the floating glass capsule reads as a
-     pill rather than a full-width banner. The horizontal centring uses
-     `left:50% + transform:translateX(-50%)` because we set an explicit
-     width (and right:auto) — that combo keeps the bar visually balanced
-     regardless of viewport size. */
+  /* Edge-to-edge floating bar (full width). The previous experiment
+     centred the bar at 90% width; that was reverted because the
+     business needs HEIGHT-only reduction (handled via --tb-h above). */
   top:.65rem;
-  left:50%;
-  right:auto;
-  width:90%;
-  max-width:1600px;
-  transform:translateX(-50%);
+  left:.65rem;
+  right:.65rem;
   height:calc(var(--tb-h) - 1.3rem);
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.18);
@@ -175,9 +172,7 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
 }
 @media (max-width:768px){
   :root{--tb-h:72px}
-  /* Mobile: keep the centred 90% rule from the desktop topbar but
-     override the height/padding/etc. so the bar is compact on phones. */
-  .topbar{top:.4rem;left:50%;right:auto;width:90%;max-width:none;transform:translateX(-50%);height:calc(var(--tb-h) - .8rem);padding:0 .8rem;gap:.4rem;border-radius:14px}
+  .topbar{top:.4rem;left:.4rem;right:.4rem;height:calc(var(--tb-h) - .8rem);padding:0 .8rem;gap:.4rem;border-radius:14px}
   .topbar-logo img{height:44px;border-radius:11px}
   .brand-line1{font-size:1.1rem}
   .brand-line2{font-size:.92rem;margin-left:.6rem}
@@ -799,22 +794,13 @@ body.hero-page .topbar,
     backdrop-filter:saturate(160%) blur(14px);
     -webkit-backdrop-filter:saturate(160%) blur(14px);
     border:1px solid rgba(255,255,255,.14);
-    border-radius:14px;
-    box-shadow:0 12px 32px rgba(8,30,42,.18);
-    /* 10% narrower than the previous edge-to-edge bar.
-       width:90% + max-width cap + horizontal centring via left:50%
-       + transform:translateX(-50%) keeps the bar visually balanced
-       across all viewport widths. The earlier .topbar rule (above)
-       already declares the same; this MOCKUP-MATCH override mirrors
-       it so the later rule doesn't accidentally widen the bar back. */
-    top:.6rem;
-    left:50%;
-    right:auto;
-    width:90%;
-    max-width:1600px;
-    transform:translateX(-50%);
+    border-radius:0;             /* edge-to-edge like mockup */
+    box-shadow:none;
+    top:0;left:0;right:0;
     height:auto;
-    padding:.85rem 2rem;
+    /* Vertical padding reduced ~10% with --tb-h to shrink the bar's
+       visual height without touching its width. */
+    padding:.7rem 2rem;
     gap:.5rem;
 }
 .topbar.scrolled,
