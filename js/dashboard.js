@@ -410,6 +410,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function buildDayCard(pkgIdx, dayIdx, day) {
+        // Ensure imageIds always exists so we can mutate it safely
+        if (!Array.isArray(day.imageIds)) day.imageIds = [];
+
         const el = document.createElement('div');
         el.className = 'ite-day-card';
         el.innerHTML = `
@@ -431,6 +434,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 <label>Activities <small>(one per line)</small></label>
                 <textarea class="pkg-input pkg-textarea" rows="5" placeholder="Airport pickup&#10;Hotel check-in&#10;City tour"></textarea>
             </div>
+            <!-- Per-day gallery: uses gallery collection. Photos uploaded
+                 here get packageRef = pkg.id and dayNumber = day.day so
+                 they also appear on the public /gallery page. -->
+            <div class="ite-day-gallery">
+                <div class="ite-day-gallery-head">
+                    <label>Day Photos <small>(<span class="ite-day-gallery-count">0</span>)</small></label>
+                    <div class="ite-day-gallery-actions">
+                        <button type="button" class="btn-day-pick"   title="Choose from existing gallery">
+                            <i class="fas fa-images"></i> Pick
+                        </button>
+                        <button type="button" class="btn-day-upload" title="Upload new photo(s) for this day">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload
+                        </button>
+                        <input type="file" class="ite-day-file-input" accept="image/*" multiple style="display:none;">
+                    </div>
+                </div>
+                <div class="ite-day-gallery-strip"></div>
+                <div class="ite-day-gallery-status"></div>
+            </div>
         `;
         // Set textarea value directly (avoids HTML entity issues)
         el.querySelector('textarea').value = (day.activities || []).join('\n');
@@ -446,7 +468,226 @@ document.addEventListener('DOMContentLoaded', function () {
         el.querySelector('textarea').addEventListener('input', function() {
             packagesData[pkgIdx].days[dayIdx].activities = this.value.split('\n').map(s => s.trim()).filter(Boolean);
         });
+
+        // ── Day-gallery wiring ────────────────────────────
+        const stripEl  = el.querySelector('.ite-day-gallery-strip');
+        const countEl  = el.querySelector('.ite-day-gallery-count');
+        const statusEl = el.querySelector('.ite-day-gallery-status');
+        const fileEl   = el.querySelector('.ite-day-file-input');
+
+        function refreshStrip() {
+            const ids = packagesData[pkgIdx].days[dayIdx].imageIds || [];
+            countEl.textContent = ids.length;
+            if (!ids.length) {
+                stripEl.innerHTML = '<p class="ite-day-gallery-empty">No photos yet. Click <strong>Pick</strong> to attach existing photos, or <strong>Upload</strong> to add new ones.</p>';
+                return;
+            }
+            // Resolve thumbs from the gallery cache (populated lazily below)
+            stripEl.innerHTML = ids.map((gid, i) => {
+                const item = window._iteGalleryCache && window._iteGalleryCache[gid];
+                const src  = item ? (item.thumbUrl || item.url) : '';
+                const cap  = item ? escHtml(item.title || '') : '…';
+                return `
+                <div class="ite-day-thumb" data-gid="${escHtml(gid)}">
+                    ${src ? `<img src="${escHtml(src)}" alt="${cap}" loading="lazy">` : `<div class="ite-day-thumb-loading"><i class="fas fa-spinner fa-spin"></i></div>`}
+                    <button type="button" class="ite-day-thumb-rm" title="Remove from this day">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>`;
+            }).join('');
+
+            // Wire remove buttons
+            stripEl.querySelectorAll('.ite-day-thumb-rm').forEach((btn, i) => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const arr = packagesData[pkgIdx].days[dayIdx].imageIds || [];
+                    arr.splice(i, 1);
+                    refreshStrip();
+                    setStatus('Removed from day. Click Save & Publish to keep the change.');
+                });
+            });
+
+            // Lazy-load any missing thumbs in the cache, then re-render
+            const missing = ids.filter(gid => !(window._iteGalleryCache && window._iteGalleryCache[gid]));
+            if (missing.length) {
+                ensureGalleryCache().then(() => refreshStrip()).catch(() => {});
+            }
+        }
+
+        function setStatus(msg, isError) {
+            statusEl.textContent = msg || '';
+            statusEl.style.color = isError ? '#c0392b' : '#0d7a8a';
+        }
+
+        // ── Pick from existing gallery ─────────────────────
+        el.querySelector('.btn-day-pick').addEventListener('click', async () => {
+            try {
+                await ensureGalleryCache();
+                openGalleryPicker(pkgIdx, dayIdx, refreshStrip);
+            } catch (err) {
+                setStatus('Could not load gallery: ' + (err && err.message ? err.message : err), true);
+            }
+        });
+
+        // ── Upload new photos for this day ──────────────────
+        el.querySelector('.btn-day-upload').addEventListener('click', () => fileEl.click());
+        fileEl.addEventListener('change', async () => {
+            const files = Array.from(fileEl.files || []);
+            if (!files.length) return;
+            if (!window.GalleryStore || typeof window.GalleryStore.uploadGalleryImage !== 'function') {
+                setStatus('Gallery uploader not available.', true);
+                return;
+            }
+            const pkg = packagesData[pkgIdx];
+            const dayN = packagesData[pkgIdx].days[dayIdx].day;
+            for (let i = 0; i < files.length; i++) {
+                setStatus('Uploading ' + (i+1) + '/' + files.length + ': ' + files[i].name + '…');
+                try {
+                    const item = await window.GalleryStore.uploadGalleryImage(files[i], {
+                        title:      pkg.name + ' — Day ' + dayN + (files.length > 1 ? ' (' + (i+1) + ')' : ''),
+                        category:   pkg.name + ' Day ' + dayN,
+                        date:       new Date().toISOString().slice(0, 10),
+                        place:      '',
+                        packageRef: pkg.id || pkg.name,
+                        order:      9999
+                        // NOTE: gallery.js doesn't currently store dayNumber by name,
+                        // but `category` includes it so it's recoverable.
+                    });
+                    // Cache + attach to day
+                    if (!window._iteGalleryCache) window._iteGalleryCache = {};
+                    window._iteGalleryCache[item.id] = item;
+                    if (!Array.isArray(packagesData[pkgIdx].days[dayIdx].imageIds)) {
+                        packagesData[pkgIdx].days[dayIdx].imageIds = [];
+                    }
+                    packagesData[pkgIdx].days[dayIdx].imageIds.push(item.id);
+                } catch (err) {
+                    console.error('Day-photo upload failed:', err);
+                    setStatus('Upload failed: ' + (err && err.message ? err.message : err), true);
+                    fileEl.value = '';
+                    return;
+                }
+            }
+            fileEl.value = '';
+            setStatus('✓ Uploaded ' + files.length + ' photo(s). Click Save & Publish to keep the link.');
+            refreshStrip();
+        });
+
+        // Initial paint
+        refreshStrip();
+
         return el;
+    }
+
+    // ── Gallery cache + picker (used by per-day gallery) ────────
+    // Caches every gallery doc by id so day-thumbs render instantly,
+    // and powers the multi-select picker. One Firestore read per
+    // editor session; subsequent picks are free.
+    async function ensureGalleryCache() {
+        if (window._iteGalleryCache && window._iteGalleryCacheLoaded) return;
+        if (!window.GalleryStore || typeof window.GalleryStore.loadGalleryItems !== 'function') {
+            throw new Error('GalleryStore not loaded');
+        }
+        const items = await window.GalleryStore.loadGalleryItems();
+        window._iteGalleryCache = {};
+        items.forEach(it => { window._iteGalleryCache[it.id] = it; });
+        window._iteGalleryCacheLoaded = true;
+    }
+
+    function openGalleryPicker(pkgIdx, dayIdx, onDone) {
+        // Lazy-create the modal once
+        let modal = document.getElementById('iteGalleryPickerModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'iteGalleryPickerModal';
+            modal.className = 'ite-gpicker-modal';
+            modal.innerHTML = `
+                <div class="ite-gpicker-card">
+                    <div class="ite-gpicker-head">
+                        <h3><i class="fas fa-images"></i> Pick photos for this day</h3>
+                        <button type="button" class="ite-gpicker-close" aria-label="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="ite-gpicker-toolbar">
+                        <input type="text" class="ite-gpicker-search" placeholder="Search by title, place, package, category…">
+                        <span class="ite-gpicker-count">0 photos</span>
+                    </div>
+                    <div class="ite-gpicker-grid"></div>
+                    <div class="ite-gpicker-foot">
+                        <button type="button" class="ite-gpicker-cancel">Cancel</button>
+                        <button type="button" class="ite-gpicker-save"><i class="fas fa-check"></i> Add Selected</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+            modal.querySelector('.ite-gpicker-close').addEventListener('click', () => modal.classList.remove('open'));
+            modal.querySelector('.ite-gpicker-cancel').addEventListener('click', () => modal.classList.remove('open'));
+        }
+
+        const grid = modal.querySelector('.ite-gpicker-grid');
+        const search = modal.querySelector('.ite-gpicker-search');
+        const countEl = modal.querySelector('.ite-gpicker-count');
+        const saveBtn = modal.querySelector('.ite-gpicker-save');
+
+        const allItems = Object.values(window._iteGalleryCache || {})
+            .sort((a, b) => (a.order || 9999) - (b.order || 9999));
+        const selected = new Set(packagesData[pkgIdx].days[dayIdx].imageIds || []);
+
+        function renderGrid(filterText) {
+            const q = (filterText || '').toLowerCase();
+            const filtered = !q ? allItems : allItems.filter(it =>
+                (it.title || '').toLowerCase().includes(q) ||
+                (it.place || '').toLowerCase().includes(q) ||
+                (it.packageRef || '').toLowerCase().includes(q) ||
+                (it.category || '').toLowerCase().includes(q)
+            );
+            countEl.textContent = filtered.length + ' photo' + (filtered.length === 1 ? '' : 's');
+            if (!filtered.length) {
+                grid.innerHTML = '<p class="ite-gpicker-empty">No photos found. Upload some from the Gallery page first, or use the <strong>Upload</strong> button on this day.</p>';
+                return;
+            }
+            grid.innerHTML = filtered.map(it => {
+                const isOn = selected.has(it.id);
+                const meta = [it.place, it.packageRef, it.category].filter(Boolean).join(' · ');
+                return `
+                <label class="ite-gpicker-tile ${isOn ? 'is-selected' : ''}" data-gid="${escHtml(it.id)}">
+                    <input type="checkbox" ${isOn ? 'checked' : ''}>
+                    <img src="${escHtml(it.thumbUrl || it.url)}" alt="${escHtml(it.title || '')}" loading="lazy">
+                    <div class="ite-gpicker-tile-cap">
+                        <strong>${escHtml(it.title || '(no title)')}</strong>
+                        ${meta ? `<small>${escHtml(meta)}</small>` : ''}
+                    </div>
+                </label>`;
+            }).join('');
+
+            grid.querySelectorAll('.ite-gpicker-tile').forEach(tile => {
+                const cb = tile.querySelector('input[type="checkbox"]');
+                tile.addEventListener('click', e => {
+                    if (e.target !== cb) {
+                        e.preventDefault();
+                        cb.checked = !cb.checked;
+                    }
+                    const gid = tile.dataset.gid;
+                    if (cb.checked) selected.add(gid); else selected.delete(gid);
+                    tile.classList.toggle('is-selected', cb.checked);
+                });
+            });
+        }
+
+        renderGrid('');
+        search.value = '';
+        search.oninput = () => renderGrid(search.value);
+
+        // Save button — replace listener fresh each time
+        const newSave = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSave, saveBtn);
+        newSave.addEventListener('click', () => {
+            packagesData[pkgIdx].days[dayIdx].imageIds = Array.from(selected);
+            modal.classList.remove('open');
+            if (typeof onDone === 'function') onDone();
+        });
+
+        modal.classList.add('open');
     }
 
     function renderIteDaysContainer(pkgIdx) {
