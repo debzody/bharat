@@ -1,0 +1,43 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "customize-email",
+    "main": "worker.js",
+    "compatibility_date": "2025-05-01",
+    "compatibility_flags": ["nodejs_compat"],
+    "observability": {
+        "enabled": true
+    },
+
+    // ── Variables ───────────────────────────────────────────────
+    // CORS allow-list (only this Origin can POST to the worker).
+    // Optional: override sender / recipient without editing worker.js:
+    //   "FROM_EMAIL": "enquiries@andamanvoyages.in",
+    //   "FROM_NAME":  "Andaman Voyages Enquiries",
+    //   "TO_EMAIL":   "booking@andamanvoyages.in"
+    "vars": {
+        "ALLOWED_ORIGIN": "https://andamanvoyages.in"
+    },
+
+    // ── send_email binding ──────────────────────────────────────
+    // The destination_address is intentionally omitted. The worker
+    // sends to `body.traveller.email` indirectly (via fromEmail/toEmail
+    // resolved at runtime), and Cloudflare validates the FROM is a
+    // verified Email Routing address on your account.
+    //
+    // After deploy, in the Cloudflare dashboard:
+    //   Workers & Pages → customize-email → Settings → Bindings
+    //   Add binding → Send email
+    //     Variable name: SEND_EMAIL
+    //     Destination address: booking@andamanvoyages.in
+    //     (or leave blank to allow any verified address)
+    "send_email": [
+        {
+            "name": "SEND_EMAIL"
+        }
+    ]
+
+    // ── Optional: secret for extra abuse defence ────────────────
+    // After deploy, set with:
+    //   npx wrangler secret put SHARED_TOKEN
+    // Then put the same value in customize.html → window.CZ_WORKER_TOKEN.
+}
