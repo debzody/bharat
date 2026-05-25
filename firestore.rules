@@ -31,7 +31,8 @@ service cloud.firestore {
     function isStaff() {
       return request.auth != null
         && request.auth.token.email in [
-          "pittu.das2@gmail.com"
+          "pittu.das2@gmail.com",
+          "debjyoti.office@gmail.com"
         ];
     }
     function isAdminOrStaff() {

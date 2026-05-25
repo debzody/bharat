@@ -81,7 +81,8 @@ window.ADMIN_EMAIL = window.ADMIN_EMAILS[0];
 // allowlist inside firestore.rules — that's where the rules are
 // actually enforced. The browser-side checks are UX guards only.
 window.STAFF_EMAILS = [
-    "pittu.das2@gmail.com"
+    "pittu.das2@gmail.com",
+    "debjyoti.office@gmail.com"
 ];
 
 // ── Cloudinary configuration (for the photo gallery uploads) ──
