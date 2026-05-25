@@ -1328,3 +1328,327 @@ body.dashboard-page h1::after{
     margin-left:.2rem;
 }
 @keyframes hacker-cursor{50%{opacity:0}}
+/* ═══════════════════════════════════════════════════════════════
+   CABS PAGE — Andaman cab service
+   ═══════════════════════════════════════════════════════════════ */
+.cabs-hero{
+    position:relative;
+    padding:7rem 1.5rem 4rem;
+    background:
+        linear-gradient(135deg,rgba(8,30,42,.78),rgba(13,122,138,.65)),
+        url('../images/beach1.jpg') center/cover no-repeat;
+    color:#fff;
+    overflow:hidden;
+}
+.cabs-hero::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(60% 60% at 80% 20%,rgba(255,255,255,.08),transparent 70%);
+    pointer-events:none;
+}
+.cabs-hero-inner{
+    position:relative;z-index:2;
+    max-width:1100px;margin:0 auto;
+}
+.cabs-hero-eyebrow{
+    display:inline-block;
+    background:rgba(255,255,255,.14);
+    backdrop-filter:blur(6px);
+    padding:.4rem 1rem;
+    border-radius:999px;
+    font-size:.78rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    font-weight:600;
+    margin-bottom:1.4rem;
+}
+.cabs-hero-title{
+    font-size:clamp(2rem,5vw,3.6rem);
+    line-height:1.1;
+    font-weight:800;
+    margin:0 0 1rem;
+    max-width:900px;
+}
+.cabs-hero-title em{
+    font-style:normal;
+    background:linear-gradient(90deg,#ffd166,#ffa94d);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+.cabs-hero-sub{
+    font-size:1.1rem;
+    line-height:1.6;
+    max-width:720px;
+    color:rgba(255,255,255,.92);
+    margin:0 0 2rem;
+}
+.cabs-hero-ctas{
+    display:flex;flex-wrap:wrap;gap:.9rem;
+    margin-bottom:1.8rem;
+}
+.cabs-cta-primary,
+.cabs-cta-secondary{
+    display:inline-flex;align-items:center;gap:.55rem;
+    padding:.95rem 1.6rem;
+    border-radius:999px;
+    font-weight:600;
+    font-size:1rem;
+    text-decoration:none;
+    transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.cabs-cta-primary{
+    background:#ff7a45;
+    color:#fff;
+    box-shadow:0 8px 24px rgba(255,122,69,.35);
+}
+.cabs-cta-primary:hover{transform:translateY(-2px);background:#ff6526;}
+.cabs-cta-secondary{
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.32);
+    backdrop-filter:blur(6px);
+}
+.cabs-cta-secondary:hover{background:rgba(255,255,255,.22);transform:translateY(-2px);}
+.cabs-hero-trust{
+    display:flex;flex-wrap:wrap;gap:1.4rem;
+    font-size:.92rem;
+    color:rgba(255,255,255,.88);
+}
+.cabs-hero-trust span{display:inline-flex;align-items:center;gap:.45rem;}
+.cabs-hero-trust i{color:#7ee2c0;}
+
+/* Sections */
+.cabs-section{padding:4.5rem 1.5rem;background:#fff;}
+.cabs-section-alt{background:#f5fafb;}
+.cabs-section-head{
+    max-width:900px;margin:0 auto 2.5rem;text-align:center;
+}
+.cabs-section-head h2{
+    font-size:clamp(1.6rem,3.2vw,2.4rem);
+    font-weight:800;
+    color:#0d2b3a;
+    margin:0 0 .6rem;
+}
+.cabs-section-head h2 i{color:#0d7a8a;margin-right:.5rem;}
+.cabs-section-head p{
+    color:#516573;
+    font-size:1.05rem;
+    line-height:1.55;
+    margin:0;
+}
+
+/* Coverage area cards */
+.cabs-area-grid{
+    max-width:1180px;margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.2rem;
+}
+.cabs-area-card{
+    position:relative;
+    min-height:220px;
+    border-radius:18px;
+    background-size:cover;
+    background-position:center;
+    padding:1.4rem;
+    color:#fff;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    overflow:hidden;
+    box-shadow:0 10px 28px rgba(8,30,42,.18);
+    transition:transform .25s ease,box-shadow .25s ease;
+}
+.cabs-area-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(8,30,42,.28);}
+.cabs-area-card h3{
+    font-size:1.2rem;font-weight:700;margin:0 0 .35rem;
+    text-shadow:0 1px 6px rgba(0,0,0,.4);
+}
+.cabs-area-card p{
+    font-size:.92rem;line-height:1.45;margin:0;
+    color:rgba(255,255,255,.92);
+    text-shadow:0 1px 6px rgba(0,0,0,.4);
+}
+
+/* Fleet */
+.cabs-fleet-grid{
+    max-width:1180px;margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.5rem;
+}
+.cabs-fleet-card{
+    position:relative;
+    background:#fff;
+    border:1px solid #e6eef0;
+    border-radius:18px;
+    padding:2rem 1.6rem;
+    text-align:center;
+    box-shadow:0 6px 20px rgba(8,30,42,.06);
+    transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.cabs-fleet-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 14px 30px rgba(8,30,42,.12);
+    border-color:#bfe5ec;
+}
+.cabs-fleet-card--featured{
+    border-color:#0d7a8a;
+    box-shadow:0 12px 30px rgba(13,122,138,.18);
+}
+.cabs-fleet-badge{
+    position:absolute;top:-.7rem;left:50%;transform:translateX(-50%);
+    background:#ff7a45;color:#fff;
+    font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:.3rem .8rem;border-radius:999px;
+    box-shadow:0 6px 14px rgba(255,122,69,.4);
+}
+.cabs-fleet-icon{
+    width:62px;height:62px;border-radius:50%;
+    background:linear-gradient(135deg,#0d7a8a,#1aa4b8);
+    color:#fff;font-size:1.6rem;
+    display:inline-flex;align-items:center;justify-content:center;
+    margin-bottom:1rem;
+    box-shadow:0 8px 18px rgba(13,122,138,.3);
+}
+.cabs-fleet-card h3{
+    font-size:1.25rem;font-weight:700;color:#0d2b3a;margin:0 0 .25rem;
+}
+.cabs-fleet-cap{
+    color:#0d7a8a;font-weight:600;font-size:.95rem;margin:0 0 1.2rem;
+}
+.cabs-fleet-card ul{
+    list-style:none;padding:0;margin:0;text-align:left;
+}
+.cabs-fleet-card ul li{
+    padding:.45rem 0;font-size:.95rem;color:#3a4a55;
+    display:flex;gap:.55rem;align-items:flex-start;
+}
+.cabs-fleet-card ul li i{color:#1aa4b8;margin-top:.25rem;flex-shrink:0;}
+
+/* Services grid */
+.cabs-services-grid{
+    max-width:1180px;margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:1rem;
+}
+.cabs-service{
+    background:#fff;
+    border:1px solid #e6eef0;
+    border-radius:14px;
+    padding:1.5rem 1.2rem;
+    text-align:center;
+    transition:transform .22s ease,box-shadow .22s ease;
+}
+.cabs-service:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(8,30,42,.08);}
+.cabs-service i{
+    font-size:1.8rem;color:#0d7a8a;margin-bottom:.7rem;
+    display:inline-block;
+}
+.cabs-service h4{
+    font-size:1rem;font-weight:700;color:#0d2b3a;margin:0 0 .35rem;
+}
+.cabs-service p{
+    font-size:.88rem;color:#516573;margin:0;line-height:1.45;
+}
+
+/* Rates table */
+.cabs-rates-wrap{max-width:1100px;margin:0 auto;}
+.cabs-rates-table{
+    width:100%;
+    border-collapse:separate;border-spacing:0;
+    background:#fff;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(8,30,42,.08);
+    font-size:.95rem;
+}
+.cabs-rates-table thead th{
+    background:#0d2b3a;color:#fff;
+    text-align:left;font-weight:600;
+    padding:.95rem 1rem;
+    font-size:.92rem;letter-spacing:.02em;
+}
+.cabs-rates-table tbody td{
+    padding:.85rem 1rem;
+    border-top:1px solid #edf2f4;
+    color:#2c3e4a;
+}
+.cabs-rates-table tbody tr:nth-child(even){background:#f9fcfd;}
+.cabs-rates-table tbody td:first-child{font-weight:600;color:#0d2b3a;}
+.cabs-rates-note{
+    margin:1rem .2rem 0;
+    font-size:.88rem;color:#516573;
+}
+.cabs-rates-note i{color:#0d7a8a;margin-right:.4rem;}
+
+/* FAQ */
+.cabs-faq{max-width:880px;margin:0 auto;}
+.cabs-faq-item{
+    background:#fff;
+    border:1px solid #e6eef0;
+    border-radius:12px;
+    padding:1rem 1.2rem;
+    margin-bottom:.8rem;
+    transition:box-shadow .2s ease,border-color .2s ease;
+}
+.cabs-faq-item[open]{
+    box-shadow:0 8px 22px rgba(8,30,42,.08);
+    border-color:#bfe5ec;
+}
+.cabs-faq-item summary{
+    cursor:pointer;
+    list-style:none;
+    font-weight:600;
+    color:#0d2b3a;
+    font-size:1rem;
+    position:relative;
+    padding-right:2rem;
+}
+.cabs-faq-item summary::-webkit-details-marker{display:none;}
+.cabs-faq-item summary::after{
+    content:"+";
+    position:absolute;right:0;top:50%;transform:translateY(-50%);
+    font-size:1.4rem;
+    color:#0d7a8a;
+    font-weight:300;
+    transition:transform .2s ease;
+}
+.cabs-faq-item[open] summary::after{transform:translateY(-50%) rotate(45deg);}
+.cabs-faq-item p{
+    margin:.8rem 0 0;
+    color:#516573;
+    line-height:1.6;
+    font-size:.95rem;
+}
+.cabs-faq-item a{color:#0d7a8a;font-weight:600;}
+
+/* CTA strip */
+.cabs-cta-strip{
+    background:linear-gradient(135deg,#0d2b3a,#0d7a8a);
+    color:#fff;
+    padding:3rem 1.5rem;
+}
+.cabs-cta-strip-inner{
+    max-width:1100px;margin:0 auto;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:1.5rem;
+}
+.cabs-cta-strip h2{
+    font-size:clamp(1.4rem,2.6vw,2rem);
+    font-weight:800;margin:0 0 .4rem;
+}
+.cabs-cta-strip p{
+    margin:0;color:rgba(255,255,255,.85);font-size:1rem;
+}
+.cabs-cta-strip-actions{
+    display:flex;flex-wrap:wrap;gap:.7rem;
+}
+
+/* Mobile */
+@media (max-width:768px){
+    .cabs-hero{padding:5rem 1.2rem 3rem;}
+    .cabs-section{padding:3rem 1.2rem;}
+    .cabs-rates-table{font-size:.85rem;}
+    .cabs-rates-table thead th,
+    .cabs-rates-table tbody td{padding:.7rem .6rem;}
+    .cabs-cta-strip-inner{flex-direction:column;align-items:flex-start;}
+}
