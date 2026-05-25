@@ -20,7 +20,7 @@
     <link rel="apple-touch-icon" href="images/logo-white.png">
 
     <link rel="stylesheet" href="css/style.css?v=54">
-    <link rel="stylesheet" href="css/dashboard.css?v=5">
+    <link rel="stylesheet" href="css/dashboard.css?v=6">
     <link rel="stylesheet" href="css/gallery.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -914,6 +914,130 @@
                 </div>
             </div>
 
+            <!-- ── Conversion Boosters ─────────────────────────── -->
+            <div class="settings-card" style="margin-top:1.5rem;background:#fff8e1;border-left:3px solid #f39c12;">
+                <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:.5rem;">
+                    <div class="settings-label-block" style="margin-bottom:.4rem;">
+                        <h3><i class="fas fa-rocket" style="color:#f39c12;"></i> Conversion Boosters</h3>
+                        <p>Live, settings-driven widgets that lift conversion on every public page. Each toggle takes effect immediately for new visitors. Loaded from <code style="background:#fef9e7;padding:.1rem .35rem;border-radius:4px;">js/conversion-kit.js</code>.</p>
+                    </div>
+
+                    <!-- 1. Urgency bar -->
+                    <div class="settings-row" style="margin-top:.5rem;">
+                        <div class="settings-label-block">
+                            <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;"><i class="fas fa-fire" style="color:#e74c3c;"></i> Urgency Bar</h4>
+                            <p style="font-size:.86rem;color:#666;">Sticky red bar at the top of every package page with a live midnight countdown. Boosts urgency &amp; reduces "I'll book later" drop-off.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ckUrgencyToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row" style="margin-top:.4rem;flex-direction:column;align-items:stretch;gap:.3rem;">
+                        <label for="ckUrgencyMessage" style="font-size:.82rem;font-weight:600;color:#666;">Message text</label>
+                        <input type="text" id="ckUrgencyMessage"
+                               placeholder="🔥 Bookings closing soon — reserve your seats today"
+                               style="width:100%;padding:.55rem .75rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;">
+                    </div>
+
+                    <!-- 2. WhatsApp FAB -->
+                    <div class="settings-row" style="margin-top:1.1rem;">
+                        <div class="settings-label-block">
+                            <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;"><i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp Floating Button</h4>
+                            <p style="font-size:.86rem;color:#666;">Pulsing green WhatsApp circle bottom-right of every page. Indians prefer WhatsApp 4&times; over phone calls — biggest single inquiry-rate lever.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ckWhatsappToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row" style="margin-top:.4rem;flex-direction:column;align-items:stretch;gap:.3rem;">
+                        <label for="ckWhatsappNumber" style="font-size:.82rem;font-weight:600;color:#666;">WhatsApp number <small style="color:#aaa;text-transform:none;font-weight:400;">(international, no '+', e.g. 918880195191)</small></label>
+                        <input type="text" id="ckWhatsappNumber" placeholder="918880195191" style="width:100%;padding:.55rem .75rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;">
+                        <label for="ckWhatsappMessage" style="font-size:.82rem;font-weight:600;color:#666;margin-top:.4rem;">Pre-filled message</label>
+                        <input type="text" id="ckWhatsappMessage"
+                               placeholder="Hi! I'm interested in an Andaman package — could you share more details?"
+                               style="width:100%;padding:.55rem .75rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;">
+                    </div>
+
+                    <!-- 3. Exit-intent popup -->
+                    <div class="settings-row" style="margin-top:1.1rem;">
+                        <div class="settings-label-block">
+                            <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;"><i class="fas fa-door-open" style="color:#a04000;"></i> Exit-Intent Coupon</h4>
+                            <p style="font-size:.86rem;color:#666;">When the visitor's mouse moves toward the close-tab button (or after 30s on mobile), a popup offers a coupon. Shown once per session.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ckExitToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row" style="margin-top:.4rem;align-items:end;gap:.6rem;">
+                        <div style="flex:1;">
+                            <label for="ckExitCode" style="font-size:.82rem;font-weight:600;color:#666;display:block;margin-bottom:.2rem;">Coupon code</label>
+                            <input type="text" id="ckExitCode" placeholder="COMEBACK10" style="width:100%;padding:.55rem .75rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;">
+                        </div>
+                        <div style="flex-shrink:0;">
+                            <label for="ckExitPercent" style="font-size:.82rem;font-weight:600;color:#666;display:block;margin-bottom:.2rem;">Discount %</label>
+                            <div style="display:flex;align-items:center;gap:.3rem;">
+                                <input type="number" id="ckExitPercent" min="1" max="50" step="1" value="10" style="width:70px;padding:.55rem .65rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;text-align:center;font-weight:600;">
+                                <span style="font-weight:700;color:#666;">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Launch advance coupon -->
+                    <div class="settings-row" style="margin-top:1.1rem;">
+                        <div class="settings-label-block">
+                            <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;"><i class="fas fa-tag" style="color:#0d7a8a;"></i> Launch Advance Coupon</h4>
+                            <p style="font-size:.86rem;color:#666;">When a customer types this code at checkout, the per-head advance drops to a flat amount (e.g. ₹2,000) instead of ₹6K/₹11K. Massive friction-reducer for first-time buyers.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ckLaunchToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row" style="margin-top:.4rem;align-items:end;gap:.6rem;">
+                        <div style="flex:1;">
+                            <label for="ckLaunchCode" style="font-size:.82rem;font-weight:600;color:#666;display:block;margin-bottom:.2rem;">Coupon code</label>
+                            <input type="text" id="ckLaunchCode" placeholder="LAUNCH2000" style="width:100%;padding:.55rem .75rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;">
+                        </div>
+                        <div style="flex-shrink:0;">
+                            <label for="ckLaunchAmount" style="font-size:.82rem;font-weight:600;color:#666;display:block;margin-bottom:.2rem;">Advance ₹/head</label>
+                            <input type="number" id="ckLaunchAmount" min="500" step="500" value="2000" style="width:100px;padding:.55rem .65rem;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:.9rem;text-align:center;font-weight:600;">
+                        </div>
+                    </div>
+
+                    <!-- 5. Google Reviews + 6. Landing pages (single-row toggles) -->
+                    <div class="settings-row" style="margin-top:1.1rem;">
+                        <div class="settings-label-block">
+                            <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;"><i class="fab fa-google" style="color:#4285f4;"></i> Live Google Reviews</h4>
+                            <p style="font-size:.86rem;color:#666;">Replace the homepage testimonials block with the Trustindex live-reviews widget (auto-pulls your real Google reviews).</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ckGoogleReviewsToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row" style="margin-top:1.1rem;">
+                        <div class="settings-label-block">
+                            <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;"><i class="fas fa-bullseye" style="color:#9b59b6;"></i> Landing Pages</h4>
+                            <p style="font-size:.86rem;color:#666;">Enable <code style="background:#f0e6f5;padding:.1rem .3rem;border-radius:3px;">/lp/honeymoon</code> &amp; <code style="background:#f0e6f5;padding:.1rem .3rem;border-radius:3px;">/lp/family</code> ad-landing pages (no nav, single CTA, social proof above the fold).</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ckLandingPagesToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-actions" style="margin-top:1.4rem;display:flex;gap:.6rem;align-items:center;">
+                        <button class="btn-save-packages" id="saveConversionBoostersBtn">
+                            <i class="fas fa-save"></i> Save All Boosters
+                        </button>
+                        <span id="ckSaveStatus" style="color:#666;font-size:.9rem;"></span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Database backup & mirror -->
             <div class="settings-card" style="margin-top:1.5rem;">
                 <div class="settings-row">
@@ -986,9 +1110,9 @@
     </div>
 
     <script src="js/firebase-config.js?v=21"></script>
-    <script src="js/dataStore.js?v=24"></script>
+    <script src="js/dataStore.js?v=25"></script>
     <script src="js/toast.js?v=1"></script>
-    <script src="js/dashboard.js?v=23"></script>
+    <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/security.js?v=2"></script>
     <script>

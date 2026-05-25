@@ -379,7 +379,26 @@
         // Default % of total trip cost charged as advance to confirm a booking.
         // Stored as a percentage number (e.g. 5 means 5%, 10 means 10%).
         // Can be overridden per-user via users/{uid}.advanceRate.
-        advanceRate: 5
+        advanceRate: 5,
+
+        // ── Conversion Boosters (admin-toggleable) ─────────────
+        // Each flag is read by js/conversion-kit.js and the relevant
+        // page scripts. Flip any of them off in the admin dashboard
+        // (Settings → Conversion Boosters) and the corresponding
+        // widget/feature disappears from the live site immediately.
+        urgencyBarEnabled:        true,   // sticky red bar on package.html with countdown
+        urgencyBarMessage:        '🔥 Bookings closing soon — reserve your seats today',
+        whatsappFabEnabled:       true,   // floating WhatsApp button on every public page
+        whatsappFabNumber:        '918880195191', // E.164 without "+"
+        whatsappFabMessage:       "Hi! I'm interested in an Andaman package — could you share more details?",
+        exitIntentCouponEnabled:  true,   // popup when mouse leaves window — gives 10% coupon
+        exitIntentCouponCode:     'COMEBACK10',
+        exitIntentCouponPercent:  10,
+        launchAdvanceCouponEnabled: true, // LAUNCH2000 coupon → flat ₹2,000 advance instead of ₹6K/₹11K
+        launchAdvanceCouponCode:    'LAUNCH2000',
+        launchAdvanceCouponAmount:  2000,
+        googleReviewsEnabled:     true,   // pulls live Google reviews on the homepage testimonials section
+        landingPagesEnabled:      true    // /lp/honeymoon and /lp/family ad-landing pages
     };
 
     function getCachedSettings() {

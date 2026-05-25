@@ -1636,4 +1636,101 @@ document.addEventListener('DOMContentLoaded', function () {
         // Initial state — match the class that the FOUC bootstrapper applied
         markActive(getActive());
     })();
+
+    // ── Conversion Boosters (Settings → Conversion Boosters) ──
+    // Single Save button writes all 9 fields in one Firestore call.
+    (function initConversionBoosters() {
+        var saveBtn = document.getElementById('saveConversionBoostersBtn');
+        if (!saveBtn) return;
+        var statusEl = document.getElementById('ckSaveStatus');
+
+        // Map of field id → settings key + parser. Booleans for toggles,
+        // string for text fields, number for the two numeric fields.
+        var FIELDS = [
+            { id: 'ckUrgencyToggle',         key: 'urgencyBarEnabled',       type: 'bool' },
+            { id: 'ckUrgencyMessage',        key: 'urgencyBarMessage',       type: 'str'  },
+            { id: 'ckWhatsappToggle',        key: 'whatsappFabEnabled',      type: 'bool' },
+            { id: 'ckWhatsappNumber',        key: 'whatsappFabNumber',       type: 'str'  },
+            { id: 'ckWhatsappMessage',       key: 'whatsappFabMessage',      type: 'str'  },
+            { id: 'ckExitToggle',            key: 'exitIntentCouponEnabled', type: 'bool' },
+            { id: 'ckExitCode',              key: 'exitIntentCouponCode',    type: 'str'  },
+            { id: 'ckExitPercent',           key: 'exitIntentCouponPercent', type: 'num'  },
+            { id: 'ckLaunchToggle',          key: 'launchAdvanceCouponEnabled', type: 'bool' },
+            { id: 'ckLaunchCode',            key: 'launchAdvanceCouponCode',    type: 'str'  },
+            { id: 'ckLaunchAmount',          key: 'launchAdvanceCouponAmount',  type: 'num'  },
+            { id: 'ckGoogleReviewsToggle',   key: 'googleReviewsEnabled',    type: 'bool' },
+            { id: 'ckLandingPagesToggle',    key: 'landingPagesEnabled',     type: 'bool' }
+        ];
+
+        function setStatus(msg, color) {
+            if (statusEl) {
+                statusEl.textContent = msg || '';
+                statusEl.style.color = color || '#0a5a68';
+            }
+        }
+
+        function readField(f) {
+            var el = document.getElementById(f.id);
+            if (!el) return null;
+            if (f.type === 'bool') return !!el.checked;
+            if (f.type === 'num')  {
+                var n = Number(el.value);
+                return isFinite(n) ? n : null;
+            }
+            return String(el.value || '').trim();
+        }
+
+        function writeField(f, val) {
+            var el = document.getElementById(f.id);
+            if (!el) return;
+            if (f.type === 'bool') el.checked = val !== false;
+            else                   el.value   = (val == null ? '' : String(val));
+        }
+
+        // Load current values from settings into the form
+        async function loadIntoForm() {
+            if (!window.SettingsStore) return;
+            try {
+                var s = await window.SettingsStore.load();
+                FIELDS.forEach(function (f) {
+                    if (Object.prototype.hasOwnProperty.call(s, f.key)) writeField(f, s[f.key]);
+                });
+            } catch (err) {
+                console.warn('Conversion boosters load failed', err);
+            }
+        }
+        loadIntoForm();
+
+        // Save all fields → Firestore
+        saveBtn.addEventListener('click', async function () {
+            if (!window.SettingsStore) {
+                setStatus('Settings store not loaded — refresh.', '#c0392b');
+                return;
+            }
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+            setStatus('Saving boosters to Firebase…', '#0a5a68');
+
+            var patch = {};
+            FIELDS.forEach(function (f) {
+                var v = readField(f);
+                if (v !== null) patch[f.key] = v;
+            });
+
+            try {
+                await window.SettingsStore.save(patch);
+                setStatus('✅ Saved. New visitors see the latest config now.', '#0a5a68');
+                if (window.Toast && window.Toast.success) {
+                    window.Toast.success('Conversion boosters updated.');
+                }
+            } catch (err) {
+                setStatus('❌ ' + (err.message || 'Failed to save.'), '#c0392b');
+            } finally {
+                setTimeout(function () {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Save All Boosters';
+                }, 1500);
+            }
+        });
+    })();
 });
