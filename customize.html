@@ -19,6 +19,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/firebase-config.js?v=18"></script>
     <script src="js/analytics.js?v=1"></script>
+    <!-- ── Email send config ────────────────────────────────────────
+         /customize sends enquiries directly via EmailJS (no backend).
+         To enable:
+           1. Sign up free at https://www.emailjs.com/
+           2. Add an "Email Service" (Gmail/Outlook/SMTP) → note the Service ID
+           3. Add an "Email Template" with these fields in the body:
+              {{subject}} {{from_name}} {{message_html}} {{message_text}}
+              {{ref}} {{name}} {{email}} {{phone}} {{islands}} {{hotel}}
+              {{vibe}} {{activities}} {{inclusions}} {{notes}} {{budget}}
+              {{start}} {{end}} {{adults}} {{children}} {{city}}
+              Set "To Email" to {{to_email}}, "Reply To" to {{reply_to}},
+              "CC" to {{cc}}.
+              Note the Template ID.
+           4. Account → API Keys → copy the PUBLIC key.
+           5. Paste the three values below and re-deploy.
+         Free tier: 200 emails / month. ─────────────────────────── -->
+    <script>
+      window.EMAILJS_CONFIG = {
+        publicKey:  "",   // e.g. "abCDef123ghIJKlMno"
+        serviceId:  "",   // e.g. "service_abc123"
+        templateId: ""    // e.g. "template_xyz456"
+      };
+    </script>
 </head>
 <body>
     <header class="topbar">
@@ -200,7 +223,7 @@
             <h2>Enquiry sent!</h2>
             <p>Thanks <strong id="czSuccessName">there</strong> — we've forwarded your custom-trip details to our Port Blair team. You'll get a personalised quote in your inbox within 2 working hours.</p>
             <div>Reference: <span class="cz-success-ref" id="czSuccessRef">CUST-XXXXX</span></div>
-            <p style="margin-top:1.2rem;font-size:.9rem;">We've also opened your email client with a copy of the message — please send it if it didn't auto-send.</p>
+            <p style="margin-top:1.2rem;font-size:.9rem;">We've also CC'd you on the email so you have a copy in your inbox.</p>
             <div class="cz-success-actions">
                 <a class="cz-btn-primary" href="/"><i class="fas fa-home"></i> Back to Home</a>
                 <a class="cz-btn-secondary" href="https://wa.me/918880195191" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Continue on WhatsApp</a>
@@ -240,6 +263,6 @@
     <script src="js/script.js?v=30"></script>
     <script src="js/security.js?v=2"></script>
     <script src="js/user-menu.js?v=11"></script>
-    <script src="js/customize.js?v=3"></script>
+    <script src="js/customize.js?v=4"></script>
 </body>
 </html>

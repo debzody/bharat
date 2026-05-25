@@ -1,77 +1,92 @@
-# /customize Page — Direct Email Send Setup
+# /customize Page — Email Send Setup
 
-The `/customize` page now sends enquiries **directly** (no `mailto:` popup) by writing a document to a Firestore collection that the **Firebase "Trigger Email" extension** watches and dispatches via SMTP.
+The `/customize` page sends enquiries directly from the browser using **EmailJS** — no server / no Firebase Cloud Functions / no Firebase Blaze plan required. Free tier: **200 emails/month**, more than enough for enquiries.
 
-## What the page does on click
+The page tries 3 senders in order:
 
-1. Validates the form.
-2. Writes an audit copy to `customEnquiries/{ref}`.
-3. Writes a mail doc to `mail/{ref}` in this shape:
-   ```js
-   {
-     to: ["booking@andamanvoyages.in"],
-     cc: ["the-user-who-submitted@example.com"],
-     replyTo: "the-user-who-submitted@example.com",
-     message: { subject, text, html },
-     meta: { ref, type: "customEnquiry", userUid, createdAt }
-   }
-   ```
-4. The **Trigger Email** extension picks up the new doc, sends the email through your configured SMTP server, and stamps `delivery: { state: "SUCCESS", ... }` on the same doc.
-5. The page shows the success state to the user.
+1. **EmailJS**  (preferred — once you fill in the 3 IDs in `customize.html`)
+2. **Firestore `mail/{ref}`** (only used if you've installed the Firebase "Trigger Email" extension)
+3. **`mailto:`** (last-resort fallback that opens the user's email client)
 
-If Firestore is unreachable (offline / blocked), the page falls back to a `mailto:` link as a backup.
+So even before you set anything up, the page works (via mailto). After 5 minutes of EmailJS setup, it sends silently in the background.
 
-## One-time Firebase setup
+---
 
-### 1. Install the "Trigger Email" extension
+## Quick setup — EmailJS (recommended, ~5 min)
 
-In the Firebase console:
+### 1. Create an EmailJS account
 
+Go to **https://www.emailjs.com/** and sign up (free).
+
+### 2. Add your email service
+
+In the EmailJS dashboard:
+- **Email Services** → **Add New Service** → pick **Gmail** (or Outlook, custom SMTP, etc.)
+- Authorize with the `booking@andamanvoyages.in` Gmail account.
+- Copy the **Service ID** (looks like `service_abc123`).
+
+### 3. Create the template
+
+- **Email Templates** → **Create New Template**
+- **Subject** field: `{{subject}}`
+- **To Email** field: `{{to_email}}`
+- **Reply To** field: `{{reply_to}}`
+- **CC** field: `{{cc}}`
+- **Content** (switch to "Code editor" mode):
+  ```html
+  {{{message_html}}}
+  ```
+  (triple braces = unescaped — required so our pretty HTML renders).
+  Or, if you prefer plain text, use `{{message_text}}`.
+- **Save**, copy the **Template ID** (looks like `template_xyz456`).
+
+### 4. Get your Public Key
+
+- **Account** → **General** (or **API Keys**)
+- Copy the **Public Key** (looks like `abCDef123ghIJKlMno`).
+
+### 5. Paste them into `customize.html`
+
+Open `customize.html`, find this block near the top:
+
+```html
+<script>
+  window.EMAILJS_CONFIG = {
+    publicKey:  "",
+    serviceId:  "",
+    templateId: ""
+  };
+</script>
 ```
-Extensions → Browse the Hub → "Trigger Email from Firestore" (by Firebase) → Install in project
-```
 
-Configuration values to use:
+Fill in the three values, commit & push. Done.
 
-| Field | Value |
-|---|---|
-| **Authentication Type** | `UsernamePassword` |
-| **SMTP connection URI** | e.g. `smtps://booking%40andamanvoyages.in@smtp.gmail.com:465` (URL-encode the `@` as `%40`) |
-| **SMTP password** | A Gmail **App Password** (not the account password) — generate at https://myaccount.google.com/apppasswords |
-| **Email documents collection** | `mail` |
-| **Default `from` address** | `Andaman Voyages <booking@andamanvoyages.in>` |
-| **Default `reply-to` address** | leave blank — the page sets it per-enquiry |
-| **Users collection** *(optional)* | leave blank |
+### 6. Test
 
-> **Note on Gmail SMTP:** Gmail's free tier allows ~500 emails/day per account. For higher volume, switch to SendGrid (`smtps://apikey:YOUR_KEY@smtp.sendgrid.net:465`), Mailgun, or Amazon SES.
+1. Open https://andamanvoyages.in/customize
+2. Log in, fill the form, click **Send Enquiry**
+3. The button shows "Sending…", then jumps to the success state — no popup.
+4. Check `booking@andamanvoyages.in` — the email should arrive in a few seconds.
+5. The user (CC) should also have a copy.
 
-### 2. Update Firestore rules
+If something goes wrong, check the browser console for an `[customize] EmailJS error:` log line — EmailJS returns descriptive 400/401/403 messages.
 
-Already done in this commit — see `firestore.rules`. Re-deploy them:
+---
 
-```
-Firebase Console → Firestore Database → Rules → Publish
-```
+## Optional — Firebase "Trigger Email" extension (alternate path)
 
-The new rules allow any signed-in user to **create** docs in `mail` and `customEnquiries`, but only admins can read/update/delete other users' enquiries.
+Use this only if you don't want EmailJS. Requires Firebase **Blaze** (pay-as-you-go) plan — Spark won't run extensions.
 
-### 3. Verify
+Install: Firebase Console → Extensions → "Trigger Email from Firestore" → fill in SMTP creds, set "Email documents collection" to `mail`. Then re-publish `firestore.rules` (already updated in this commit). The page will write a doc to `mail/{ref}` and the extension dispatches it.
 
-1. Open https://andamanvoyages.in/customize while signed in.
-2. Fill the form, click **Send Enquiry**.
-3. In the Firebase console, open Firestore → `mail` → the new doc. After ~30 s the doc should have `delivery.state: "SUCCESS"`.
-4. Check `booking@andamanvoyages.in` — the email should be there.
-5. The user should also have a CC copy in their inbox.
+---
 
-## Troubleshooting
+## Common gotchas
 
-| Symptom | Likely cause | Fix |
+| Symptom | Cause | Fix |
 |---|---|---|
-| User sees toast: "Network issue — opening your email client as a backup" | Firestore write failed (rules or offline) | Verify rules deployed; check browser console for the exact error. |
-| Mail doc has `delivery.state: "ERROR"` | SMTP credentials wrong | Re-enter Gmail App Password in extension config. |
-| Email goes to spam | Sender domain not verified | Set up SPF + DKIM for `andamanvoyages.in` in your DNS. |
-| Want to disable user CC | privacy / volume | In `js/customize.js`, remove the `cc` line in `sendViaFirestoreMail`. |
-
-## Local development (no SMTP)
-
-If you're testing locally without the extension installed, the page will still write to `mail/{ref}` — those docs just won't be delivered. The fallback `mailto:` won't trigger as long as the write succeeds.
+| User sees "Network issue — opening your email client as a backup" | Neither EmailJS nor Firestore extension is configured | Fill in `EMAILJS_CONFIG` (above). |
+| EmailJS returns 400 "service not found" | Wrong Service ID | Re-copy from EmailJS dashboard. |
+| EmailJS returns 412 Precondition Failed | Domain not whitelisted | EmailJS → Account → Security → enable "Allow EmailJS API" or whitelist `andamanvoyages.in`. |
+| Email lands in spam | Sender domain not verified | Add SPF + DKIM for `andamanvoyages.in` in DNS, or use a verified sender service. |
+| Want to remove the user CC | Privacy / volume | In `js/customize.js`, blank the `cc:` field in `sendViaEmailJS`. |
