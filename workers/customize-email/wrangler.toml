@@ -1,0 +1,31 @@
+name = "customize-email"
+main = "worker.js"
+compatibility_date = "2025-05-01"
+compatibility_flags = [ "nodejs_compat" ]
+
+# ── Bindings ───────────────────────────────────────────────
+# After deploy, configure via:
+#   - Cloudflare dashboard → Email Routing → Email Workers
+#   - or `wrangler deploy` then set the Email binding manually in dashboard
+
+# CORS allow-list (only this Origin can POST to the worker).
+# Empty = allow any (NOT recommended in production).
+[vars]
+ALLOWED_ORIGIN = "https://andamanvoyages.in"
+
+# ── send_email binding ─────────────────────────────────────
+# This must match the binding you create in the Cloudflare dashboard:
+#   Workers & Pages → your worker → Settings → Variables → Bindings
+#   Add binding → Send email → Variable name: SEND_EMAIL
+#                              Destination address: booking@andamanvoyages.in
+# ALSO: in Cloudflare → your zone → Email Routing → Routing Addresses
+# add `enquiries@andamanvoyages.in` (or whatever you set as FROM_EMAIL
+# in worker.js) and verify it.
+[[send_email]]
+name = "SEND_EMAIL"
+destination_address = "booking@andamanvoyages.in"
+
+# ── Optional secrets (set via `wrangler secret put SHARED_TOKEN`)
+# Leave unset to skip the shared-token check (origin allow-list still
+# applies). Useful if you want extra protection against bots posting
+# directly to the worker URL.

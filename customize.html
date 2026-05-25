@@ -19,23 +19,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/firebase-config.js?v=18"></script>
     <script src="js/analytics.js?v=1"></script>
-    <!-- ── Email send config ────────────────────────────────────────
-         /customize sends enquiries directly via EmailJS (no backend).
-         To enable:
-           1. Sign up free at https://www.emailjs.com/
-           2. Add an "Email Service" (Gmail/Outlook/SMTP) → note the Service ID
-           3. Add an "Email Template" with these fields in the body:
-              {{subject}} {{from_name}} {{message_html}} {{message_text}}
-              {{ref}} {{name}} {{email}} {{phone}} {{islands}} {{hotel}}
-              {{vibe}} {{activities}} {{inclusions}} {{notes}} {{budget}}
-              {{start}} {{end}} {{adults}} {{children}} {{city}}
-              Set "To Email" to {{to_email}}, "Reply To" to {{reply_to}},
-              "CC" to {{cc}}.
-              Note the Template ID.
-           4. Account → API Keys → copy the PUBLIC key.
-           5. Paste the three values below and re-deploy.
-         Free tier: 200 emails / month. ─────────────────────────── -->
+    <!-- ── Email send config (4-tier failover) ──────────────────────
+         The /customize page will try senders in this order:
+           1. Cloudflare Worker  (window.CZ_WORKER_URL)
+           2. EmailJS            (window.EMAILJS_CONFIG)
+           3. Firestore mail     (Firebase Trigger Email extension)
+           4. mailto:            (last resort — opens user's mail app)
+         Configure ONE of the first three to send silently. The page
+         still works without any of them via the mailto fallback.
+         Full setup steps: see /customize_email_setup.md ─────────── -->
     <script>
+      // ── Option 1: Cloudflare Email Worker (recommended) ──
+      // Deploy /workers/customize-email/ to Cloudflare. Once deployed,
+      // paste the Worker URL here. The worker uses Cloudflare Email
+      // Routing's send_email binding — no SMTP creds needed.
+      window.CZ_WORKER_URL   = "";   // e.g. "https://customize-email.YOURACCOUNT.workers.dev"
+      window.CZ_WORKER_TOKEN = "";   // optional, must match SHARED_TOKEN secret on the worker
+
+      // ── Option 2: EmailJS (browser-only, no backend) ──
+      // Sign up at https://www.emailjs.com/ → create a Gmail/SMTP service
+      // and a template that uses {{to_email}} {{reply_to}} {{cc}}
+      // {{subject}} {{{message_html}}}. Paste the 3 IDs below.
       window.EMAILJS_CONFIG = {
         publicKey:  "",   // e.g. "abCDef123ghIJKlMno"
         serviceId:  "",   // e.g. "service_abc123"
