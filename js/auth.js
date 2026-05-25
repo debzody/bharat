@@ -10,8 +10,14 @@ const ADMIN_EMAILS   = (Array.isArray(window.ADMIN_EMAILS) && window.ADMIN_EMAIL
   ? window.ADMIN_EMAILS.map(e => String(e).toLowerCase())
   : [String(window.ADMIN_EMAIL || 'deb@andamanvoyages.in').toLowerCase()];
 const ADMIN_EMAIL    = ADMIN_EMAILS[0]; // legacy
+const STAFF_EMAILS   = (Array.isArray(window.STAFF_EMAILS) && window.STAFF_EMAILS.length)
+  ? window.STAFF_EMAILS.map(e => String(e).toLowerCase())
+  : [];
 function isAdminEmail(email) {
   return !!email && ADMIN_EMAILS.indexOf(String(email).toLowerCase()) >= 0;
+}
+function isStaffEmail(email) {
+  return !!email && STAFF_EMAILS.indexOf(String(email).toLowerCase()) >= 0;
 }
 
 const DB = {
@@ -45,6 +51,14 @@ function isAdmin(user) {
   if (!user) return false;
   return isAdminEmail(user.email) || user.role === 'admin' || user.username === ADMIN_USERNAME;
 }
+function isStaff(user) {
+  if (!user) user = currentUser;
+  if (!user) return false;
+  return isStaffEmail(user.email) || user.role === 'staff';
+}
+function canAccessDashboard(user) {
+  return isAdmin(user) || isStaff(user);
+}
 
 // ── UI: show/hide nav based on auth & role ──
 function findDashboardNavItem() {
@@ -76,7 +90,7 @@ function updateAuthUI() {
   }
 
   if (dashboardNavItem) {
-    dashboardNavItem.style.display = isAdmin() ? '' : 'none';
+    dashboardNavItem.style.display = canAccessDashboard() ? '' : 'none';
   }
 }
 

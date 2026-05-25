@@ -23,8 +23,14 @@
         ? window.ADMIN_EMAILS.map(e => String(e).toLowerCase())
         : [String(window.ADMIN_EMAIL || 'deb@andamanvoyages.in').toLowerCase()];
     const ADMIN_EMAIL  = ADMIN_EMAILS[0]; // legacy single
+    const STAFF_EMAILS = (Array.isArray(window.STAFF_EMAILS) && window.STAFF_EMAILS.length)
+        ? window.STAFF_EMAILS.map(e => String(e).toLowerCase())
+        : [];
     function isAdminEmail(email) {
         return !!email && ADMIN_EMAILS.indexOf(String(email).toLowerCase()) >= 0;
+    }
+    function isStaffEmail(email) {
+        return !!email && STAFF_EMAILS.indexOf(String(email).toLowerCase()) >= 0;
     }
     const SDK_VERSION  = '10.13.2';
     const APP_URL       = `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-app.js`;
@@ -315,6 +321,10 @@
         const { db, auth, firestore } = await window.__firebaseReady;
         const user = auth.currentUser;
         if (!user) throw new Error('You must be signed in as the admin to publish.');
+        // Staff users can update existing packages but cannot publish a
+        // new package list (which deletes anything missing from the array).
+        // Treat publishPackages() the same as a wholesale write-and-delete
+        // operation, which is admin-only.
         if (!isAdminEmail(user.email)) throw new Error('Only an admin user can publish packages.');
 
         // Strategy: write/merge each provided package, delete packages in
@@ -830,10 +840,20 @@
         const u = getCurrentUser();
         return !!u && (isAdminEmail(u.email) || u.role === 'admin' || u.username === 'deb');
     }
+    function isStaff() {
+        const u = getCurrentUser();
+        return !!u && (isStaffEmail(u.email) || u.role === 'staff');
+    }
+    function canAccessDashboard() {
+        return isAdmin() || isStaff();
+    }
 
     // ── Admin-only helpers (Firestore rules also enforce these) ──
     function ensureAdmin() {
         if (!isAdmin()) throw new Error('Admin access required.');
+    }
+    function ensureAdminOrStaff() {
+        if (!isAdmin() && !isStaff()) throw new Error('Admin or staff access required.');
     }
 
     async function listAllUsers() {
@@ -863,18 +883,77 @@
         );
     }
 
-    // Removes the user's Firestore profile + username mapping.
+    // Removes the user's Firestore profile + username mapping(s).
     // ⚠️ Does NOT delete the Firebase Auth account itself — that requires
     // server-side Admin SDK. We provide a Console deep-link instead.
+    //
+    // Cleanup is defence-in-depth:
+    //   1. Delete users/{uid}.
+    //   2. Delete the explicitly-passed usernames/{username} mapping.
+    //   3. ALSO scan all `usernames` for any doc whose `uid` field matches
+    //      the deleted user, and delete those too. This catches:
+    //         • Users who renamed their username (old mapping orphaned)
+    //         • Users where the row's username arg was missing/typo'd
+    //         • Older registrations that ran before username trimming
+    //      Without this sweep, the orphan `usernames/<old>` doc keeps
+    //      blocking re-registration with "username already taken".
     async function deleteUserProfile(uid, username) {
         ensureAdmin();
+        if (!uid) throw new Error('uid is required.');
         const { db, firestore } = await window.__firebaseReady;
+
+        // Pass 1 — find every username doc that still points at this uid
+        const orphanIds = new Set();
+        if (username) {
+            orphanIds.add(String(username).trim().toLowerCase());
+        }
+        try {
+            const q = firestore.query(
+                firestore.collection(db, 'usernames'),
+                firestore.where('uid', '==', uid)
+            );
+            const snap = await firestore.getDocs(q);
+            snap.forEach(d => orphanIds.add(d.id));
+        } catch (err) {
+            console.warn('[deleteUserProfile] username-by-uid sweep failed; continuing with explicit username only:', err);
+        }
+
+        // Pass 2 — single batch with everything
         const batch = firestore.writeBatch(db);
         batch.delete(firestore.doc(db, 'users', uid));
-        if (username) {
-            batch.delete(firestore.doc(db, 'usernames', username.toLowerCase()));
-        }
+        orphanIds.forEach(id => {
+            if (id) batch.delete(firestore.doc(db, 'usernames', id));
+        });
         await batch.commit();
+
+        return {
+            uid,
+            removedUsernames: Array.from(orphanIds)
+        };
+    }
+
+    // Admin-only nuclear option: wipe a stale `usernames/{username}` doc
+    // by name, regardless of who currently owns it. Use this to recover
+    // from orphaned mappings when the original delete didn't sweep them
+    // (e.g. very old accounts created before the auto-sweep landed).
+    //
+    //     await window.UsersStore.adminDeleteUsername('staff')
+    //     // → { username: 'staff', existed: true, ownerUid: '...' }
+    async function adminDeleteUsername(username) {
+        ensureAdmin();
+        if (!username) throw new Error('username is required.');
+        const lower = String(username).trim().toLowerCase();
+        const { db, firestore } = await window.__firebaseReady;
+        const ref = firestore.doc(db, 'usernames', lower);
+        let existed = false;
+        let ownerUid = null;
+        try {
+            const snap = await firestore.getDoc(ref);
+            existed = snap.exists();
+            if (existed) ownerUid = (snap.data() || {}).uid || null;
+        } catch (_) {}
+        await firestore.deleteDoc(ref);
+        return { username: lower, existed, ownerUid };
     }
 
     // Direct password-reset for an arbitrary email (admin convenience).
@@ -968,6 +1047,8 @@
         onAuthChange:             onAuthChange,
         getCurrentUser:           getCurrentUser,
         isAdmin:                  isAdmin,
+        isStaff:                  isStaff,
+        canAccessDashboard:       canAccessDashboard,
         updateProfile:            updateProfile,
         reauthenticate:           reauthenticate,
         changePassword:           changePassword,
@@ -982,6 +1063,7 @@
         listAllUsers:             listAllUsers,
         setUserDisabled:          setUserDisabled,
         deleteUserProfile:        deleteUserProfile,
+        adminDeleteUsername:      adminDeleteUsername,
         adminSendPasswordReset:   adminSendPasswordReset,
         adminSetUserAdvanceRate:  adminSetUserAdvanceRate,
         getEffectiveAdvanceRate:  getEffectiveAdvanceRate,
