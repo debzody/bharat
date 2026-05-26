@@ -156,24 +156,25 @@
         const bodyHtml = row.textHtml
             ? row.textHtml
             : '<div style="white-space:pre-wrap;line-height:1.6;">' + esc(row.textPlain || '(no body)') + '</div>';
+        // Header (fixed) + scrollable body — sits inside the
+        // .inbox-preview-wrap which is a flex column with height 100%
+        // and overflow:hidden, so the .ipv-body's overflow-y:auto kicks in.
         box.innerHTML =
-            '<div class="table-card" style="height:100%;">' +
-                '<div class="table-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">' +
-                    '<div>' +
-                        '<h3 style="margin:0 0 .35rem 0;">' + esc(row.subject || '(no subject)') + '</h3>' +
-                        '<div style="font-size:.88rem;color:#5a6877;line-height:1.7;">' +
-                            '<div><strong>From:</strong> ' + esc(row.from || '') + '</div>' +
-                            '<div><strong>To:</strong> ' + esc(row.to || row.mailbox || '') + '</div>' +
-                            '<div><strong>Mailbox:</strong> ' + esc(mailboxLabel(row.mailbox)) + '</div>' +
-                            '<div><strong>Received:</strong> ' + esc(fmtDate(row.receivedAt || row.date)) + '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<button type="button" class="btn-add-package" id="inboxReplyBtn" style="white-space:nowrap;">' +
-                        '<i class="fas fa-reply"></i> Reply' +
-                    '</button>' +
+            '<div class="ipv-head">' +
+                '<h3 class="ipv-subject">' + esc(row.subject || '(no subject)') + '</h3>' +
+                '<div class="ipv-meta">' +
+                    '<div class="ipv-row"><strong>From:</strong> ' + esc(row.from || '') + '</div>' +
+                    '<div class="ipv-row"><strong>To:</strong> ' + esc(row.to || row.mailbox || '') + '</div>' +
+                    '<div class="ipv-row"><strong>Mailbox:</strong> ' + esc(mailboxLabel(row.mailbox)) + '</div>' +
+                    '<div class="ipv-row"><strong>Received:</strong> ' + esc(fmtDate(row.receivedAt || row.date)) + '</div>' +
                 '</div>' +
-                '<div style="padding:1rem;">' + bodyHtml + '</div>' +
-            '</div>';
+            '</div>' +
+            '<div class="ipv-actions">' +
+                '<button type="button" class="ipv-reply" id="inboxReplyBtn">' +
+                    '<i class="fas fa-reply"></i> Reply' +
+                '</button>' +
+            '</div>' +
+            '<div class="ipv-body">' + bodyHtml + '</div>';
         const replyBtn = $('inboxReplyBtn');
         if (replyBtn) {
             replyBtn.addEventListener('click', function () {
@@ -329,9 +330,82 @@
             if (typeof window.loadInboxSent === 'function') window.loadInboxSent();
         });
     }
+    /* ── Resizable split divider ───────────────────────────
+       Drag the small bar between the list and the preview to
+       change the split. Stored in localStorage as a percentage
+       of the .inbox-split width (8 % .. 75 %). Default = 40 %
+       (so the preview gets ~60 %). */
+    function initResizableSplit() {
+        const split = $('inboxSplit');
+        const divider = $('inboxDivider');
+        if (!split || !divider) return;
+        const STORAGE_KEY = 'inboxSplitRatio';
+        const MIN_PCT = 18;   // list column minimum
+        const MAX_PCT = 75;   // list column maximum
+
+        function applyPct(pct) {
+            const clamped = Math.max(MIN_PCT, Math.min(MAX_PCT, pct));
+            split.style.setProperty('--inbox-list-w', clamped.toFixed(2) + '%');
+        }
+        // Initial: saved or default 40%
+        let saved = parseFloat(localStorage.getItem(STORAGE_KEY) || '');
+        if (!isFinite(saved) || saved < MIN_PCT || saved > MAX_PCT) saved = 40;
+        applyPct(saved);
+
+        let dragging = false;
+        function onDown(ev) {
+            ev.preventDefault();
+            dragging = true;
+            divider.classList.add('active');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        }
+        function onMove(ev) {
+            if (!dragging) return;
+            const rect = split.getBoundingClientRect();
+            if (!rect.width) return;
+            const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+            const pct = (x / rect.width) * 100;
+            applyPct(pct);
+        }
+        function onUp() {
+            if (!dragging) return;
+            dragging = false;
+            divider.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            // Persist current value
+            const cur = split.style.getPropertyValue('--inbox-list-w');
+            const num = parseFloat(cur);
+            if (isFinite(num)) {
+                try { localStorage.setItem(STORAGE_KEY, String(num)); } catch (_) {}
+            }
+        }
+        divider.addEventListener('mousedown', onDown);
+        divider.addEventListener('touchstart', onDown, { passive: false });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('mouseup', onUp);
+        document.addEventListener('touchend', onUp);
+        // Double-click resets to default 40 %
+        divider.addEventListener('dblclick', function () {
+            applyPct(40);
+            try { localStorage.setItem(STORAGE_KEY, '40'); } catch (_) {}
+        });
+        // Keyboard nudges (← / →) when divider is focused
+        divider.addEventListener('keydown', function (ev) {
+            if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+            ev.preventDefault();
+            const cur = parseFloat(split.style.getPropertyValue('--inbox-list-w')) || 40;
+            const next = ev.key === 'ArrowLeft' ? cur - 2 : cur + 2;
+            applyPct(next);
+            try { localStorage.setItem(STORAGE_KEY, String(Math.max(MIN_PCT, Math.min(MAX_PCT, next)))); } catch (_) {}
+        });
+    }
     function init() {
         bindTabs();
         initRefresh();
+        initResizableSplit();
         subscribe().catch(function (err) {
             console.error('[inbox-receiver] init failed:', err);
         });

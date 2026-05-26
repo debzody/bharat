@@ -519,7 +519,7 @@
                         <span class="inbox-mbx-count" data-mbx-count="__all__">0</span>
                     </button>
                 </div>
-                <div class="inbox-split">
+                <div class="inbox-split" id="inboxSplit">
                     <div class="inbox-list-wrap table-card">
                         <div class="table-header" style="display:flex;align-items:center;gap:.75rem;justify-content:space-between;">
                             <h3 style="margin:0;"><i class="fas fa-inbox"></i> <span id="inboxMbxLabel">Bookings</span></h3>
@@ -544,6 +544,7 @@
                             </table>
                         </div>
                     </div>
+                    <div class="inbox-divider" id="inboxDivider" role="separator" aria-orientation="vertical" aria-label="Drag to resize" tabindex="0"></div>
                     <div class="inbox-preview-wrap" id="inboxPreview">
                         <div class="inbox-preview-empty">
                             <i class="fas fa-envelope-open"></i>
@@ -1322,16 +1323,68 @@
                     padding-left: 1.5rem; /* visual indent under group header */
                 }
 
-                /* Two-pane Received layout: list on the left, preview right */
+                /* Two-pane Received layout — resizable.
+                   Default split: list 40% / preview 60% (the reading
+                   pane is the wider one because admins spend more
+                   time reading). A draggable divider lets the admin
+                   change the ratio; the chosen value is persisted in
+                   localStorage as 'inboxSplitRatio'. */
                 .inbox-split {
                     display: grid;
-                    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-                    gap: 1rem;
+                    grid-template-columns: minmax(180px, var(--inbox-list-w, 40%)) 6px minmax(220px, 1fr);
+                    gap: 0;
                     margin-top: 1rem;
-                    align-items: start;
+                    align-items: stretch;
+                    height: 78vh;
+                }
+                .inbox-split .inbox-list-wrap,
+                .inbox-split .inbox-preview-wrap {
+                    min-height: 0;        /* allow the inner panel to shrink + scroll */
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+                .inbox-split .inbox-list-wrap .table-responsive {
+                    flex: 1 1 0;
+                    min-height: 0;
+                    overflow-y: auto;
+                }
+                .inbox-divider {
+                    cursor: col-resize;
+                    background: #e3e8ef;
+                    position: relative;
+                    transition: background .15s;
+                }
+                .inbox-divider:hover,
+                .inbox-divider.active {
+                    background: #0d7a8a;
+                }
+                .inbox-divider::before {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 2px;
+                    height: 32px;
+                    background: #b7cdd6;
+                    border-radius: 2px;
+                }
+                .inbox-divider:hover::before,
+                .inbox-divider.active::before {
+                    background: #fff;
                 }
                 @media (max-width: 980px) {
-                    .inbox-split { grid-template-columns: 1fr; }
+                    .inbox-split {
+                        grid-template-columns: 1fr;
+                        height: auto;
+                    }
+                    .inbox-divider { display: none; }
+                    .inbox-split .inbox-list-wrap,
+                    .inbox-split .inbox-preview-wrap {
+                        height: auto;
+                    }
                 }
                 .inbox-list-wrap .data-table tbody tr {
                     cursor: pointer;
@@ -1765,7 +1818,7 @@
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
-    <script src="js/inbox-receiver.js?v=5"></script>
+    <script src="js/inbox-receiver.js?v=6"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());
