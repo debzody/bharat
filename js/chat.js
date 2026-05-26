@@ -49,7 +49,10 @@
     style.textContent = `
     .chat-widget-btn {
         position: fixed;
-        bottom: 28px;
+        /* Sits ABOVE the WhatsApp FAB (which now lives at bottom:28px /
+           56px tall). 28 + 56 + 16 ≈ 100, so we anchor the chat bubble
+           at bottom:104px to leave a clean ~16px gap between them. */
+        bottom: 104px;
         right: 28px;
         z-index: 99999;
         width: 64px;
@@ -80,7 +83,9 @@
 
     .chat-panel-wrap {
         position: fixed;
-        bottom: 106px;
+        /* Chat panel pops up above the chat button (which is at bottom:104px,
+           64px tall). 104 + 64 + 14 ≈ 182. */
+        bottom: 182px;
         right: 28px;
         z-index: 99998;
         width: 460px;
@@ -259,10 +264,13 @@
         .chat-panel-wrap {
             width: calc(100vw - 20px);
             right: 10px;
-            bottom: 100px;
-            height: min(600px, calc(100vh - 120px));
+            /* chat button is at bottom:90px; panel pops above it (90 + 64 + 14). */
+            bottom: 168px;
+            height: min(600px, calc(100vh - 200px));
         }
-        .chat-widget-btn { bottom: 20px; right: 16px; }
+        /* Chat button sits ABOVE the WhatsApp FAB on mobile too.
+           WhatsApp is at bottom:20px / 50px tall, so 20+50+20 = 90. */
+        .chat-widget-btn { bottom: 90px; right: 16px; }
     }
     `;
     document.head.appendChild(style);
