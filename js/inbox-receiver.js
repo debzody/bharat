@@ -123,12 +123,22 @@
         setCounts();
         try {
             const fb = await window.__firebaseReady;
+            const email = (fb.auth && fb.auth.currentUser && fb.auth.currentUser.email) || '';
             await fb.firestore.updateDoc(
                 fb.firestore.doc(fb.db, 'receivedEmails', row.id),
-                { unread: false, readAt: new Date().toISOString() }
+                { unread: false, readAt: new Date().toISOString(), readBy: email }
             );
         } catch (err) {
-            console.warn('[inbox-receiver] markRead failed:', err);
+            console.error('[inbox-receiver] markRead failed:', err);
+            // Revert local optimistic flip so the user sees something is wrong
+            row.unread = true;
+            if (rec) rec.unread = true;
+            setCounts();
+            renderRows();
+            if (window.Toast && typeof window.Toast.error === 'function') {
+                window.Toast.error('Could not mark mail as read: ' + (err.message || err) +
+                    ' (deploy updated firestore.rules — see firebase console).');
+            }
         }
     }
     function setPreview(row) {
