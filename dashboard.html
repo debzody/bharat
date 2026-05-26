@@ -398,14 +398,9 @@
                             </label>
                             <label class="agf-field">
                                 <span>Category <span class="agf-req">*</span></span>
-                                <input type="text" id="galCategory" placeholder="e.g. Beaches" list="galCategoryList" required aria-required="true" data-required-upload="1">
-                                <datalist id="galCategoryList">
-                                    <option value="Beaches">
-                                    <option value="Islands">
-                                    <option value="Activities">
-                                    <option value="Resorts">
-                                    <option value="Sunsets">
-                                </datalist>
+                                <select id="galCategory" required aria-required="true" data-required-upload="1" data-dropdown="category">
+                                    <option value="">— Choose category —</option>
+                                </select>
                             </label>
                             <label class="agf-field" style="max-width:120px;">
                                 <span>Order <span class="agf-opt">(optional)</span></span>
@@ -423,30 +418,15 @@
                             </label>
                             <label class="agf-field">
                                 <span><i class="fas fa-map-marker-alt"></i> Place <span class="agf-req">*</span></span>
-                                <input type="text" id="galPlace" placeholder="e.g. Havelock Island" list="galPlaceList" required aria-required="true" data-required-upload="1">
-                                <datalist id="galPlaceList">
-                                    <option value="Port Blair">
-                                    <option value="Havelock Island">
-                                    <option value="Neil Island">
-                                    <option value="Ross Island">
-                                    <option value="Baratang">
-                                    <option value="Diglipur">
-                                    <option value="Radhanagar Beach">
-                                    <option value="Elephant Beach">
-                                    <option value="Cellular Jail">
-                                </datalist>
+                                <select id="galPlace" required aria-required="true" data-required-upload="1" data-dropdown="place">
+                                    <option value="">— Choose place —</option>
+                                </select>
                             </label>
                             <label class="agf-field">
                                 <span><i class="fas fa-suitcase"></i> Package <span class="agf-req">*</span></span>
-                                <input type="text" id="galPackage" placeholder="e.g. Honeymoon" list="galPackageList" required aria-required="true" data-required-upload="1">
-                                <datalist id="galPackageList">
-                                    <option value="Budget">
-                                    <option value="Standard">
-                                    <option value="Luxury">
-                                    <option value="Honeymoon">
-                                    <option value="Family">
-                                    <option value="Adventure">
-                                </datalist>
+                                <select id="galPackage" required aria-required="true" data-required-upload="1" data-dropdown="package">
+                                    <option value="">— Choose package —</option>
+                                </select>
                             </label>
                         </div>
                     </div>
@@ -1038,6 +1018,141 @@
                 </div>
             </div>
 
+            <!-- ── Manage Gallery Dropdowns (admin-only) ──────────
+                 The Category / Place / Package fields on the gallery
+                 upload form are now locked to dropdowns so staff can
+                 only pick from a fixed list. The lists themselves are
+                 stored in /settings/site under galleryCategoryOptions /
+                 galleryPlaceOptions / galleryPackageOptions and can be
+                 edited here by an admin. Any change saves immediately
+                 to Firestore and is read by the upload form on next
+                 page-load.
+
+                 This whole section is hidden for staff users via the
+                 sidebar-link[data-section=settings] CSS rule near the
+                 top of the file. -->
+            <div class="settings-card" style="margin-top:1.5rem;background:#f8fcfd;border-left:3px solid #16a085;">
+                <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:.5rem;">
+                    <div class="settings-label-block" style="margin-bottom:.4rem;">
+                        <h3><i class="fas fa-list-check" style="color:#16a085;"></i> Manage Gallery Dropdowns</h3>
+                        <p>Control the values staff can pick from when uploading photos. Add or remove options here — staff will see them on the upload form immediately. <em>Admin-only.</em></p>
+                    </div>
+                    <div id="gdMgr" class="gd-mgr">
+                        <div class="gd-list" data-list="category">
+                            <h4>Category options</h4>
+                            <ul></ul>
+                            <div class="gd-add-row">
+                                <input type="text" placeholder="e.g. Food &amp; Drink" maxlength="60">
+                                <button type="button" class="gd-add-btn"><i class="fas fa-plus"></i> Add</button>
+                            </div>
+                        </div>
+                        <div class="gd-list" data-list="place">
+                            <h4>Place options</h4>
+                            <ul></ul>
+                            <div class="gd-add-row">
+                                <input type="text" placeholder="e.g. Mount Harriet" maxlength="60">
+                                <button type="button" class="gd-add-btn"><i class="fas fa-plus"></i> Add</button>
+                            </div>
+                        </div>
+                        <div class="gd-list" data-list="package">
+                            <h4>Package options</h4>
+                            <ul></ul>
+                            <div class="gd-add-row">
+                                <input type="text" placeholder="e.g. Wedding" maxlength="60">
+                                <button type="button" class="gd-add-btn"><i class="fas fa-plus"></i> Add</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-actions" style="margin-top:1rem;display:flex;gap:.6rem;align-items:center;">
+                        <span id="gdSaveStatus" style="color:#0d7a8a;font-size:.88rem;"></span>
+                    </div>
+                </div>
+            </div>
+            <style>
+                .gd-mgr {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 1rem;
+                    margin-top: .5rem;
+                }
+                .gd-list {
+                    background: #fff;
+                    border: 1px solid #d6eaee;
+                    border-radius: 10px;
+                    padding: 1rem 1.1rem;
+                }
+                .gd-list h4 {
+                    margin: 0 0 .65rem;
+                    font-size: .95rem;
+                    color: #0d2c3a;
+                    font-weight: 700;
+                }
+                .gd-list ul {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0 0 .85rem;
+                    max-height: 220px;
+                    overflow-y: auto;
+                    border: 1px dashed #cfdde0;
+                    border-radius: 8px;
+                    background: #f9fcfd;
+                }
+                .gd-list li {
+                    display: flex;
+                    align-items: center;
+                    gap: .5rem;
+                    padding: .45rem .65rem;
+                    border-bottom: 1px solid #eef2f4;
+                    font-size: .9rem;
+                    color: #2c3e50;
+                }
+                .gd-list li:last-child { border-bottom: none; }
+                .gd-list li span { flex: 1; word-break: break-word; }
+                .gd-list li button {
+                    background: transparent;
+                    border: 0;
+                    color: #c0392b;
+                    cursor: pointer;
+                    padding: .2rem .4rem;
+                    border-radius: 4px;
+                    font-size: .85rem;
+                    flex-shrink: 0;
+                    transition: background .12s, color .12s;
+                }
+                .gd-list li button:hover { background: #fdedec; }
+                .gd-list li.gd-empty { color: #888; font-style: italic; justify-content: center; }
+                .gd-add-row {
+                    display: flex;
+                    gap: .4rem;
+                }
+                .gd-add-row input {
+                    flex: 1;
+                    padding: .55rem .75rem;
+                    border: 1px solid #cfd9df;
+                    border-radius: 8px;
+                    font: inherit;
+                    font-size: .9rem;
+                }
+                .gd-add-row input:focus {
+                    outline: none;
+                    border-color: #0d7a8a;
+                    box-shadow: 0 0 0 3px rgba(13,122,138,.15);
+                }
+                .gd-add-btn {
+                    background: linear-gradient(135deg, #0d7a8a, #16a085);
+                    color: #fff;
+                    border: 0;
+                    padding: .55rem 1rem;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    font: inherit;
+                    font-size: .88rem;
+                    flex-shrink: 0;
+                }
+                .gd-add-btn:hover { filter: brightness(1.05); }
+            </style>
+
             <!-- Database backup & mirror -->
             <div class="settings-card" style="margin-top:1.5rem;">
                 <div class="settings-row">
@@ -1110,7 +1225,7 @@
     </div>
 
     <script src="js/firebase-config.js?v=21"></script>
-    <script src="js/dataStore.js?v=25"></script>
+    <script src="js/dataStore.js?v=26"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
@@ -1313,13 +1428,13 @@
                         <div class="gal-edit-body">
                             <label>Title<input type="text" data-f="title"></label>
                             <label>Caption<input type="text" data-f="caption"></label>
-                            <label>Category<input type="text" data-f="category" list="galCategoryList"></label>
+                            <label>Category<select data-f="category" data-dropdown="category"><option value="">— Choose category —</option></select></label>
                             <div class="gal-edit-row2">
                                 <label>Date<input type="date" data-f="date"></label>
                                 <label>Order<input type="number" data-f="order" min="0" step="1"></label>
                             </div>
-                            <label>Place<input type="text" data-f="place" list="galPlaceList"></label>
-                            <label>Package<input type="text" data-f="packageRef" list="galPackageList"></label>
+                            <label>Place<select data-f="place" data-dropdown="place"><option value="">— Choose place —</option></select></label>
+                            <label>Package<select data-f="packageRef" data-dropdown="package"><option value="">— Choose package —</option></select></label>
                         </div>
                         <div class="gal-edit-foot">
                             <button type="button" class="gal-edit-cancel">Cancel</button>
@@ -1327,6 +1442,10 @@
                         </div>
                     </div>
                 `;
+                // Populate the new <select>s from the live SettingsStore options
+                if (typeof window.__populateGalleryDropdowns === 'function') {
+                    window.__populateGalleryDropdowns(modal);
+                }
                 document.body.appendChild(modal);
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) modal.classList.remove('open');
@@ -2020,6 +2139,213 @@
         window.__staffMaybeEnableUpload = maybeEnableUpload;
     })();
     </script>
+
+    <!-- ── Gallery dropdowns (admin manages, staff picks from them) ──
+         Populates the Category / Place / Package <select>s in the
+         gallery upload form (and in the per-photo edit modal) from
+         the SettingsStore-backed lists on /settings/site. Admins also
+         get the "Manage Gallery Dropdowns" panel in Settings to add /
+         remove options on the fly. -->
+    <script>
+    (function () {
+        var FIELDS = [
+            { key: 'category', settingsKey: 'galleryCategoryOptions' },
+            { key: 'place',    settingsKey: 'galleryPlaceOptions'    },
+            { key: 'package',  settingsKey: 'galleryPackageOptions'  }
+        ];
+        var DEFAULTS = {
+            galleryCategoryOptions: ['Beaches', 'Islands', 'Activities', 'Resorts', 'Sunsets'],
+            galleryPlaceOptions:    ['Port Blair', 'Havelock Island', 'Neil Island', 'Ross Island', 'Baratang', 'Diglipur', 'Radhanagar Beach', 'Elephant Beach', 'Cellular Jail'],
+            galleryPackageOptions:  ['Budget', 'Standard', 'Luxury', 'Honeymoon', 'Family', 'Adventure']
+        };
+
+        // Pull the currently-cached settings (or fall back to defaults).
+        // This is sync — page renders the dropdowns instantly, and we
+        // re-render once Firestore returns fresh data below.
+        function getOptions(key) {
+            try {
+                var s = (window.SettingsStore && window.SettingsStore.cached && window.SettingsStore.cached()) || {};
+                var v = s[key];
+                if (Array.isArray(v) && v.length) return v.slice();
+            } catch (_) {}
+            return (DEFAULTS[key] || []).slice();
+        }
+
+        // Populate ALL <select data-dropdown="..."> within `root` (defaults
+        // to document). Safe to call repeatedly — the placeholder and the
+        // currently-selected value are preserved across rerenders.
+        function populate(root) {
+            root = root || document;
+            FIELDS.forEach(function (field) {
+                var opts = getOptions(field.settingsKey);
+                root.querySelectorAll('select[data-dropdown="' + field.key + '"]').forEach(function (sel) {
+                    var current = sel.value;
+                    var placeholder = sel.querySelector('option[value=""]');
+                    var placeholderHTML = placeholder ? placeholder.outerHTML
+                        : '<option value="">— Choose ' + field.key + ' —</option>';
+                    sel.innerHTML = placeholderHTML +
+                        opts.map(function (o) {
+                            var safe = String(o).replace(/[&<>"']/g, function (c) {
+                                return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+                            });
+                            return '<option value="' + safe + '">' + safe + '</option>';
+                        }).join('');
+                    // Restore previously chosen value (works for legacy
+                    // photos whose value isn't in the list any more —
+                    // we add it as an extra trailing option).
+                    if (current) {
+                        var found = Array.prototype.some.call(sel.options, function (op) {
+                            return op.value === current;
+                        });
+                        if (!found) {
+                            var safeCur = String(current).replace(/[&<>"']/g, function (c) {
+                                return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+                            });
+                            sel.insertAdjacentHTML('beforeend',
+                                '<option value="' + safeCur + '" data-legacy="1">' + safeCur + ' (legacy)</option>');
+                        }
+                        sel.value = current;
+                    }
+                });
+            });
+        }
+        // Expose so other scripts (the edit-modal code above) can call it
+        // when they construct their own DOM tree on demand.
+        window.__populateGalleryDropdowns = populate;
+
+        // First paint
+        populate();
+
+        // ── Manage panel (admin-only) ──────────────────────────
+        // Render the three lists in Settings → Manage Gallery Dropdowns,
+        // wire add/remove buttons. Each click writes the full list to
+        // Firestore via SettingsStore.save(); the local cache updates
+        // immediately so the upload-form selects stay in sync.
+        function renderManager() {
+            if (window.__dashRole !== 'admin') return; // panel hidden for staff
+            var mgr = document.getElementById('gdMgr');
+            if (!mgr) return;
+            FIELDS.forEach(function (field) {
+                var listEl = mgr.querySelector('.gd-list[data-list="' + field.key + '"] ul');
+                if (!listEl) return;
+                var opts = getOptions(field.settingsKey);
+                if (!opts.length) {
+                    listEl.innerHTML = '<li class="gd-empty">(no options yet — add one below)</li>';
+                    return;
+                }
+                listEl.innerHTML = opts.map(function (o) {
+                    var safe = String(o).replace(/[&<>"']/g, function (c) {
+                        return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+                    });
+                    return '<li><span>' + safe + '</span>' +
+                        '<button type="button" data-remove="' + safe + '" title="Remove"><i class="fas fa-times"></i></button></li>';
+                }).join('');
+            });
+        }
+
+        function showStatus(msg, isError) {
+            var el = document.getElementById('gdSaveStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.style.color = isError ? '#c0392b' : '#0d7a8a';
+        }
+
+        async function saveList(field, opts) {
+            if (!window.SettingsStore || !window.SettingsStore.save) {
+                throw new Error('SettingsStore not available');
+            }
+            var patch = {};
+            patch[field.settingsKey] = opts;
+            await window.SettingsStore.save(patch);
+        }
+
+        function wireMgr() {
+            if (window.__dashRole !== 'admin') return;
+            var mgr = document.getElementById('gdMgr');
+            if (!mgr) return;
+
+            // Add button (for each list)
+            mgr.querySelectorAll('.gd-list').forEach(function (listCard) {
+                var key = listCard.dataset.list;
+                var field = FIELDS.find(function (f) { return f.key === key; });
+                if (!field) return;
+                var input  = listCard.querySelector('.gd-add-row input');
+                var addBtn = listCard.querySelector('.gd-add-btn');
+                if (!input || !addBtn) return;
+
+                async function add() {
+                    var val = (input.value || '').trim();
+                    if (!val) return;
+                    var current = getOptions(field.settingsKey);
+                    if (current.indexOf(val) >= 0) {
+                        showStatus('"' + val + '" is already in the list.', true);
+                        return;
+                    }
+                    var next = current.concat([val]);
+                    addBtn.disabled = true;
+                    showStatus('Saving…');
+                    try {
+                        await saveList(field, next);
+                        input.value = '';
+                        showStatus('✓ Added "' + val + '"');
+                        renderManager();
+                        populate();
+                    } catch (err) {
+                        console.error('Gallery dropdown add failed:', err);
+                        showStatus('Failed: ' + (err && err.message || err), true);
+                    } finally {
+                        addBtn.disabled = false;
+                    }
+                }
+                addBtn.addEventListener('click', add);
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); add(); }
+                });
+            });
+
+            // Remove (delegated)
+            mgr.addEventListener('click', async function (e) {
+                var btn = e.target.closest('button[data-remove]');
+                if (!btn) return;
+                var listCard = btn.closest('.gd-list');
+                if (!listCard) return;
+                var key = listCard.dataset.list;
+                var field = FIELDS.find(function (f) { return f.key === key; });
+                if (!field) return;
+                var val = btn.dataset.remove;
+                if (!confirm('Remove "' + val + '" from the ' + key + ' list?')) return;
+                var current = getOptions(field.settingsKey);
+                var next = current.filter(function (o) { return o !== val; });
+                showStatus('Saving…');
+                try {
+                    await saveList(field, next);
+                    showStatus('✓ Removed "' + val + '"');
+                    renderManager();
+                    populate();
+                } catch (err) {
+                    console.error('Gallery dropdown remove failed:', err);
+                    showStatus('Failed: ' + (err && err.message || err), true);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            renderManager();
+            wireMgr();
+        });
+
+        // Pull fresh settings from Firestore. Once the load resolves,
+        // re-populate the upload-form selects + manager UI so any admin
+        // changes made on a different device show up here too.
+        if (window.SettingsStore && window.SettingsStore.load) {
+            window.SettingsStore.load().then(function () {
+                populate();
+                renderManager();
+            }).catch(function () {});
+        }
+    })();
+    </script>
+
     <script src="js/user-menu.js?v=11"></script>
 </body>
 </html>
