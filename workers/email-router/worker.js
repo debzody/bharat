@@ -32,7 +32,11 @@ import { parseRfc822 } from './mime.js';
 import { getFirestoreAccessToken, firestoreCreateIfMissing } from './firestore.js';
 
 export default {
-    /* HTTP handler — health-check only. Inbound mail uses email() below. */
+    /* HTTP handler — health-check + /mirror endpoint.
+     * Inbound MX-routed mail uses email() below; the /mirror endpoint
+     * lets sibling Workers (e.g. customize-email) write a synthetic
+     * /receivedEmails doc using THIS Worker's service-account credentials,
+     * so they don't need the secret of their own. */
     async fetch(request, env) {
         const url = new URL(request.url);
         if (url.pathname === '/' || url.pathname === '/health') {
@@ -43,6 +47,9 @@ export default {
                 forwardTo: env.FORWARD_ALL_TO || null,
                 hasServiceAccount: !!env.FIREBASE_SERVICE_ACCOUNT_KEY
             });
+        }
+        if (url.pathname === '/mirror' && request.method === 'POST') {
+            return handleMirror(request, env);
         }
         return new Response('Not found', { status: 404 });
     },
@@ -117,6 +124,38 @@ async function tryForward(message, env) {
         } catch (err2) {
             console.error('email-router: fallback forward failed:', err2);
         }
+    }
+}
+
+/* /mirror — accept a JSON payload from sibling Workers and write it
+ * to /receivedEmails. Auth is via a shared secret env.MIRROR_TOKEN
+ * (Bearer scheme); rejects anything else with 401. */
+async function handleMirror(request, env) {
+    const auth = request.headers.get('Authorization') || '';
+    const want = (env.MIRROR_TOKEN || '').trim();
+    if (!want) {
+        return Response.json({ error: 'mirror not configured' }, { status: 503 });
+    }
+    if (auth !== 'Bearer ' + want) {
+        return Response.json({ error: 'unauthorized' }, { status: 401 });
+    }
+    let body;
+    try { body = await request.json(); }
+    catch { return Response.json({ error: 'invalid json' }, { status: 400 }); }
+
+    const docId  = String(body.docId || '').trim();
+    const fields = body.fields;
+    if (!docId || !fields || typeof fields !== 'object') {
+        return Response.json({ error: 'docId and fields required' }, { status: 400 });
+    }
+
+    try {
+        const token   = await getFirestoreAccessToken(env);
+        const created = await firestoreCreateIfMissing(env, token, 'receivedEmails', docId, fields);
+        return Response.json({ ok: true, created });
+    } catch (err) {
+        console.error('email-router /mirror failed:', err);
+        return Response.json({ error: 'firestore write failed', detail: String(err && err.message || err) }, { status: 500 });
     }
 }
 

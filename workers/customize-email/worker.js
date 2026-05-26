@@ -24,7 +24,6 @@
 import { EmailMessage } from 'cloudflare:email';
 import { createMimeMessage } from 'mimetext/browser';
 import { sha256Hex } from './lib.js';
-import { getFirestoreAccessToken, firestoreCreateIfMissing } from './firestore.js';
 
 // Defaults — overridable via env.FROM_EMAIL / env.FROM_NAME / env.TO_EMAIL
 // (set in wrangler.toml [vars] block).
@@ -163,26 +162,33 @@ function validate(b) {
     return errs;
 }
 
-/* Write a /receivedEmails doc so the dashboard's Enquiries tab sees
- * this enquiry alongside actual MX-routed mail. Doc ID is the SHA-256
- * of the customize ref so retries from the browser are idempotent. */
+/* Mirror this enquiry into Firestore /receivedEmails so the
+ * dashboard's Enquiries tab sees it. Rather than juggle a second
+ * service-account secret here, we delegate to the email-router
+ * Worker's /mirror endpoint — that Worker already holds the
+ * FIREBASE_SERVICE_ACCOUNT_KEY. Auth is a shared bearer token
+ * (env.MIRROR_TOKEN — same value on both Workers).
+ *
+ * Doc ID is SHA-256(customize:<ref>) so retries from the browser
+ * dedupe naturally. */
 async function mirrorToFirestore(env, info) {
-    if (!env.FIREBASE_SERVICE_ACCOUNT_KEY || !env.FIREBASE_PROJECT_ID) {
-        // Worker not configured for Firestore writes — skip silently.
+    const url   = (env.MIRROR_URL   || 'https://email-router.pittu-das2.workers.dev/mirror').trim();
+    const token = (env.MIRROR_TOKEN || '').trim();
+    if (!url || !token) {
+        // Mirror not configured — skip silently. The gmail send still works.
         return;
     }
-    const token = await getFirestoreAccessToken(env);
     const docId = await sha256Hex('customize:' + (info.ref || Math.random()));
     const fromHeader = info.fromName
         ? `${info.fromName} <${info.fromEmail}>`
         : info.fromEmail;
     const replyTo = (info.traveller && info.traveller.email) || '';
-    const doc = {
+    const fields = {
         messageId:    'customize-' + info.ref,
         envelopeFrom: info.fromEmail,
-        envelopeTo:   info.toEmail,                       // enquiries@…
+        envelopeTo:   'enquiries@andamanvoyages.in',
         from:         fromHeader,
-        to:           info.toEmail,
+        to:           'enquiries@andamanvoyages.in',
         cc:           '',
         subject:      info.subject,
         date:         new Date().toUTCString(),
@@ -192,15 +198,24 @@ async function mirrorToFirestore(env, info) {
         textHtml:     String(info.htmlBody || '').slice(0, 200_000),
         attachments:  [],
         rawSize:      String(info.htmlBody || '').length,
-        mailbox:      String(info.toEmail || '').toLowerCase(),  // → 'enquiries@…'
+        mailbox:      'enquiries@andamanvoyages.in',
         unread:       true,
         receivedAt:   new Date().toISOString(),
-        // Extra fields specific to /customize submissions — handy for
-        // admins to one-click reply.
         replyTo:      replyTo,
         source:       'customize-form'
     };
-    await firestoreCreateIfMissing(env, token, 'receivedEmails', docId, doc);
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ docId, fields })
+    });
+    if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error('mirror responded ' + res.status + ': ' + txt);
+    }
 }
 
 function escHtml(s) {
