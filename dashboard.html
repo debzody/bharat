@@ -496,9 +496,34 @@
 
             <!-- Received pane (default visible) -->
             <div class="inbox-pane" id="inboxReceivedPane" data-inbox-pane="received">
+                <!-- Mailbox sub-tabs (Booking / Info / Cancellation / All) -->
+                <div class="inbox-mailbox-tabs" role="tablist">
+                    <button type="button" class="inbox-mbx-tab active" data-mailbox="booking@andamanvoyages.in" role="tab" aria-selected="true">
+                        <i class="fas fa-suitcase"></i> Bookings
+                        <span class="inbox-mbx-count" data-mbx-count="booking@andamanvoyages.in">0</span>
+                    </button>
+                    <button type="button" class="inbox-mbx-tab" data-mailbox="info@andamanvoyages.in" role="tab" aria-selected="false">
+                        <i class="fas fa-info-circle"></i> Info
+                        <span class="inbox-mbx-count" data-mbx-count="info@andamanvoyages.in">0</span>
+                    </button>
+                    <button type="button" class="inbox-mbx-tab" data-mailbox="cancellation@andamanvoyages.in" role="tab" aria-selected="false">
+                        <i class="fas fa-ban"></i> Cancellations
+                        <span class="inbox-mbx-count" data-mbx-count="cancellation@andamanvoyages.in">0</span>
+                    </button>
+                    <button type="button" class="inbox-mbx-tab" data-mailbox="__all__" role="tab" aria-selected="false">
+                        <i class="fas fa-layer-group"></i> All
+                        <span class="inbox-mbx-count" data-mbx-count="__all__">0</span>
+                    </button>
+                </div>
                 <div class="inbox-split">
                     <div class="inbox-list-wrap table-card">
-                        <div class="table-header"><h3><i class="fas fa-inbox"></i> Inbox</h3></div>
+                        <div class="table-header" style="display:flex;align-items:center;gap:.75rem;justify-content:space-between;">
+                            <h3 style="margin:0;"><i class="fas fa-inbox"></i> <span id="inboxMbxLabel">Bookings</span></h3>
+                            <label style="font-size:.78rem;color:#5a6877;display:inline-flex;align-items:center;gap:.4rem;font-weight:500;">
+                                <input type="checkbox" id="inboxGroupBySender" checked>
+                                Group by sender
+                            </label>
+                        </div>
                         <div class="table-responsive">
                             <table class="data-table">
                                 <thead>
@@ -1200,6 +1225,99 @@
                     color: #fff;
                 }
 
+                /* Mailbox sub-tabs (Bookings / Info / Cancellations / All) */
+                .inbox-mailbox-tabs {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: .4rem;
+                    margin: 1rem 0 .25rem;
+                }
+                .inbox-mbx-tab {
+                    background: #fff;
+                    border: 1px solid #cfd9df;
+                    color: #5a6877;
+                    padding: .45rem .9rem;
+                    border-radius: 999px;
+                    font-family: inherit;
+                    font-size: .82rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .4rem;
+                    transition: background .12s, border-color .12s, color .12s, transform .1s, box-shadow .12s;
+                }
+                .inbox-mbx-tab:hover {
+                    background: #eef6f8;
+                    border-color: #b7cdd6;
+                    color: #0d7a8a;
+                }
+                .inbox-mbx-tab.active {
+                    background: linear-gradient(135deg, #0d7a8a, #16a085);
+                    color: #fff;
+                    border-color: transparent;
+                    box-shadow: 0 2px 6px rgba(13,122,138,.22);
+                }
+                .inbox-mbx-tab.active:hover {
+                    color: #fff;
+                    transform: translateY(-1px);
+                    filter: brightness(1.05);
+                }
+                .inbox-mbx-count {
+                    background: #eef3f5;
+                    color: #5a6877;
+                    font-size: .7rem;
+                    padding: .08rem .5rem;
+                    border-radius: 999px;
+                    font-weight: 700;
+                    min-width: 1.1rem;
+                    text-align: center;
+                }
+                .inbox-mbx-tab.active .inbox-mbx-count {
+                    background: rgba(255,255,255,.25);
+                    color: #fff;
+                }
+
+                /* Sender group header rows in the Received list */
+                .inbox-list-wrap .data-table tbody tr.group-header {
+                    cursor: pointer;
+                    background: #f3f8fa;
+                }
+                .inbox-list-wrap .data-table tbody tr.group-header:hover {
+                    background: #e8f1f4;
+                }
+                .inbox-list-wrap .data-table tbody tr.group-header td {
+                    font-weight: 700;
+                    color: #0d2c3a;
+                    font-size: .88rem;
+                    padding: .55rem .75rem;
+                }
+                .inbox-list-wrap .data-table tbody tr.group-header .group-count {
+                    display: inline-block;
+                    margin-left: .45rem;
+                    background: #0d7a8a;
+                    color: #fff;
+                    border-radius: 999px;
+                    padding: .05rem .55rem;
+                    font-size: .7rem;
+                    font-weight: 700;
+                }
+                .inbox-list-wrap .data-table tbody tr.group-header .group-toggle {
+                    display: inline-block;
+                    width: .9rem;
+                    color: #5a6877;
+                    transition: transform .15s;
+                }
+                .inbox-list-wrap .data-table tbody tr.group-header.collapsed .group-toggle {
+                    transform: rotate(-90deg);
+                }
+                .inbox-list-wrap .data-table tbody tr.group-row.hidden {
+                    display: none;
+                }
+                .inbox-list-wrap .data-table tbody tr.group-row td:first-child {
+                    padding-left: 1.5rem; /* visual indent under group header */
+                }
+
                 /* Two-pane Received layout: list on the left, preview right */
                 .inbox-split {
                     display: grid;
@@ -1641,7 +1759,8 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
-    <script src="js/inbox.js?v=3"></script>
+    <script src="js/inbox.js?v=5"></script>
+    <script src="js/inbox-receiver.js?v=2"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());
