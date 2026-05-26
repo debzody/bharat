@@ -318,6 +318,17 @@
                         <option value="confirmed">Confirmed</option>
                         <option value="cancelled">Cancelled</option>
                     </select>
+                    <!-- Admin-only test helper: seeds two fake bookings into
+                         localStorage so admins can verify the Cancel button +
+                         status badges without needing a real Razorpay payment.
+                         Hidden for staff via the staff-role CSS gate near the
+                         top of the page. -->
+                    <button class="btn-add-package" id="seedFakeBookingsBtn" style="background:#9b59b6;" title="Add 2 sample bookings to this device's localStorage so you can test the Cancel flow.">
+                        <i class="fas fa-flask"></i> Seed Test Bookings
+                    </button>
+                    <button class="btn-add-package" id="clearFakeBookingsBtn" style="background:#e74c3c;" title="Wipe all bookings from this device's localStorage.">
+                        <i class="fas fa-broom"></i> Clear Bookings
+                    </button>
                 </div>
             </div>
             <div class="table-card">
@@ -1817,7 +1828,7 @@
     <script src="js/firebase-config.js?v=21"></script>
     <script src="js/dataStore.js?v=27"></script>
     <script src="js/toast.js?v=1"></script>
-    <script src="js/dashboard.js?v=27"></script>
+    <script src="js/dashboard.js?v=28"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=8"></script>
