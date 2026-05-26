@@ -300,8 +300,14 @@
 
         // Cancellation rule values for this tier — keeps the UI in sync
         // with /terms#cancellation without re-reading anything.
-        var cxlFee     = isLuxuryTier ? 7000 : 4000;
-        var cxlRefund  = isLuxuryTier ? 4000 : 2000;
+        // Sliding scale (per head):
+        //   30+ days  → flat fee retained, balance refunded
+        //   8–29 days → 50% of advance retained
+        //   0–7 days  → no refund
+        var cxlFee30   = isLuxuryTier ? 7000 : 4000;        // ≥30d retained / head
+        var cxlRef30   = isLuxuryTier ? 4000 : 2000;        // ≥30d refund   / head
+        var cxlFee8    = Math.round(perHead / 2);            // 50% of advance
+        var cxlRef8    = perHead - cxlFee8;                  // remaining 50%
         var tierLabel  = isLuxuryTier ? 'Luxury / Premium / Honeymoon' : 'Budget / Standard';
 
         var couponHtml = state.coupon
@@ -346,12 +352,15 @@
             '<div id="rzp-embed-container" class="rzp-embed-container" style="display:none;"></div>' +
             '<a href="/#packages" style="text-decoration:none;"><button class="btn-secondary" type="button"><i class="fas fa-arrow-left"></i> Continue Browsing</button></a>' +
 
-            // Cancellation policy summary — flat per-head fee, not a %.
+            // Cancellation policy summary — three-tier sliding scale.
+            // Single source of truth duplicated in /terms#cancellation and
+            // in the POLICY_HTML.cancel modal below; keep all three in sync.
             '<div class="cxl-policy">' +
-                '<strong><i class="fas fa-info-circle"></i> Cancellation Policy</strong>' +
+                '<strong><i class="fas fa-info-circle"></i> Cancellation Policy <small style="font-weight:500;color:#5a6877;">— ' + esc(tierLabel) + ', ' + R + fmt(perHead) + '/head advance</small></strong>' +
                 '<ul>' +
-                    '<li><strong>More than 7 days</strong> before travel (' + esc(tierLabel) + '): ' + R + fmt(cxlFee) + '/head retained as cancellation fee &mdash; <strong>' + R + fmt(cxlRefund) + '/head refunded</strong>.</li>' +
-                    '<li><strong>Within 7 days of travel (or no-show):</strong> no refund &mdash; full advance forfeited.</li>' +
+                    '<li><strong>30 days or more</strong> before travel: ' + R + fmt(cxlFee30) + '/head retained &mdash; <strong>' + R + fmt(cxlRef30) + '/head refunded</strong>.</li>' +
+                    '<li><strong>8 – 29 days</strong> before travel: 50% of advance retained &mdash; <strong>' + R + fmt(cxlRef8) + '/head refunded</strong>.</li>' +
+                    '<li><strong>0 – 7 days</strong> before travel (or no-show): <strong>no refund</strong> &mdash; full advance forfeited.</li>' +
                 '</ul>' +
                 '<small>Balance of ' + R + fmt(balance) + ' is paid directly during or after your trip — UPI / bank transfer / cash. <a href="/terms#cancellation" style="color:#0a5a68;">Full policy →</a></small>' +
             '</div>' +
@@ -468,21 +477,43 @@
         ].join(''),
         cancel: [
             '<h3><i class="fas fa-info-circle"></i> Cancellation &amp; Refund Policy</h3>',
-            '<p style="color:#888;font-size:.85rem;margin:0 0 1rem;">Last updated: 22 May 2026 &middot; <a href="/terms#cancellation" target="_blank" rel="noopener" style="color:#0a5a68;">View full policy in new tab →</a></p>',
-            '<p>Cancellations must be requested in writing at <a href="mailto:cancellation@andamanvoyages.in" style="color:#0a5a68;">cancellation@andamanvoyages.in</a> with your Booking Reference.</p>',
-            '<h4>Budget &amp; Standard packages — ₹6,000 / head advance</h4>',
+            '<p style="color:#888;font-size:.85rem;margin:0 0 1rem;">Last updated: 26 May 2026 &middot; <a href="/terms#cancellation" target="_blank" rel="noopener" style="color:#0a5a68;">View full policy in new tab →</a></p>',
+            '<p>Cancellations must be requested in writing at <a href="mailto:cancellation@andamanvoyages.in" style="color:#0a5a68;">cancellation@andamanvoyages.in</a> with your Booking Reference. Refunds follow a <strong>three-tier sliding scale</strong> based on how many days are left before your travel start date.</p>',
+            '<div style="overflow-x:auto;margin:1rem 0;">',
+              '<table class="cxl-table" style="width:100%;border-collapse:collapse;font-size:.92rem;">',
+                '<thead>',
+                  '<tr style="background:#0d7a8a;color:#fff;text-align:left;">',
+                    '<th style="padding:.7rem .8rem;font-weight:700;">Days before travel</th>',
+                    '<th style="padding:.7rem .8rem;font-weight:700;">Budget / Standard<br><small style="opacity:.8;font-weight:500;">(₹6,000 advance / head)</small></th>',
+                    '<th style="padding:.7rem .8rem;font-weight:700;">Luxury / Premium / Honeymoon<br><small style="opacity:.8;font-weight:500;">(₹11,000 advance / head)</small></th>',
+                  '</tr>',
+                '</thead>',
+                '<tbody>',
+                  '<tr style="border-bottom:1px solid #e3e8ef;">',
+                    '<td style="padding:.7rem .8rem;font-weight:700;">30 days or more</td>',
+                    '<td style="padding:.7rem .8rem;">₹4,000 / head retained →<br><strong style="color:#0a5a68;">₹2,000 / head refunded</strong></td>',
+                    '<td style="padding:.7rem .8rem;">₹7,000 / head retained →<br><strong style="color:#0a5a68;">₹4,000 / head refunded</strong></td>',
+                  '</tr>',
+                  '<tr style="border-bottom:1px solid #e3e8ef;background:#f9fbfc;">',
+                    '<td style="padding:.7rem .8rem;font-weight:700;">8 – 29 days</td>',
+                    '<td style="padding:.7rem .8rem;">50% of advance retained →<br><strong style="color:#0a5a68;">₹3,000 / head refunded</strong></td>',
+                    '<td style="padding:.7rem .8rem;">50% of advance retained →<br><strong style="color:#0a5a68;">₹5,500 / head refunded</strong></td>',
+                  '</tr>',
+                  '<tr>',
+                    '<td style="padding:.7rem .8rem;font-weight:700;">0 – 7 days <small style="font-weight:500;color:#7a8b96;">or no-show</small></td>',
+                    '<td style="padding:.7rem .8rem;color:#c0392b;"><strong>No refund</strong> — full advance forfeited</td>',
+                    '<td style="padding:.7rem .8rem;color:#c0392b;"><strong>No refund</strong> — full advance forfeited</td>',
+                  '</tr>',
+                '</tbody>',
+              '</table>',
+            '</div>',
+            '<p style="margin-top:1rem;"><strong>Worked example:</strong> A family of 4 books a Standard package and pays ₹6,000 × 4 = ₹24,000 advance.',
             '<ul>',
-                '<li><strong>Cancellation more than 7 days before travel:</strong> ₹4,000 / head retained as cancellation fee → <strong>₹2,000 / head refunded</strong>.</li>',
-                '<li><strong>Cancellation within 7 days of travel (or no-show):</strong> <strong>no refund</strong> — full advance &amp; any partial balance paid is forfeited.</li>',
-            '</ul>',
-            '<h4>Luxury, Premium &amp; Honeymoon packages — ₹11,000 / head advance</h4>',
-            '<ul>',
-                '<li><strong>Cancellation more than 7 days before travel:</strong> ₹7,000 / head retained as cancellation fee → <strong>₹4,000 / head refunded</strong>.</li>',
-                '<li><strong>Cancellation within 7 days of travel (or no-show):</strong> <strong>no refund</strong> — full advance &amp; any partial balance paid is forfeited.</li>',
-            '</ul>',
-            '<p style="margin-top:1rem;"><strong>Worked example:</strong> A family of 4 books a Standard package and pays ₹6,000 × 4 = ₹24,000 advance. If they cancel 30 days before travel, they receive ₹2,000 × 4 = ₹8,000 back. If they cancel 5 days before travel, no refund — full ₹24,000 forfeited.</p>',
-            '<p><strong>Note:</strong> Non-refundable third-party charges (flight tickets, peak-season ferry bookings, hotel pre-payment penalties) are deducted in addition to the above.</p>',
-            '<p>Approved refunds are processed within 7–10 working days to the original payment method.</p>'
+              '<li>Cancel <strong>35 days</strong> before travel → refund = ₹2,000 × 4 = <strong>₹8,000</strong>.</li>',
+              '<li>Cancel <strong>20 days</strong> before travel → refund = ₹3,000 × 4 = <strong>₹12,000</strong>.</li>',
+              '<li>Cancel <strong>5 days</strong> before travel → <strong>no refund</strong>; full ₹24,000 forfeited.</li>',
+            '</ul></p>',
+            '<p><strong>Note:</strong> Non-refundable third-party charges (flight tickets, peak-season ferry bookings, hotel pre-payment penalties) are deducted in addition to the slabs above. Approved refunds are processed within 7–10 working days to the original payment method.</p>'
         ].join('')
     };
 
