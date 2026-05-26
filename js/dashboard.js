@@ -616,6 +616,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 modal = document.createElement('div');
                 modal.id = 'iteDayUploadModal';
                 modal.className = 'gal-edit-modal';
+                // The itinerary overlay (.ite-overlay) sits at z-index 100000,
+                // so the day-upload dialog MUST sit above it or it's invisible.
+                // The gallery edit modal's default z-index of 1000 (from
+                // css/gallery.css) hides it behind the overlay → the dialog
+                // appears to "not open" even though .open is set. Force a
+                // higher z-index right on the element so we don't have to
+                // touch the shared CSS.
+                modal.style.zIndex = '100002';
                 modal.innerHTML = `
                     <div class="gal-edit-card" style="max-width:560px;">
                         <div class="gal-edit-head">
