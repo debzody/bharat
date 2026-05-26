@@ -91,13 +91,33 @@ async function handleSend(request, env) {
     const text     = (body.text     || '').toString();
     const replyTo  = (body.replyTo  || '').toString().trim();
     const cc       = Array.isArray(body.cc) ? body.cc : [];
+    const fromReq  = (body.from     || '').toString().trim().toLowerCase();
 
     if (!isValidEmail(to))                    return jsonResponse(env, request, { error: 'Invalid `to` address' }, 400);
     if (!subject || subject.length > 300)     return jsonResponse(env, request, { error: 'Subject required (≤300 chars)' }, 400);
     if (!html && !text)                       return jsonResponse(env, request, { error: 'Body required (html or text)' }, 400);
     if (!env.BREVO_API_KEY)                   return jsonResponse(env, request, { error: 'BREVO_API_KEY secret not configured' }, 500);
 
-    const fromEmail = env.FROM_EMAIL || 'booking@andamanvoyages.in';
+    // ── Choose the From address ──────────────────────────────
+    // The dashboard's Compose modal lets the admin pick which mailbox
+    // the email should appear to come from (booking@, info@, cancellation@…).
+    // We validate the choice against ALLOWED_SENDERS so an attacker who
+    // gets an admin token can't impersonate arbitrary domains. Each
+    // sender must also be a verified sender in Brevo, otherwise Brevo
+    // will reject the request with `sender_not_authorized`.
+    const allowedSenders = (env.ALLOWED_SENDERS || env.FROM_EMAIL || 'booking@andamanvoyages.in')
+        .split(',')
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+    const defaultFromEmail = (env.FROM_EMAIL || allowedSenders[0] || 'booking@andamanvoyages.in').toLowerCase();
+    let fromEmail;
+    if (fromReq) {
+        if (!isValidEmail(fromReq))            return jsonResponse(env, request, { error: 'Invalid `from` address' }, 400);
+        if (!allowedSenders.includes(fromReq)) return jsonResponse(env, request, { error: 'From address not allowed: ' + fromReq }, 403);
+        fromEmail = fromReq;
+    } else {
+        fromEmail = defaultFromEmail;
+    }
     const fromName  = env.FROM_NAME  || 'Bharat Tours & Travels';
 
     const payload = {
