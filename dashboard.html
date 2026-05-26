@@ -480,8 +480,8 @@
                 inbound mail is captured by Cloudflare Email Routing and persisted via the
                 <code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">email-router</code> Worker.
                 The <strong>Received</strong> tab below mirrors everything sent to
-                <strong>booking@</strong>, <strong>info@</strong> and
-                <strong>cancellation@andamanvoyages.in</strong>; click any row to preview, then hit Reply to prefill Compose.
+                <strong>booking@</strong>, <strong>info@</strong>, <strong>cancellation@</strong> and
+                <strong>enquiries@andamanvoyages.in</strong>; click any row to preview, then hit Reply to prefill Compose.
             </p>
 
             <!-- Sent / Received tabs -->
@@ -509,6 +509,10 @@
                     <button type="button" class="inbox-mbx-tab" data-mailbox="cancellation@andamanvoyages.in" role="tab" aria-selected="false">
                         <i class="fas fa-ban"></i> Cancellations
                         <span class="inbox-mbx-count" data-mbx-count="cancellation@andamanvoyages.in">0</span>
+                    </button>
+                    <button type="button" class="inbox-mbx-tab" data-mailbox="enquiries@andamanvoyages.in" role="tab" aria-selected="false">
+                        <i class="fas fa-question-circle"></i> Enquiries
+                        <span class="inbox-mbx-count" data-mbx-count="enquiries@andamanvoyages.in">0</span>
                     </button>
                     <button type="button" class="inbox-mbx-tab" data-mailbox="__all__" role="tab" aria-selected="false">
                         <i class="fas fa-layer-group"></i> All
@@ -1751,7 +1755,8 @@
         window.INBOX_FROM_OPTIONS = [
             { email: 'booking@andamanvoyages.in',      label: 'Bookings'      },
             { email: 'info@andamanvoyages.in',         label: 'Info / Sales'  },
-            { email: 'cancellation@andamanvoyages.in', label: 'Cancellations' }
+            { email: 'cancellation@andamanvoyages.in', label: 'Cancellations' },
+            { email: 'enquiries@andamanvoyages.in',    label: 'Enquiries'     }
         ];
     </script>
     <script src="js/firebase-config.js?v=21"></script>
@@ -1759,8 +1764,8 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
-    <script src="js/inbox.js?v=5"></script>
-    <script src="js/inbox-receiver.js?v=4"></script>
+    <script src="js/inbox.js?v=6"></script>
+    <script src="js/inbox-receiver.js?v=5"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());

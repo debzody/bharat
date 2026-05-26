@@ -26,9 +26,10 @@
 
     /* ── Mailbox config ─────────────────────────────────────── */
     const MAILBOXES = [
-        { id: 'booking@andamanvoyages.in',      label: 'Bookings',      icon: 'fa-suitcase'    },
-        { id: 'info@andamanvoyages.in',         label: 'Info',          icon: 'fa-info-circle' },
-        { id: 'cancellation@andamanvoyages.in', label: 'Cancellations', icon: 'fa-ban'         }
+        { id: 'booking@andamanvoyages.in',      label: 'Bookings',      icon: 'fa-suitcase'      },
+        { id: 'info@andamanvoyages.in',         label: 'Info',          icon: 'fa-info-circle'   },
+        { id: 'cancellation@andamanvoyages.in', label: 'Cancellations', icon: 'fa-ban'           },
+        { id: 'enquiries@andamanvoyages.in',    label: 'Enquiries',     icon: 'fa-question-circle' }
     ];
     const ALL = '__all__';
 
