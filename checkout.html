@@ -64,6 +64,12 @@
         <a href="/terms">Terms</a>
     </footer>
 
+    <!-- Inbox-mail Worker URL — used by booking-emails.js to send the
+         booking confirmation through Brevo when an admin/staff is
+         logged in. Customers fall through to the Firestore mail/{ref}
+         queue (Trigger Email extension). Same URL as dashboard.html. -->
+    <script>window.INBOX_WORKER_URL = 'https://inbox-mail.pittu-das2.workers.dev';</script>
+    <script src="js/booking-emails.js?v=1"></script>
     <script src="js/checkout.js?v=6"></script>
     <script src="js/security.js?v=2"></script>
     <script src="js/user-menu.js?v=10"></script>
