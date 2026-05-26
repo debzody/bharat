@@ -21,7 +21,7 @@
 
     <link rel="stylesheet" href="css/style.css?v=54">
     <link rel="stylesheet" href="css/dashboard.css?v=6">
-    <link rel="stylesheet" href="css/gallery.css?v=4">
+    <link rel="stylesheet" href="css/gallery.css?v=5">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/firebase-config.js?v=21"></script>
@@ -95,10 +95,11 @@
         html[data-dashboard-role="staff"] .sidebar-link[data-section="settings"] {
             display: none !important;
         }
-        /* Hide admin-only controls in the Packages section */
+        /* Hide admin-only controls in the Packages section.
+           Staff CAN save & publish their edits (#publishBtn is intentionally
+           NOT in this list) — they just can't add/delete or seed sample data. */
         html[data-dashboard-role="staff"] #addPackageBtn,
         html[data-dashboard-role="staff"] #seedPackagesBtn,
-        html[data-dashboard-role="staff"] #publishBtn,
         html[data-dashboard-role="staff"] .btn-del-pkg {
             display: none !important;
         }
@@ -1814,9 +1815,9 @@
         ];
     </script>
     <script src="js/firebase-config.js?v=21"></script>
-    <script src="js/dataStore.js?v=26"></script>
+    <script src="js/dataStore.js?v=27"></script>
     <script src="js/toast.js?v=1"></script>
-    <script src="js/dashboard.js?v=24"></script>
+    <script src="js/dashboard.js?v=25"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=8"></script>
@@ -1881,19 +1882,127 @@
 
         function setPendingFiles(files) {
             pendingFiles = files;
+            // The button is enabled as soon as files are picked. The
+            // mandatory-field validation runs ON CLICK and surfaces any
+            // missing fields in a dedicated modal dialog (so the user
+            // gets clear, actionable guidance instead of a silently
+            // disabled button — which previously confused both admin
+            // and staff users).
             uploadBtn.disabled = !files.length;
             const names = files.map(f => f.name).join(', ');
             setStatus(`${files.length} file(s) ready: ${names}`);
-            // For staff users, the staff-bootstrap script below adds extra
-            // required-field validation on top of the "files chosen" check.
-            // Re-run it here so picking a file doesn't bypass the rule.
+            // Tell the staff-bootstrap script to re-evaluate too, so any
+            // extra UI cues it adds (red borders, tooltip) stay accurate.
             if (typeof window.__staffMaybeEnableUpload === 'function') {
                 window.__staffMaybeEnableUpload();
             }
         }
 
+        // ── Mandatory-field check + dialog ─────────────────────
+        // Every gallery upload (admin AND staff) requires Title, Category,
+        // Date, Place and Package. We check on click and pop a modal
+        // listing the missing fields so the user can fix them quickly.
+        // Caption + Order remain optional.
+        const REQUIRED_UPLOAD_FIELDS = [
+            { id: 'galTitle',    label: 'Title',    el: titleEl    },
+            { id: 'galCategory', label: 'Category', el: categoryEl },
+            { id: 'galDate',     label: 'Date',     el: dateEl     },
+            { id: 'galPlace',    label: 'Place',    el: placeEl    },
+            { id: 'galPackage',  label: 'Package',  el: packageEl  }
+        ];
+
+        function findMissingFields() {
+            return REQUIRED_UPLOAD_FIELDS.filter(f => {
+                const v = f.el && (f.el.value || '');
+                return !String(v).trim();
+            });
+        }
+
+        function showMissingFieldsDialog(missing) {
+            // Lazy-create the modal once
+            let modal = document.getElementById('galRequiredModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'galRequiredModal';
+                modal.className = 'gal-edit-modal';
+                modal.innerHTML = `
+                    <div class="gal-edit-card" style="max-width:480px;">
+                        <div class="gal-edit-head">
+                            <h3 style="color:#a04000;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Missing required fields
+                            </h3>
+                            <button type="button" class="gal-edit-close" aria-label="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="gal-edit-body">
+                            <p style="margin:0 0 .75rem;color:#3a4a55;line-height:1.55;">
+                                Please fill the following before uploading. These tags help group photos
+                                on the public gallery (year / place / package) and make them searchable.
+                            </p>
+                            <ul id="galRequiredList" style="margin:0 0 .25rem 1.1rem;padding:0;color:#c0392b;font-weight:600;line-height:1.9;"></ul>
+                        </div>
+                        <div class="gal-edit-foot">
+                            <button type="button" class="gal-edit-cancel">Got it</button>
+                            <button type="button" class="gal-edit-save" id="galRequiredFocusBtn">
+                                <i class="fas fa-edit"></i> Fill them now
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.classList.remove('open');
+                });
+                modal.querySelector('.gal-edit-close').addEventListener('click', () => modal.classList.remove('open'));
+                modal.querySelector('.gal-edit-cancel').addEventListener('click', () => modal.classList.remove('open'));
+            }
+
+            // Repopulate the list each time
+            const list = modal.querySelector('#galRequiredList');
+            list.innerHTML = missing.map(m =>
+                '<li><i class="fas fa-circle-exclamation" style="margin-right:.4rem;"></i>' +
+                escapeHtml(m.label) + '</li>'
+            ).join('');
+
+            // Rebind focus button to jump to the first missing field
+            const focusBtn = modal.querySelector('#galRequiredFocusBtn');
+            const newFocusBtn = focusBtn.cloneNode(true);
+            focusBtn.parentNode.replaceChild(newFocusBtn, focusBtn);
+            newFocusBtn.addEventListener('click', () => {
+                modal.classList.remove('open');
+                const first = missing[0] && missing[0].el;
+                if (first) {
+                    try { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+                    setTimeout(() => { try { first.focus(); } catch (_) {} }, 250);
+                    // Briefly highlight the field so the user can see where to type
+                    if (first.classList) {
+                        first.classList.add('agf-field-flash');
+                        setTimeout(() => first.classList.remove('agf-field-flash'), 1600);
+                    }
+                }
+            });
+
+            modal.classList.add('open');
+        }
+
         uploadBtn.addEventListener('click', async () => {
-            if (!pendingFiles.length) return;
+            if (!pendingFiles.length) {
+                setStatus('Please choose one or more images to upload first.', true);
+                return;
+            }
+
+            // Validate mandatory fields BEFORE disabling the button —
+            // otherwise a user who closes the dialog can't try again.
+            const missing = findMissingFields();
+            if (missing.length) {
+                showMissingFieldsDialog(missing);
+                setStatus('Upload blocked — please fill: ' +
+                    missing.map(m => m.label).join(', '), true);
+                return;
+            }
+
             uploadBtn.disabled = true;
 
             const meta = {
@@ -2711,20 +2820,33 @@
             var btn = document.getElementById('galUploadBtn');
             var fileInput = document.getElementById('galFileInput');
             if (!btn) return;
-            // Mirror the page's existing rule: enabled only when files chosen
+            // Button policy (post-2026 dialog refactor):
+            //   The Upload button is enabled the moment files are chosen.
+            //   When the user clicks it without filling the required tags,
+            //   the inline gallery wiring shows a modal listing exactly
+            //   which fields are missing — no more silently-disabled
+            //   buttons that confused staff.
+            //   We still set a tooltip + visual cue here so the user
+            //   knows what they need to fill before clicking.
             var hasFiles = !!(fileInput && fileInput.files && fileInput.files.length);
-            // …AND every required field is filled
             var allFilled = ['galTitle', 'galCategory', 'galDate', 'galPlace', 'galPackage']
                 .every(function (id) {
                     var el = document.getElementById(id);
                     return el && String(el.value || '').trim() !== '';
                 });
-            btn.disabled = !(hasFiles && allFilled);
+            btn.disabled = !hasFiles;
             btn.title = !hasFiles
                 ? 'Choose one or more images to upload'
                 : !allFilled
-                    ? 'Please fill all required fields (Title, Category, Date, Place, Package).'
+                    ? 'Click to see which required fields are still empty (Title, Category, Date, Place, Package).'
                     : 'Upload selected images';
+            // Add a subtle warning class while fields are still missing
+            // (used by CSS to colour the button amber, not red).
+            if (hasFiles && !allFilled) {
+                btn.classList.add('upload-needs-fields');
+            } else {
+                btn.classList.remove('upload-needs-fields');
+            }
         }
         // Expose so the inline gallery wiring can call it after a file is chosen
         window.__staffMaybeEnableUpload = maybeEnableUpload;

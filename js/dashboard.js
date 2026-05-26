@@ -1029,11 +1029,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            await window.PackagesStore.publish(packagesData);
+            const result = await window.PackagesStore.publish(packagesData);
             status.className = 'publish-status publish-success';
-            status.innerHTML =
-                '✅ Published! Changes are live globally. Other devices will see them on next page load.';
-            btn.innerHTML = '<i class="fas fa-check"></i> Published!';
+            // Staff gets a slightly different message — they can update,
+            // not create or delete, so call out exactly what landed.
+            if (result && result.role === 'staff') {
+                const skippedNote = result.skipped
+                    ? ' ' + result.skipped + ' new package(s) were skipped — ask an admin to add them.'
+                    : '';
+                status.innerHTML =
+                    '✅ Saved! ' + result.count + ' package(s) updated and live globally.' + skippedNote;
+            } else {
+                status.innerHTML =
+                    '✅ Published! Changes are live globally. Other devices will see them on next page load.';
+            }
+            btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
         } catch (err) {
             const msg = (err && err.message) ? err.message : 'unknown error';
             status.className = 'publish-status publish-error';
