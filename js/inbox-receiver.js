@@ -4,7 +4,8 @@
     const MAILBOXES = [
         { id: 'booking@andamanvoyages.in', label: 'Bookings' },
         { id: 'info@andamanvoyages.in', label: 'Info' },
-        { id: 'cancellation@andamanvoyages.in', label: 'Cancellations' }
+        { id: 'cancellation@andamanvoyages.in', label: 'Cancellations' },
+        { id: 'enquiries@andamanvoyages.in', label: 'Enquiries' }
     ];
     const ALL = '__all__';
     const state = {
