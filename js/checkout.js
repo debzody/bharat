@@ -242,6 +242,32 @@
             '</div></div>';
     }
 
+    // Resolve the included meal plan for the cart's package tier.
+    // Budget / Standard  → all three meals (breakfast + lunch + dinner)
+    // Luxury / Premium / Honeymoon (and everything else) → breakfast only
+    // The plan is fixed by the package and NOT customer-selectable, so
+    // we render it as a read-only chip rather than a <select>.
+    function mealPlanForCart() {
+        var perHead = advancePerHead();
+        var key = String(state.cart && state.cart.pkgId || '').toLowerCase();
+        var nm  = String(state.cart && state.cart.name  || '').toLowerCase();
+        // Budget / Standard tier (₹6,000 head advance) gets all 3 meals.
+        // We also catch admin-named packages whose id isn't 'budget'/'standard'
+        // by checking the per-head bucket.
+        if (perHead === ADVANCE_STANDARD || /budget|standard/.test(key) || /budget|standard/.test(nm)) {
+            return {
+                code: 'all',
+                label: 'Breakfast + Lunch + Dinner',
+                note: 'All 3 meals included — Budget & Standard packages.'
+            };
+        }
+        return {
+            code: 'breakfast',
+            label: 'Breakfast only',
+            note: 'Only breakfast is included for Luxury / Premium / Honeymoon packages.'
+        };
+    }
+
     function customizeCard() {
         var sel = (state.cart.addons || []).map(function (a) { return a.id; });
         var addonsH = ADDONS.map(function (a) {
@@ -252,6 +278,14 @@
                 '<input type="checkbox" data-addon="' + a.id + '" data-price="' + a.price + '" data-name="' + esc(a.name) + '"' + (ch ? ' checked' : '') + '>' +
                 '</label>';
         }).join('');
+
+        // Locked-in meal plan — derived from the package tier, not user-editable.
+        // We still write the chosen value to a hidden #mealPlan input so the
+        // existing wireEvents()/Razorpay notes pipeline keeps working unchanged.
+        var meal = mealPlanForCart();
+        // Persist on the cart for downstream consumers.
+        state.cart.meals = meal.label;
+
         return '<div class="co-card"><h2><i class="fas fa-sliders-h"></i> Customize Your Trip</h2>' +
             '<div class="co-form-row">' +
                 '<div class="co-field"><label>Duration Preference</label><select id="durationPref">' +
@@ -259,10 +293,16 @@
                     '<option>4 Nights / 5 Days</option><option>5 Nights / 6 Days</option>' +
                     '<option>6 Nights / 7 Days</option><option>7 Nights / 8 Days</option>' +
                 '</select></div>' +
-                '<div class="co-field"><label>Meal Plan</label><select id="mealPlan">' +
-                    '<option value="">Breakfast Only (default)</option>' +
-                    '<option>Breakfast + Dinner</option><option>All Meals</option>' +
-                '</select></div>' +
+                '<div class="co-field">' +
+                    '<label>Meal Plan <small style="color:#7a8b96;font-weight:500;">(included with package)</small></label>' +
+                    '<div class="meal-plan-locked" title="' + esc(meal.note) + '">' +
+                        '<i class="fas fa-utensils"></i> ' +
+                        '<strong>' + esc(meal.label) + '</strong>' +
+                        '<i class="fas fa-lock" style="margin-left:auto;font-size:.78rem;opacity:.55;" aria-hidden="true"></i>' +
+                    '</div>' +
+                    '<small style="display:block;color:#7a8b96;font-size:.78rem;margin-top:.3rem;line-height:1.45;">' + esc(meal.note) + '</small>' +
+                    '<input type="hidden" id="mealPlan" value="' + esc(meal.label) + '">' +
+                '</div>' +
             '</div>' +
             '<label style="display:block;font-weight:600;color:#2c3e50;font-size:.85rem;margin:.5rem 0 .5rem;text-transform:uppercase;letter-spacing:.4px;">Optional Add-ons</label>' +
             '<div class="addons">' + addonsH + '</div>' +
