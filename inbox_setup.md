@@ -58,7 +58,7 @@ Copy that URL.
 Open `dashboard.html` and find the line:
 ```html
 <script>
-    window.INBOX_WORKER_URL = 'https://inbox-mail.deb-andaman.workers.dev';
+    window.INBOX_WORKER_URL = 'https://inbox-mail.pittu-das2.workers.dev';
 </script>
 ```
 Replace it with the URL from step 2. Commit + push.
