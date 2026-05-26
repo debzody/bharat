@@ -605,6 +605,26 @@
     min-width: 160px;
 }
 
+/* Required-field asterisk + optional hint inside upload form labels.
+   Matches the staff-required input styling so admins see the same cue. */
+.agf-field .agf-req {
+    color: #e74c3c;
+    font-weight: 700;
+    margin-left: .15rem;
+}
+.agf-field .agf-opt {
+    color: #9aa7b1;
+    font-weight: 400;
+    font-size: .82em;
+    margin-left: .15rem;
+}
+/* Disabled upload button — clear "not yet" affordance */
+.admin-gallery-upload-btn:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    filter: grayscale(.4);
+}
+
 @media (max-width: 720px) {
     .agf-grid { grid-template-columns: 1fr; }
 }

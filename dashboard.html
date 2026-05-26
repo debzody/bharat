@@ -21,7 +21,7 @@
 
     <link rel="stylesheet" href="css/style.css?v=54">
     <link rel="stylesheet" href="css/dashboard.css?v=6">
-    <link rel="stylesheet" href="css/gallery.css?v=3">
+    <link rel="stylesheet" href="css/gallery.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/firebase-config.js?v=21"></script>
@@ -389,16 +389,16 @@
                         <h4 class="agf-title"><i class="fas fa-tag"></i> Photo details</h4>
                         <div class="agf-grid">
                             <label class="agf-field">
-                                <span>Title</span>
-                                <input type="text" id="galTitle" placeholder="e.g. Radhanagar Beach">
+                                <span>Title <span class="agf-req">*</span></span>
+                                <input type="text" id="galTitle" placeholder="e.g. Radhanagar Beach" required aria-required="true" data-required-upload="1">
                             </label>
                             <label class="agf-field">
                                 <span>Caption (optional)</span>
                                 <input type="text" id="galCaption" placeholder="Short caption">
                             </label>
                             <label class="agf-field">
-                                <span>Category</span>
-                                <input type="text" id="galCategory" placeholder="e.g. Beaches" list="galCategoryList">
+                                <span>Category <span class="agf-req">*</span></span>
+                                <input type="text" id="galCategory" placeholder="e.g. Beaches" list="galCategoryList" required aria-required="true" data-required-upload="1">
                                 <datalist id="galCategoryList">
                                     <option value="Beaches">
                                     <option value="Islands">
@@ -408,7 +408,7 @@
                                 </datalist>
                             </label>
                             <label class="agf-field" style="max-width:120px;">
-                                <span>Order</span>
+                                <span>Order <span class="agf-opt">(optional)</span></span>
                                 <input type="number" id="galOrder" placeholder="0" min="0" step="1" style="text-align:center;">
                             </label>
                         </div>
@@ -418,12 +418,12 @@
                         <h4 class="agf-title"><i class="fas fa-map-marked-alt"></i> Trip tags &mdash; used for grouping on the public gallery</h4>
                         <div class="agf-grid">
                             <label class="agf-field">
-                                <span><i class="fas fa-calendar-day"></i> Date (when the photo was taken — used for Year / Month grouping)</span>
-                                <input type="date" id="galDate">
+                                <span><i class="fas fa-calendar-day"></i> Date <span class="agf-req">*</span> <small style="font-weight:400;opacity:.75;">(when the photo was taken — used for Year / Month grouping)</small></span>
+                                <input type="date" id="galDate" required aria-required="true" data-required-upload="1">
                             </label>
                             <label class="agf-field">
-                                <span><i class="fas fa-map-marker-alt"></i> Place</span>
-                                <input type="text" id="galPlace" placeholder="e.g. Havelock Island" list="galPlaceList">
+                                <span><i class="fas fa-map-marker-alt"></i> Place <span class="agf-req">*</span></span>
+                                <input type="text" id="galPlace" placeholder="e.g. Havelock Island" list="galPlaceList" required aria-required="true" data-required-upload="1">
                                 <datalist id="galPlaceList">
                                     <option value="Port Blair">
                                     <option value="Havelock Island">
@@ -437,8 +437,8 @@
                                 </datalist>
                             </label>
                             <label class="agf-field">
-                                <span><i class="fas fa-suitcase"></i> Package</span>
-                                <input type="text" id="galPackage" placeholder="e.g. Honeymoon" list="galPackageList">
+                                <span><i class="fas fa-suitcase"></i> Package <span class="agf-req">*</span></span>
+                                <input type="text" id="galPackage" placeholder="e.g. Honeymoon" list="galPackageList" required aria-required="true" data-required-upload="1">
                                 <datalist id="galPackageList">
                                     <option value="Budget">
                                     <option value="Standard">
@@ -1178,6 +1178,12 @@
             uploadBtn.disabled = !files.length;
             const names = files.map(f => f.name).join(', ');
             setStatus(`${files.length} file(s) ready: ${names}`);
+            // For staff users, the staff-bootstrap script below adds extra
+            // required-field validation on top of the "files chosen" check.
+            // Re-run it here so picking a file doesn't bypass the rule.
+            if (typeof window.__staffMaybeEnableUpload === 'function') {
+                window.__staffMaybeEnableUpload();
+            }
         }
 
         uploadBtn.addEventListener('click', async () => {
@@ -1224,6 +1230,11 @@
                 hideProgress();
             } finally {
                 uploadBtn.disabled = pendingFiles.length === 0;
+                // Re-apply staff required-field gating after upload
+                // (we just cleared title/order so the button must lock again).
+                if (typeof window.__staffMaybeEnableUpload === 'function') {
+                    window.__staffMaybeEnableUpload();
+                }
             }
         });
 
