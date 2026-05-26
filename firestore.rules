@@ -146,9 +146,17 @@ service cloud.firestore {
     // account and writes via REST. The browser never writes here; admins
     // can only read. Service-account writes bypass these rules entirely,
     // so denying create/update/delete here is the correct posture.
+    // Admin can flip the read state from the dashboard. The Worker
+    // (which writes new mail) authenticates with a service account and
+    // bypasses these rules, so we only need to allow the small "mark
+    // read" update here. Limit it to a short whitelist of fields so a
+    // compromised admin token can't rewrite mail content.
     match /receivedEmails/{id} {
-      allow read:                  if isAdmin();
-      allow create, update, delete: if false;
+      allow read:   if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['unread', 'readAt', 'readBy']);
+      allow create, delete: if false;
     }
 
     // Default deny everything else
