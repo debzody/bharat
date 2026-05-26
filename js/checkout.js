@@ -201,10 +201,15 @@
     }
     // Booking advance is now a flat per-head amount (₹6,000 or ₹11,000),
     // NOT a percentage of the total trip cost. See ADVANCE_BY_PKG above.
+    // Returns 0 when the per-head advance is explicitly 0 — in that case
+    // startPayment() skips the Razorpay gateway and confirms the booking
+    // directly (admin-issued comp / 100 %-discount coupon flow).
     function calcAdvance() {
+        var perHead = advancePerHead();
+        if (perHead <= 0) return 0;
         // Cap at the actual total — guards against a tiny test cart where
         // headcount × per-head would exceed the trip cost.
-        return Math.min(calcTotal(), Math.max(1, advancePerHead() * headCount()));
+        return Math.min(calcTotal(), Math.max(1, perHead * headCount()));
     }
     function calcBalance() { return Math.max(0, calcTotal() - calcAdvance()); }
 
@@ -365,9 +370,14 @@
             '<div class="row total"><span>Total Trip Cost</span><span class="val">' + R + fmt(total) + '</span></div>' +
 
             // Advance / balance split — flat ₹6K / ₹11K per head, NOT a %.
+            // When advance is 0 (admin-issued comp / 100 %-discount coupon) we
+            // collapse the "Pay now" line and just promise full settlement
+            // during/after the trip — the Razorpay step is skipped entirely.
             '<div class="advance-split">' +
-                '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' ' + (people === 1 ? 'traveller' : 'travellers') + ')</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>' +
-                '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> Balance during or after travel</span><span>' + R + fmt(balance) + '</span></div>' +
+                (advance > 0
+                    ? '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' ' + (people === 1 ? 'traveller' : 'travellers') + ')</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>'
+                    : '<div class="row" style="color:#0a5a68;"><span><i class="fas fa-gift"></i> Pay now</span><span class="adv-amt"><strong>FREE</strong> &mdash; no advance required</span></div>') +
+                '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> ' + (advance > 0 ? 'Balance during or after travel' : 'Pay during or after travel') + '</span><span>' + R + fmt(balance) + '</span></div>' +
             '</div>' +
 
             // Mandatory T&C / Cancellation acceptance — Pay button stays
@@ -387,7 +397,11 @@
                 '</span>' +
             '</label>' +
 
-            '<button class="btn-pay" id="payBtn" disabled><i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm</button>' +
+            '<button class="btn-pay" id="payBtn" disabled>' +
+                (advance > 0
+                    ? '<i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm'
+                    : '<i class="fas fa-check-circle"></i> Confirm Booking &mdash; No Payment Now') +
+            '</button>' +
             // Embedded Razorpay container — checkout renders inline here (no popup)
             '<div id="rzp-embed-container" class="rzp-embed-container" style="display:none;"></div>' +
             '<a href="/#packages" style="text-decoration:none;"><button class="btn-secondary" type="button"><i class="fas fa-arrow-left"></i> Continue Browsing</button></a>' +
@@ -723,7 +737,6 @@
         }
         var errs = validate();
         if (errs.length) { window.Toast.warning(errs.join('\n')); return; }
-        if (typeof Razorpay === 'undefined') { window.Toast.error('Payment gateway not loaded. Please refresh.'); return; }
 
         var total   = calcTotal();
         var advance = calcAdvance();
@@ -734,6 +747,29 @@
         var phone = document.getElementById('travelerPhone').value.trim();
         var date = (document.getElementById('travelerDate') || {}).value || '';
         var notes = (document.getElementById('travelerNotes') || {}).value || '';
+
+        // ── Zero-advance shortcut ────────────────────────────────
+        // If the cart's advance is ₹0 (admin-issued comp / 100%-discount
+        // coupon / launch coupon set to zero) we don't need to open the
+        // Razorpay gateway at all. Build a synthetic "payment" response
+        // and confirm the booking directly. Customer still gets the same
+        // confirmation email + booking record; payment_id is prefixed
+        // with FREE- so admins can spot it in the dashboard at a glance.
+        if (advance <= 0) {
+            try {
+                window.Analytics && window.Analytics.beginCheckout({
+                    id:    state.cart.pkgId,
+                    name:  state.cart.name,
+                    price: total,
+                    category: 'package'
+                }, total);
+            } catch (e) {}
+            var fakeResp = { razorpay_payment_id: 'FREE-' + ref };
+            onPaymentSuccess(fakeResp, ref, total, advance, balance, name, email, phone, date, notes);
+            return;
+        }
+
+        if (typeof Razorpay === 'undefined') { window.Toast.error('Payment gateway not loaded. Please refresh.'); return; }
 
         var payBtn = document.getElementById('payBtn');
         var payBtnLabel = '<i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm';
@@ -808,15 +844,20 @@
     }
 
     function onPaymentSuccess(response, ref, total, advance, balance, name, email, phone, date, notes) {
+        // Distinguish a zero-advance booking (synthetic FREE-* payment id —
+        // no real Razorpay charge happened) so the dashboard reports show
+        // accurate stats and emails read correctly. Everything else stays
+        // the same — same booking record shape, same confirmation email.
+        var isFreeBooking = !!(advance <= 0 || /^FREE-/i.test(String(response.razorpay_payment_id || '')));
         var booking = {
             booking_ref: ref,
             package_name: state.cart.pkgId,
             package_label: state.cart.name,
             price: total,                     // total trip cost (kept for back-compat)
             total_trip_cost: total,
-            advance_paid: advance,            // amount actually charged via Razorpay
+            advance_paid: advance,            // amount actually charged via Razorpay (0 for FREE)
             balance_due:  balance,            // amount owed at end of trip
-            payment_status: 'partial_advance',
+            payment_status: isFreeBooking ? 'no_advance_required' : 'partial_advance',
             adults: state.cart.adults,
             children: state.cart.children,
             travel_date: date,
@@ -826,7 +867,7 @@
             coupon: state.coupon ? state.coupon.code : '',
             traveler: { name: name, email: email, phone: phone, notes: notes },
             payment_id: response.razorpay_payment_id,
-            payment_method: 'razorpay',
+            payment_method: isFreeBooking ? 'no_payment' : 'razorpay',
             status: 'confirmed'
         };
 
@@ -856,6 +897,16 @@
         try { sessionStorage.removeItem('checkoutCart'); } catch (e) {}
         state.cart = null; state.coupon = null;
 
+        // Fire-and-forget booking confirmation email (Firebase
+        // Trigger Email extension picks it up from the `mail`
+        // collection). Customer is cc'd, booking@ is the To. Falls
+        // through silently if the extension isn't installed yet.
+        try {
+            if (window.BookingEmails && window.BookingEmails.sendBookingConfirmation) {
+                window.BookingEmails.sendBookingConfirmation(booking);
+            }
+        } catch (e) { /* never block UX on email */ }
+
         saved.then(function () {
             renderSuccess(ref, response.razorpay_payment_id, total, advance, balance, email);
         });
@@ -864,27 +915,43 @@
     function renderSuccess(ref, paymentId, total, advance, balance, email) {
         var wrap = document.getElementById('checkoutWrap');
         if (!wrap) return;
+        var isFreeBooking = !!(advance <= 0 || /^FREE-/i.test(String(paymentId || '')));
         // Update step bar to "Confirmation"
         var steps = document.querySelectorAll('.co-step');
         steps.forEach(function (st, i) { st.classList.remove('active'); if (i < 4) st.classList.add('done'); });
         if (steps[3]) { steps[3].classList.add('active'); steps[3].classList.remove('done'); var num = steps[3].querySelector('.num'); if (num) num.innerHTML = '<i class="fas fa-check"></i>'; }
 
+        // Headline + lede vary slightly so the customer doesn't see a
+        // "payment was successful" line when no money actually changed
+        // hands. The booking record + email content remain identical.
+        var headline = isFreeBooking ? 'Booking Confirmed — No Payment Required' : 'Booking Confirmed!';
+        var lede = isFreeBooking
+            ? 'Your seat is reserved. No payment was required at this stage. The full trip amount will be collected during or after your trip. We\'ve emailed your confirmation to <strong>' + esc(email) + '</strong>.'
+            : 'Your booking advance payment was successful and your seat is reserved. We\'ve emailed your confirmation to <strong>' + esc(email) + '</strong>.';
+        var advanceRow = isFreeBooking
+            ? '<div style="margin-bottom:.4rem;color:#0a5a68;"><span><i class="fas fa-gift"></i> Advance Paid:</span> <strong>FREE &mdash; no payment now</strong></div>'
+            : '<div style="margin-bottom:.4rem;color:#0a5a68;"><span>Advance Paid:</span> <strong>' + R + fmt(advance) + '</strong></div>';
+        var balanceLabel = isFreeBooking ? 'Total payable during or after travel' : 'Balance during or after travel';
+        var balanceNote = isFreeBooking
+            ? '<i class="fas fa-info-circle"></i> <strong>Trip payment:</strong> ' + R + fmt(balance) + ' will be collected during or after your trip via UPI / bank transfer / cash. No payment is needed right now.'
+            : '<i class="fas fa-info-circle"></i> <strong>Balance payment:</strong> ' + R + fmt(balance) + ' will be collected during or after your trip via UPI / bank transfer / cash. We will not charge this amount until your trip is in progress.';
+
         wrap.innerHTML =
             '<div class="co-card" style="grid-column:1/-1;text-align:center;padding:3rem 1.5rem;">' +
                 '<div style="width:80px;height:80px;border-radius:50%;background:#e8f8f5;color:#0a5a68;display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:1rem;"><i class="fas fa-check-circle"></i></div>' +
-                '<h2 style="color:#0a5a68;margin:0 0 .5rem;font-size:1.6rem;">Booking Confirmed!</h2>' +
-                '<p style="color:#5a6877;margin:0 0 1.5rem;font-size:1rem;">Your booking advance payment was successful and your seat is reserved. We\'ve emailed your confirmation to <strong>' + esc(email) + '</strong>.</p>' +
+                '<h2 style="color:#0a5a68;margin:0 0 .5rem;font-size:1.6rem;">' + esc(headline) + '</h2>' +
+                '<p style="color:#5a6877;margin:0 0 1.5rem;font-size:1rem;">' + lede + '</p>' +
                 '<div style="display:inline-block;background:#f8fafb;padding:1.1rem 1.5rem;border-radius:10px;text-align:left;font-size:.92rem;color:#2c3e50;border:1px dashed #cfd9df;">' +
                     '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">Booking Ref:</span> <strong>' + esc(ref) + '</strong></div>' +
-                    '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">Payment ID:</span> <strong>' + esc(paymentId) + '</strong></div>' +
+                    '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">' + (isFreeBooking ? 'Reference' : 'Payment ID') + ':</span> <strong>' + esc(paymentId) + '</strong></div>' +
                     '<hr style="border:none;border-top:1px dashed #cfd9df;margin:.6rem 0;">' +
                     '<div style="margin-bottom:.4rem;"><span style="color:#7f8c8d;">Total Trip Cost:</span> <strong>' + R + fmt(total) + '</strong></div>' +
-                    '<div style="margin-bottom:.4rem;color:#0a5a68;"><span>Advance Paid:</span> <strong>' + R + fmt(advance) + '</strong></div>' +
-                    '<div style="color:#a04000;"><span>Balance during or after travel:</span> <strong>' + R + fmt(balance) + '</strong></div>' +
+                    advanceRow +
+                    '<div style="color:#a04000;"><span>' + esc(balanceLabel) + ':</span> <strong>' + R + fmt(balance) + '</strong></div>' +
                 '</div>' +
 
                 '<div style="background:#fff8e7;color:#8a6d3b;border-left:3px solid #f39c12;padding:.75rem 1rem;border-radius:6px;margin:1.25rem auto 0;max-width:520px;text-align:left;font-size:.9rem;line-height:1.55;">' +
-                    '<i class="fas fa-info-circle"></i> <strong>Balance payment:</strong> ' + R + fmt(balance) + ' will be collected during or after your trip via UPI / bank transfer / cash. We will not charge this amount until your trip is in progress.' +
+                    balanceNote +
                 '</div>' +
 
                 '<div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">' +
@@ -894,7 +961,10 @@
                 '<p style="color:#7f8c8d;font-size:.85rem;margin-top:1.5rem;">Need help? Call <a href="tel:+918880195191" style="color:#0d7a8a;font-weight:600;">+91 88801 95191</a> &middot; Quote ref <strong>' + esc(ref) + '</strong></p>' +
             '</div>';
 
-        window.Toast.success('Booking confirmed! Advance ' + R + fmt(advance) + ' paid. Ref: ' + ref, { duration: 8000 });
+        var toastMsg = isFreeBooking
+            ? 'Booking confirmed — no advance required. Ref: ' + ref
+            : 'Booking confirmed! Advance ' + R + fmt(advance) + ' paid. Ref: ' + ref;
+        window.Toast.success(toastMsg, { duration: 8000 });
     }
 
     // The booking advance is now a flat per-head amount (see ADVANCE_BY_PKG

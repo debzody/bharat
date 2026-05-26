@@ -247,21 +247,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Attach cancel handlers — match by string OR numeric id so that
         // legacy numeric booking ids and the new string "TEST-..." ids
-        // both work.
+        // both work. After the cancel goes through we also fire-and-forget
+        // a cancellation email to cancellation@andamanvoyages.in (the
+        // customer is cc'd) — same Trigger Email pattern as the booking
+        // confirmation. The email is best-effort: any Firestore / rules /
+        // extension issue is logged but never blocks the UI.
         tbody.querySelectorAll('.action-btn-cancel').forEach(btn => {
             btn.addEventListener('click', function () {
                 const rawId = this.dataset.id;
-                if (!confirm('Cancel this booking?')) return;
+                if (!confirm('Cancel this booking?\n\nThis will:\n• Mark the booking as cancelled in the dashboard\n• Email the customer + cancellation@andamanvoyages.in with the booking + refund-policy reminder')) return;
                 const booking = DB.bookings.find(b =>
                     String(b.id) === String(rawId)
                 );
-                if (booking) {
-                    booking.status = 'cancelled';
-                    DB.saveBookings();
-                    refreshAll();
-                    if (window.Toast && window.Toast.success) {
-                        window.Toast.success('Booking cancelled.');
-                    }
+                if (!booking) return;
+
+                booking.status = 'cancelled';
+                booking.cancelledAt = new Date().toISOString();
+                DB.saveBookings();
+                refreshAll();
+
+                // Identify who cancelled, for the email's "Cancelled by" line.
+                const me = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                const cancelledBy = (me && (me.email || me.username)) || 'admin';
+
+                if (window.BookingEmails && window.BookingEmails.sendBookingCancellation) {
+                    window.BookingEmails.sendBookingCancellation(booking, {
+                        cancelledBy: cancelledBy,
+                        reason: 'Cancelled from admin dashboard'
+                    }).then(function (sent) {
+                        if (window.Toast && window.Toast.success) {
+                            window.Toast.success(sent
+                                ? 'Booking cancelled. Cancellation email queued for cancellation@andamanvoyages.in.'
+                                : 'Booking cancelled (email NOT sent — see console).');
+                        }
+                    });
+                } else if (window.Toast && window.Toast.success) {
+                    window.Toast.success('Booking cancelled. (Email helper not loaded — refresh the page.)');
                 }
             });
         });
