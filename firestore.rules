@@ -141,6 +141,16 @@ service cloud.firestore {
       allow update, delete:if isAdmin();
     }
 
+    // Received emails — populated by the email-router Cloudflare Worker
+    // (workers/email-router/) which authenticates as a Firebase service
+    // account and writes via REST. The browser never writes here; admins
+    // can only read. Service-account writes bypass these rules entirely,
+    // so denying create/update/delete here is the correct posture.
+    match /receivedEmails/{id} {
+      allow read:                  if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     // Default deny everything else
     match /{document=**} {
       allow read, write: if false;
