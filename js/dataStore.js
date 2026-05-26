@@ -398,7 +398,18 @@
         launchAdvanceCouponCode:    'LAUNCH2000',
         launchAdvanceCouponAmount:  2000,
         googleReviewsEnabled:     true,   // pulls live Google reviews on the homepage testimonials section
-        landingPagesEnabled:      true    // /lp/honeymoon and /lp/family ad-landing pages
+        landingPagesEnabled:      true,   // /lp/honeymoon and /lp/family ad-landing pages
+
+        // ── Gallery upload-form dropdown options (admin-managed) ──
+        // The staff-facing upload form on /dashboard locks Category /
+        // Place / Package to a fixed dropdown so they can ONLY pick from
+        // values pre-approved by the admin. Admins can extend each list
+        // from Settings → "Manage Gallery Dropdowns". Stored as plain
+        // string arrays so Firestore can update them atomically with
+        // arrayUnion / arrayRemove if we ever need that later.
+        galleryCategoryOptions: ['Beaches', 'Islands', 'Activities', 'Resorts', 'Sunsets'],
+        galleryPlaceOptions:    ['Port Blair', 'Havelock Island', 'Neil Island', 'Ross Island', 'Baratang', 'Diglipur', 'Radhanagar Beach', 'Elephant Beach', 'Cellular Jail'],
+        galleryPackageOptions:  ['Budget', 'Standard', 'Luxury', 'Honeymoon', 'Family', 'Adventure']
     };
 
     function getCachedSettings() {
