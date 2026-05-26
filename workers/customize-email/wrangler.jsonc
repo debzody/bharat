@@ -15,7 +15,12 @@
     //   "FROM_NAME":  "Andaman Voyages Enquiries",
     //   "TO_EMAIL":   "booking@andamanvoyages.in"
     "vars": {
-        "ALLOWED_ORIGIN": "https://andamanvoyages.in"
+        "ALLOWED_ORIGIN":      "https://andamanvoyages.in",
+        // Firebase project ID for the dashboard mirror — must match the
+        // project hosting receivedEmails. The Firestore service-account
+        // JSON is set as a secret (see below); the project_id field of
+        // the JSON should agree with this var.
+        "FIREBASE_PROJECT_ID": "andaman-b886d"
     },
 
     // ── send_email binding ──────────────────────────────────────

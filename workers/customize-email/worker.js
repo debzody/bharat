@@ -23,6 +23,8 @@
 
 import { EmailMessage } from 'cloudflare:email';
 import { createMimeMessage } from 'mimetext/browser';
+import { sha256Hex } from './lib.js';
+import { getFirestoreAccessToken, firestoreCreateIfMissing } from './firestore.js';
 
 // Defaults — overridable via env.FROM_EMAIL / env.FROM_NAME / env.TO_EMAIL
 // (set in wrangler.toml [vars] block).
@@ -35,17 +37,10 @@ import { createMimeMessage } from 'mimetext/browser';
 // Email Routing → Destination Addresses and verify the FROM address.
 const DEFAULT_FROM_EMAIL = 'enquiries@andamanvoyages.in';
 const DEFAULT_FROM_NAME  = 'Andaman Voyages Enquiries';
-// IMPORTANT — point at the on-domain mailbox so Cloudflare Email Routing
-// catches it and fires the email-router Worker, which mirrors the
-// message into Firestore /receivedEmails (the dashboard's Enquiries
-// tab). The email-router Worker also forwards a copy to the verified
-// Gmail destination, so admins still see it in their phone inbox.
-//
-// Sending directly to debjyoti.office@gmail.com (the previous default)
-// bypasses Email Routing entirely, so the dashboard never receives a
-// copy. If you want to revert to that behaviour, override
-// `TO_EMAIL` in wrangler.jsonc [vars].
-const DEFAULT_TO_EMAIL   = 'enquiries@andamanvoyages.in';
+// NOTE: This MUST be a verified destination address in Cloudflare Email
+// Routing (Cloudflare → Email Routing → Destination Addresses → Verified).
+// Cloudflare's send_email binding refuses any other recipient.
+const DEFAULT_TO_EMAIL   = 'debjyoti.office@gmail.com';
 
 export default {
     async fetch(request, env, ctx) {
@@ -106,6 +101,28 @@ export default {
             const email = new EmailMessage(fromEmail, toEmail, msg.asRaw());
             await env.SEND_EMAIL.send(email);
 
+            // ── Mirror to Firestore /receivedEmails ───────────────
+            // The send_email binding above only delivers to verified
+            // Gmail destinations (Cloudflare's restriction), so the
+            // mail never enters Email Routing → email-router → Firestore.
+            // We write a parallel record here ourselves so the dashboard
+            // Inbox → Enquiries tab still sees it (with toast / beep
+            // / unread badge from the existing onSnapshot listener).
+            // Best-effort: a Firestore failure must NOT break the user-
+            // facing email send, so we swallow + log.
+            try {
+                await mirrorToFirestore(env, {
+                    ref:        body.ref,
+                    fromEmail, fromName,
+                    toEmail:    'enquiries@andamanvoyages.in',
+                    subject,
+                    textBody, htmlBody,
+                    traveller:  body.traveller || {},
+                });
+            } catch (err) {
+                console.warn('customize-email: firestore mirror failed:', err && err.message || err);
+            }
+
             return cors(json({ ok: true, ref: body.ref }, 200), origin, allowed);
         } catch (err) {
             console.error('SEND_EMAIL failed:', err && err.stack || err);
@@ -144,6 +161,46 @@ function validate(b) {
     if (b.trip && !b.trip.start)                   errs.push('start missing');
     if (b.trip && (!Array.isArray(b.trip.islands) || !b.trip.islands.length)) errs.push('islands missing');
     return errs;
+}
+
+/* Write a /receivedEmails doc so the dashboard's Enquiries tab sees
+ * this enquiry alongside actual MX-routed mail. Doc ID is the SHA-256
+ * of the customize ref so retries from the browser are idempotent. */
+async function mirrorToFirestore(env, info) {
+    if (!env.FIREBASE_SERVICE_ACCOUNT_KEY || !env.FIREBASE_PROJECT_ID) {
+        // Worker not configured for Firestore writes — skip silently.
+        return;
+    }
+    const token = await getFirestoreAccessToken(env);
+    const docId = await sha256Hex('customize:' + (info.ref || Math.random()));
+    const fromHeader = info.fromName
+        ? `${info.fromName} <${info.fromEmail}>`
+        : info.fromEmail;
+    const replyTo = (info.traveller && info.traveller.email) || '';
+    const doc = {
+        messageId:    'customize-' + info.ref,
+        envelopeFrom: info.fromEmail,
+        envelopeTo:   info.toEmail,                       // enquiries@…
+        from:         fromHeader,
+        to:           info.toEmail,
+        cc:           '',
+        subject:      info.subject,
+        date:         new Date().toUTCString(),
+        inReplyTo:    '',
+        spamScore:    '',
+        textPlain:    String(info.textBody || '').slice(0, 100_000),
+        textHtml:     String(info.htmlBody || '').slice(0, 200_000),
+        attachments:  [],
+        rawSize:      String(info.htmlBody || '').length,
+        mailbox:      String(info.toEmail || '').toLowerCase(),  // → 'enquiries@…'
+        unread:       true,
+        receivedAt:   new Date().toISOString(),
+        // Extra fields specific to /customize submissions — handy for
+        // admins to one-click reply.
+        replyTo:      replyTo,
+        source:       'customize-form'
+    };
+    await firestoreCreateIfMissing(env, token, 'receivedEmails', docId, doc);
 }
 
 function escHtml(s) {
