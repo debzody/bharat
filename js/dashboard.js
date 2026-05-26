@@ -245,16 +245,22 @@ document.addEventListener('DOMContentLoaded', function () {
             </tr>
         `).join('');
 
-        // Attach cancel handlers
+        // Attach cancel handlers — match by string OR numeric id so that
+        // legacy numeric booking ids and the new string "TEST-..." ids
+        // both work.
         tbody.querySelectorAll('.action-btn-cancel').forEach(btn => {
             btn.addEventListener('click', function () {
-                const id = Number(this.dataset.id);
-                if (confirm('Cancel this booking?')) {
-                    const booking = DB.bookings.find(b => b.id === id);
-                    if (booking) {
-                        booking.status = 'cancelled';
-                        DB.saveBookings();
-                        refreshAll();
+                const rawId = this.dataset.id;
+                if (!confirm('Cancel this booking?')) return;
+                const booking = DB.bookings.find(b =>
+                    String(b.id) === String(rawId)
+                );
+                if (booking) {
+                    booking.status = 'cancelled';
+                    DB.saveBookings();
+                    refreshAll();
+                    if (window.Toast && window.Toast.success) {
+                        window.Toast.success('Booking cancelled.');
                     }
                 }
             });
@@ -273,6 +279,76 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bookingFilter) {
         bookingFilter.addEventListener('change', () => {
             renderAllBookings(bookingFilter.value, bookingSearch.value);
+        });
+    }
+
+    // ── Seed / Clear test bookings (admin convenience) ────────
+    // Adds a couple of fake confirmed bookings to localStorage so the
+    // admin can verify the Cancel button + status badges + revenue
+    // breakdown without needing to push a real Razorpay payment
+    // through. The data lives ONLY on this device's localStorage —
+    // it never reaches Firestore — so it's a 100 %-safe sandbox.
+    const seedFakeBookingsBtn  = document.getElementById('seedFakeBookingsBtn');
+    const clearFakeBookingsBtn = document.getElementById('clearFakeBookingsBtn');
+
+    function makeFakeBooking(overrides) {
+        const now = Date.now();
+        return Object.assign({
+            id: 'TEST-' + now + '-' + Math.floor(Math.random() * 1000),
+            userId: 'fake-user-' + Math.floor(Math.random() * 9999),
+            package_name: 'standard',
+            duration: '6 Nights / 7 Days',
+            guests: 2,
+            price: 21999,
+            status: 'confirmed',
+            createdAt: new Date(now).toISOString()
+        }, overrides || {});
+    }
+
+    if (seedFakeBookingsBtn) {
+        seedFakeBookingsBtn.addEventListener('click', () => {
+            const existing = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const newOnes = [
+                makeFakeBooking({
+                    id: 'TEST-' + Date.now() + '-A',
+                    package_name: 'budget',
+                    duration: '4 Nights / 5 Days',
+                    guests: 2,
+                    price: 15999,
+                    status: 'confirmed',
+                    customerName: 'Test Customer A',
+                    customerEmail: 'test-a@example.com',
+                    customerPhone: '+91 99999 11111'
+                }),
+                makeFakeBooking({
+                    id: 'TEST-' + Date.now() + '-B',
+                    package_name: 'honeymoon',
+                    duration: '5 Nights / 6 Days',
+                    guests: 2,
+                    price: 24999,
+                    status: 'confirmed',
+                    customerName: 'Test Customer B',
+                    customerEmail: 'test-b@example.com',
+                    customerPhone: '+91 99999 22222'
+                })
+            ];
+            const merged = existing.concat(newOnes);
+            localStorage.setItem('bookings', JSON.stringify(merged));
+            DB.bookings = merged;
+            refreshAll();
+            const msg = '✓ Added ' + newOnes.length + ' test booking(s). They live only in this browser\'s localStorage — Cancel/refund will NOT charge any real card. Use "Clear Bookings" to wipe them.';
+            if (window.Toast && window.Toast.success) window.Toast.success(msg);
+            else alert(msg);
+        });
+    }
+
+    if (clearFakeBookingsBtn) {
+        clearFakeBookingsBtn.addEventListener('click', () => {
+            if (!confirm('Wipe ALL bookings from this device\'s localStorage? Real bookings stored in Firestore are NOT affected (they live on the per-customer profile, not here).')) return;
+            localStorage.setItem('bookings', '[]');
+            DB.bookings = [];
+            refreshAll();
+            if (window.Toast && window.Toast.success) window.Toast.success('Local bookings cleared.');
         });
     }
 
