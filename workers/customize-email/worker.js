@@ -35,10 +35,17 @@ import { createMimeMessage } from 'mimetext/browser';
 // Email Routing → Destination Addresses and verify the FROM address.
 const DEFAULT_FROM_EMAIL = 'enquiries@andamanvoyages.in';
 const DEFAULT_FROM_NAME  = 'Andaman Voyages Enquiries';
-// NOTE: This MUST be a verified destination address in Cloudflare Email
-// Routing (Cloudflare → Email Routing → Destination Addresses → Verified).
-// You can override per-deploy via env.TO_EMAIL in wrangler.jsonc [vars].
-const DEFAULT_TO_EMAIL   = 'debjyoti.office@gmail.com';
+// IMPORTANT — point at the on-domain mailbox so Cloudflare Email Routing
+// catches it and fires the email-router Worker, which mirrors the
+// message into Firestore /receivedEmails (the dashboard's Enquiries
+// tab). The email-router Worker also forwards a copy to the verified
+// Gmail destination, so admins still see it in their phone inbox.
+//
+// Sending directly to debjyoti.office@gmail.com (the previous default)
+// bypasses Email Routing entirely, so the dashboard never receives a
+// copy. If you want to revert to that behaviour, override
+// `TO_EMAIL` in wrangler.jsonc [vars].
+const DEFAULT_TO_EMAIL   = 'enquiries@andamanvoyages.in';
 
 export default {
     async fetch(request, env, ctx) {
