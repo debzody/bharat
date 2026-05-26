@@ -174,12 +174,81 @@
         }
     }
 
+    /* ── confirm dialog (replaces window.confirm) ─────────── */
+    function ensureConfirmDialog() {
+        let modal = $('inboxConfirmModal');
+        if (modal) return modal;
+        modal = document.createElement('div');
+        modal.id = 'inboxConfirmModal';
+        modal.style.cssText =
+            'position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;' +
+            'background:rgba(15,32,39,.55);backdrop-filter:blur(2px);padding:1rem;';
+        modal.innerHTML =
+            '<div class="inbox-confirm-card" style="background:#fff;border-radius:14px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.32);overflow:hidden;">' +
+                '<div class="inbox-confirm-head" style="padding:1rem 1.25rem;border-bottom:1px solid #e3e8ef;display:flex;align-items:center;gap:.65rem;">' +
+                    '<i class="fas fa-exclamation-triangle" style="color:#e74c3c;font-size:1.25rem;"></i>' +
+                    '<h3 id="inboxConfirmTitle" style="margin:0;font-size:1.05rem;font-weight:700;color:#0d2c3a;">Confirm</h3>' +
+                '</div>' +
+                '<div id="inboxConfirmBody" style="padding:1.1rem 1.25rem;font-size:.95rem;color:#3a4a55;line-height:1.55;"></div>' +
+                '<div class="inbox-confirm-foot" style="padding:.85rem 1.25rem;border-top:1px solid #e3e8ef;display:flex;justify-content:flex-end;gap:.5rem;background:#f9fbfc;">' +
+                    '<button type="button" id="inboxConfirmCancel" style="padding:.55rem 1.1rem;border-radius:8px;border:1px solid #cfd9df;background:#fff;color:#5a6877;font-weight:600;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancel</button>' +
+                    '<button type="button" id="inboxConfirmOk"     style="padding:.55rem 1.1rem;border-radius:8px;border:0;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font-weight:600;font-family:inherit;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;"><i class="fas fa-trash"></i> <span>Delete</span></button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(modal);
+        // Click outside the card to dismiss
+        modal.addEventListener('click', function (ev) {
+            if (ev.target === modal) modal.style.display = 'none';
+        });
+        return modal;
+    }
+    function uiConfirm(opts) {
+        return new Promise(function (resolve) {
+            const modal = ensureConfirmDialog();
+            $('inboxConfirmTitle').textContent = opts.title || 'Confirm';
+            $('inboxConfirmBody').innerHTML = opts.bodyHtml || esc(opts.body || '');
+            const okBtn = $('inboxConfirmOk');
+            const cancelBtn = $('inboxConfirmCancel');
+            const okLabel = okBtn.querySelector('span');
+            if (okLabel) okLabel.textContent = opts.okLabel || 'Delete';
+            modal.style.display = 'flex';
+            // Focus the safer Cancel button by default
+            setTimeout(function () { try { cancelBtn.focus(); } catch (_) {} }, 30);
+
+            function cleanup(result) {
+                modal.style.display = 'none';
+                okBtn.onclick = null;
+                cancelBtn.onclick = null;
+                document.removeEventListener('keydown', onKey);
+                resolve(result);
+            }
+            function onKey(ev) {
+                if (ev.key === 'Escape') { ev.preventDefault(); cleanup(false); }
+                else if (ev.key === 'Enter') { ev.preventDefault(); cleanup(true); }
+            }
+            okBtn.onclick     = function () { cleanup(true); };
+            cancelBtn.onclick = function () { cleanup(false); };
+            document.addEventListener('keydown', onKey);
+        });
+    }
+
     /* ── delete (single + mass) ─────────────────────────── */
     async function deleteRow(row, opts) {
         if (!row) return;
         opts = opts || {};
         if (!opts.skipConfirm) {
-            const ok = confirm('Delete this email?\n\n' + (row.subject || '(no subject)') + '\n\nThis cannot be undone.');
+            const ok = await uiConfirm({
+                title: 'Delete email',
+                bodyHtml:
+                    '<div style="margin-bottom:.6rem;color:#0d2c3a;font-weight:600;">' +
+                        esc(row.subject || '(no subject)') +
+                    '</div>' +
+                    '<div style="color:#7a8b96;font-size:.88rem;">From: ' + esc(row.from || '') + '</div>' +
+                    '<div style="margin-top:.7rem;color:#c0392b;font-size:.88rem;">' +
+                        '<i class="fas fa-exclamation-triangle"></i> This cannot be undone.' +
+                    '</div>',
+                okLabel: 'Delete'
+            });
             if (!ok) return;
         }
         try {
@@ -199,7 +268,17 @@
     async function massDelete() {
         const ids = Array.from(state.checked);
         if (!ids.length) return;
-        const ok = confirm('Delete ' + ids.length + ' selected email(s)?\nThis cannot be undone.');
+        const ok = await uiConfirm({
+            title: 'Delete ' + ids.length + ' email' + (ids.length === 1 ? '' : 's'),
+            bodyHtml:
+                '<div style="color:#0d2c3a;">' +
+                    'You are about to delete <strong>' + ids.length + '</strong> selected email' + (ids.length === 1 ? '' : 's') + '.' +
+                '</div>' +
+                '<div style="margin-top:.7rem;color:#c0392b;font-size:.88rem;">' +
+                    '<i class="fas fa-exclamation-triangle"></i> This cannot be undone.' +
+                '</div>',
+            okLabel: 'Delete ' + ids.length
+        });
         if (!ok) return;
         const fb = await window.__firebaseReady;
         let okCount = 0, failCount = 0;
