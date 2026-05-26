@@ -47,13 +47,14 @@
     #ck-urgency-bar .ck-urgency-timer { font-size: .78rem; padding: 2px 7px; }
 }
 
-/* 2. WhatsApp floating button — sits ABOVE the chat widget which is
-   anchored at bottom:28px / right:28px and is roughly 60px tall.
-   We add a 30px breathing room so the pulse rings don't clash and
-   the chat widget's "Chat with us on…" tooltip has space to render. */
+/* 2. WhatsApp floating button — now sits BELOW the chat widget
+   (chat on top, WhatsApp on bottom — per design request).
+   The chat-bubble lives at bottom:106px (see js/chat.js), so
+   anchoring WhatsApp at bottom:28px puts it as the very lowest
+   floating action on the right rail. */
 #ck-wa-fab {
     position: fixed;
-    bottom: 116px;
+    bottom: 28px;
     right: 28px;
     z-index: 999997;
     width: 56px;
@@ -85,10 +86,12 @@
     70%  { box-shadow: 0 0 0 18px rgba(37,211,102,0); }
     100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
 }
-/* On phones the chat widget shifts to bottom:20px / right:16px and is
-   ~50px tall, so we stack at 100px above it on the same right rail. */
+/* On phones, mirror the same swap: WhatsApp goes to the bottom slot
+   (matching the chat-widget's old position) and the chat widget moves
+   above it. The chat-widget's mobile bottom is bumped to 100px in
+   js/chat.js to keep them from overlapping. */
 @media (max-width: 600px) {
-    #ck-wa-fab { width: 50px; height: 50px; bottom: 100px; right: 16px; }
+    #ck-wa-fab { width: 50px; height: 50px; bottom: 20px; right: 16px; }
 }
 
 /* 3. Exit-intent coupon popup */
