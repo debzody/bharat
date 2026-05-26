@@ -278,7 +278,7 @@
             '</div>' +
             '<div class="co-form-row">' +
                 '<div class="co-field"><label>Email <span class="req">*</span></label><input type="email" id="travelerEmail" required placeholder="you@example.com"></div>' +
-                '<div class="co-field"><label>Travel Date</label><input type="date" id="travelerDate" value="' + esc(c.travelDate || '') + '"></div>' +
+                '<div class="co-field"><label>Travel Date <span class="req">*</span></label><input type="date" id="travelerDate" required value="' + esc(c.travelDate || '') + '" min="' + new Date().toISOString().slice(0,10) + '"></div>' +
             '</div>' +
             '<div class="co-form-row full"><div class="co-field"><label>Special Requests (optional)</label><textarea id="travelerNotes" rows="2" placeholder="Anniversary, dietary preferences..."></textarea></div></div>' +
             '</div>';
@@ -617,9 +617,22 @@
         var n = (document.getElementById('travelerName') || {}).value || '';
         var em = (document.getElementById('travelerEmail') || {}).value || '';
         var p = (document.getElementById('travelerPhone') || {}).value || '';
+        var dt = (document.getElementById('travelerDate') || {}).value || '';
         if (n.trim().length < 2) errs.push('Please enter your full name.');
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) errs.push('Please enter a valid email.');
         if ((p.match(/\d/g) || []).length < 8) errs.push('Please enter a valid phone (at least 8 digits).');
+        // Travel date — required, must not be in the past.
+        if (!dt) {
+            errs.push('Please select a Travel Date.');
+        } else {
+            var today = new Date(); today.setHours(0, 0, 0, 0);
+            var picked = new Date(dt + 'T00:00:00');
+            if (isNaN(picked.getTime())) {
+                errs.push('Travel Date is invalid.');
+            } else if (picked < today) {
+                errs.push('Travel Date cannot be in the past.');
+            }
+        }
         return errs;
     }
 
