@@ -129,6 +129,18 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Sent emails — log of every email the admin Inbox tab has sent
+    // through the inbox-mail Cloudflare Worker. Admins can read full
+    // history; create is allowed for any authenticated admin from the
+    // dashboard (the Worker is the real authoritative gate, but the
+    // Firestore rule is a defence-in-depth layer in case someone tries
+    // to write straight from the browser).
+    match /sentEmails/{id} {
+      allow read:          if isAdmin();
+      allow create:        if isAdmin();
+      allow update, delete:if isAdmin();
+    }
+
     // Default deny everything else
     match /{document=**} {
       allow read, write: if false;
