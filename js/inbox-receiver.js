@@ -1,13 +1,31 @@
+/* ── Admin Inbox — Received pane ──────────────────────────────────
+ * Renders the table of received emails (mailbox sub-tabs + preview).
+ * Subscribes via onSnapshot to Firestore /receivedEmails so new mail
+ * arrives in real time.
+ *
+ * Features per row:
+ *   • Click the row → open preview, auto-mark read.
+ *   • Per-row checkbox + "Select all" header → bulk delete.
+ * Preview-pane buttons:
+ *   • Reply       → prefill Compose modal (To = sender, From = mailbox).
+ *   • Reply All   → adds row.to + row.cc as Cc (minus our own mailboxes).
+ *   • Forward     → blank To, body = "---------- Forwarded message".
+ *   • Delete      → confirm + Firestore delete.
+ *
+ * Resizable list/preview split is preserved (default 40 / 60 %).
+ * ──────────────────────────────────────────────────────────────── */
+
 (function () {
     'use strict';
 
     const MAILBOXES = [
-        { id: 'booking@andamanvoyages.in', label: 'Bookings' },
-        { id: 'info@andamanvoyages.in', label: 'Info' },
+        { id: 'booking@andamanvoyages.in',      label: 'Bookings'      },
+        { id: 'info@andamanvoyages.in',         label: 'Info'          },
         { id: 'cancellation@andamanvoyages.in', label: 'Cancellations' },
-        { id: 'enquiries@andamanvoyages.in', label: 'Enquiries' }
+        { id: 'enquiries@andamanvoyages.in',    label: 'Enquiries'     }
     ];
     const ALL = '__all__';
+
     const state = {
         mailbox: 'booking@andamanvoyages.in',
         pane: 'received',
@@ -16,26 +34,41 @@
         seenIds: new Set(),
         unsub: null,
         titleTimer: null,
-        baseTitle: document.title || 'Dashboard'
+        baseTitle: document.title || 'Dashboard',
+        // doc-ids ticked via per-row checkbox (drives bulk-delete bar)
+        checked: new Set()
     };
 
+    /* ── small helpers ──────────────────────────────────── */
     function $(id) { return document.getElementById(id); }
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c];
+            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
         });
     }
     function fmtDate(v) {
         const d = new Date(v || '');
-        return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+        return isNaN(d.getTime()) ? '\u2014' : d.toLocaleString();
     }
     function mailboxLabel(id) {
         const found = MAILBOXES.find(function (m) { return m.id === id; });
         return found ? found.label : 'All';
     }
+    function emailOnly(s) {
+        const m = String(s || '').match(/<([^>]+)>/);
+        return m ? m[1].trim() : String(s || '').trim();
+    }
+    function stripOwnMailboxes(addrList) {
+        const ours = MAILBOXES.map(function (m) { return m.id.toLowerCase(); });
+        return String(addrList || '')
+            .split(',').map(function (a) { return a.trim(); }).filter(Boolean)
+            .filter(function (a) { return ours.indexOf(emailOnly(a).toLowerCase()) === -1; })
+            .join(', ');
+    }
     function isAdminUser() {
         const email = (((window.currentUser || {}).email) || '').toLowerCase();
-        const admins = Array.isArray(window.ADMIN_EMAILS) ? window.ADMIN_EMAILS.map(function (v) { return String(v).toLowerCase(); }) : [];
+        const admins = Array.isArray(window.ADMIN_EMAILS)
+            ? window.ADMIN_EMAILS.map(function (v) { return String(v).toLowerCase(); }) : [];
         return !!email && admins.indexOf(email) !== -1;
     }
     function beep() {
@@ -45,11 +78,8 @@
             const ctx = new Ctx();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = 880;
-            gain.gain.value = 0.03;
-            osc.connect(gain);
-            gain.connect(ctx.destination);
+            osc.type = 'sine'; osc.frequency.value = 880; gain.gain.value = 0.03;
+            osc.connect(gain); gain.connect(ctx.destination);
             osc.start();
             setTimeout(function () {
                 try { osc.stop(); } catch (_) {}
@@ -75,7 +105,7 @@
         clearInterval(state.titleTimer);
         let on = false;
         state.titleTimer = setInterval(function () {
-            document.title = on ? '(' + count + ') New mail • ' + state.baseTitle : state.baseTitle;
+            document.title = on ? '(' + count + ') New mail \u2022 ' + state.baseTitle : state.baseTitle;
             on = !on;
         }, 900);
         setTimeout(function () {
@@ -84,6 +114,8 @@
             document.title = state.baseTitle;
         }, 8000);
     }
+
+    /* ── unread counters ────────────────────────────────── */
     function unreadCount(rows, mailbox) {
         return rows.filter(function (r) {
             const mbxOk = mailbox === ALL || r.mailbox === mailbox;
@@ -98,7 +130,6 @@
             const el = document.querySelector('[data-mbx-count="' + mbx + '"]');
             if (el) el.textContent = String(unreadCount(state.rows, mbx));
         });
-        // Topnav Inbox icon badge — visible from anywhere in the dashboard
         const navInbox = document.querySelector('.sidebar-link[data-section="inbox"]');
         if (navInbox) {
             let badge = navInbox.querySelector('.topnav-badge');
@@ -115,10 +146,11 @@
             }
         }
     }
+
+    /* ── mark-as-read ───────────────────────────────────── */
     async function markRead(row) {
         if (!row || !row.unread) return;
         row.unread = false;
-        // Update local rows so counters update immediately
         const rec = state.rows.find(function (r) { return r.id === row.id; });
         if (rec) rec.unread = false;
         setCounts();
@@ -131,17 +163,145 @@
             );
         } catch (err) {
             console.error('[inbox-receiver] markRead failed:', err);
-            // Revert local optimistic flip so the user sees something is wrong
             row.unread = true;
             if (rec) rec.unread = true;
             setCounts();
             renderRows();
             if (window.Toast && typeof window.Toast.error === 'function') {
                 window.Toast.error('Could not mark mail as read: ' + (err.message || err) +
-                    ' (deploy updated firestore.rules — see firebase console).');
+                    ' (deploy updated firestore.rules \u2014 see firebase console).');
             }
         }
     }
+
+    /* ── delete (single + mass) ─────────────────────────── */
+    async function deleteRow(row, opts) {
+        if (!row) return;
+        opts = opts || {};
+        if (!opts.skipConfirm) {
+            const ok = confirm('Delete this email?\n\n' + (row.subject || '(no subject)') + '\n\nThis cannot be undone.');
+            if (!ok) return;
+        }
+        try {
+            const fb = await window.__firebaseReady;
+            await fb.firestore.deleteDoc(fb.firestore.doc(fb.db, 'receivedEmails', row.id));
+            state.rows = state.rows.filter(function (r) { return r.id !== row.id; });
+            state.checked.delete(row.id);
+            if (state.selectedId === row.id) state.selectedId = '';
+            setCounts();
+            renderRows();
+            if (!opts.silent && window.Toast) window.Toast.success('Deleted "' + (row.subject || 'email') + '"');
+        } catch (err) {
+            console.error('[inbox-receiver] deleteRow failed:', err);
+            if (window.Toast) window.Toast.error('Delete failed: ' + (err.message || err));
+        }
+    }
+    async function massDelete() {
+        const ids = Array.from(state.checked);
+        if (!ids.length) return;
+        const ok = confirm('Delete ' + ids.length + ' selected email(s)?\nThis cannot be undone.');
+        if (!ok) return;
+        const fb = await window.__firebaseReady;
+        let okCount = 0, failCount = 0;
+        for (const id of ids) {
+            try {
+                await fb.firestore.deleteDoc(fb.firestore.doc(fb.db, 'receivedEmails', id));
+                state.rows = state.rows.filter(function (r) { return r.id !== id; });
+                okCount++;
+            } catch (err) {
+                console.error('[inbox-receiver] mass-delete failed for', id, err);
+                failCount++;
+            }
+        }
+        state.checked.clear();
+        if (state.selectedId && !state.rows.find(function (r) { return r.id === state.selectedId; })) {
+            state.selectedId = '';
+        }
+        setCounts();
+        renderRows();
+        if (window.Toast) {
+            if (failCount === 0) window.Toast.success('Deleted ' + okCount + ' email(s)');
+            else window.Toast.error('Deleted ' + okCount + ', ' + failCount + ' failed');
+        }
+    }
+
+    /* ── compose-modal prefill (Reply / Reply-All / Forward) */
+    function prefillCompose(opts) {
+        const composeBtn = $('inboxComposeBtn');
+        if (composeBtn) composeBtn.click();
+        setTimeout(function () {
+            const toEl    = $('icTo');
+            const subEl   = $('icSubject');
+            const replyEl = $('icReplyTo');
+            const bodyEl  = $('icBody');
+            const fromEl  = $('icFrom');
+            if (toEl    && opts.to       != null) toEl.value    = opts.to;
+            if (subEl   && opts.subject  != null) subEl.value   = opts.subject;
+            if (replyEl && opts.replyTo  != null) replyEl.value = opts.replyTo;
+            if (bodyEl  && opts.body     != null) bodyEl.value  = opts.body;
+            if (fromEl  && opts.from) {
+                const want = String(opts.from).toLowerCase();                Array.prototype.some.call(fromEl.options, function (o) {
+                    if (String(o.value || '').toLowerCase() === want) {
+                        fromEl.value = o.value; return true;
+                    }
+                    return false;
+                });
+            }
+            const focusEl = (opts.to == null || opts.to === '') ? toEl : bodyEl;
+            if (focusEl) try { focusEl.focus(); } catch (_) {}
+        }, 50);
+    }
+
+    function quoteBody(row) {
+        const orig = String(row.textPlain || row.subject || '').trim();
+        const quoted = orig.split('\n').map(function (l) { return '> ' + l; }).join('\n');
+        const when = fmtDate(row.receivedAt || row.date);
+        return '\n\n\nOn ' + when + ', ' + (row.from || '') + ' wrote:\n' + quoted;
+    }
+    function forwardBody(row) {
+        const headers =
+            '---------- Forwarded message ----------\n' +
+            'From: '    + (row.from || '') + '\n' +
+            'Date: '    + fmtDate(row.receivedAt || row.date) + '\n' +
+            'Subject: ' + (row.subject || '') + '\n' +
+            'To: '      + (row.to || row.mailbox || '') + '\n\n';
+        return '\n\n' + headers + (row.textPlain || '');
+    }
+    function doReply(row) {
+        prefillCompose({
+            to:      emailOnly(row.from || ''),
+            subject: /^re:/i.test(row.subject || '') ? (row.subject || '') : ('Re: ' + (row.subject || '')),
+            replyTo: row.mailbox || '',
+            from:    row.mailbox || '',
+            body:    quoteBody(row)
+        });
+    }
+    function doReplyAll(row) {
+        const toAddrs = [emailOnly(row.from || '')].filter(Boolean).join(', ');
+        const ccRaw = [row.to, row.cc].filter(Boolean).join(', ');
+        const ccAddrs = stripOwnMailboxes(ccRaw);
+        const subject = /^re:/i.test(row.subject || '') ? (row.subject || '') : ('Re: ' + (row.subject || ''));
+        let body = quoteBody(row);
+        if (ccAddrs) body = '(Cc: ' + ccAddrs + ')\n' + body;
+        prefillCompose({
+            to: toAddrs, subject: subject,
+            replyTo: row.mailbox || '', from: row.mailbox || '', body: body
+        });
+        if (ccAddrs && window.Toast) {
+            window.Toast.info('Reply-All: please add these to To: manually \u2014 ' + ccAddrs);
+        }
+    }
+    function doForward(row) {
+        prefillCompose({
+            to: '',
+            subject: /^fwd?:/i.test(row.subject || '') ? (row.subject || '') : ('Fwd: ' + (row.subject || '')),
+            replyTo: row.mailbox || '',
+            from: row.mailbox || '',
+            body: forwardBody(row)
+        });
+    }
+
+    /* ── preview pane ───────────────────────────────────── */
     function setPreview(row) {
         const box = $('inboxPreview');
         if (!box) return;
@@ -156,61 +316,103 @@
         const bodyHtml = row.textHtml
             ? row.textHtml
             : '<div style="white-space:pre-wrap;line-height:1.6;">' + esc(row.textPlain || '(no body)') + '</div>';
-        // Header (fixed) + scrollable body — sits inside the
-        // .inbox-preview-wrap which is a flex column with height 100%
-        // and overflow:hidden, so the .ipv-body's overflow-y:auto kicks in.
         box.innerHTML =
             '<div class="ipv-head">' +
                 '<h3 class="ipv-subject">' + esc(row.subject || '(no subject)') + '</h3>' +
                 '<div class="ipv-meta">' +
                     '<div class="ipv-row"><strong>From:</strong> ' + esc(row.from || '') + '</div>' +
                     '<div class="ipv-row"><strong>To:</strong> ' + esc(row.to || row.mailbox || '') + '</div>' +
+                    (row.cc ? '<div class="ipv-row"><strong>Cc:</strong> ' + esc(row.cc) + '</div>' : '') +
                     '<div class="ipv-row"><strong>Mailbox:</strong> ' + esc(mailboxLabel(row.mailbox)) + '</div>' +
                     '<div class="ipv-row"><strong>Received:</strong> ' + esc(fmtDate(row.receivedAt || row.date)) + '</div>' +
                 '</div>' +
             '</div>' +
             '<div class="ipv-actions">' +
-                '<button type="button" class="ipv-reply" id="inboxReplyBtn">' +
-                    '<i class="fas fa-reply"></i> Reply' +
-                '</button>' +
+                '<button type="button" class="ipv-reply" id="ipvReplyBtn"><i class="fas fa-reply"></i> Reply</button>' +
+                '<button type="button" id="ipvReplyAllBtn"><i class="fas fa-reply-all"></i> Reply All</button>' +
+                '<button type="button" id="ipvForwardBtn"><i class="fas fa-share"></i> Forward</button>' +
+                '<button type="button" id="ipvDeleteBtn" style="color:#c0392b;border-color:#f1c2bd;"><i class="fas fa-trash"></i> Delete</button>' +
             '</div>' +
             '<div class="ipv-body">' + bodyHtml + '</div>';
-        const replyBtn = $('inboxReplyBtn');
-        if (replyBtn) {
-            replyBtn.addEventListener('click', function () {
-                const composeBtn = $('inboxComposeBtn');
-                if (composeBtn) composeBtn.click();
-                setTimeout(function () {
-                    const to = $('icTo');
-                    const sub = $('icSubject');
-                    const reply = $('icReplyTo');
-                    if (to) to.value = ((row.from || '').match(/<([^>]+)>/) || [,''])[1] || row.from || '';
-                    if (sub) sub.value = /^re:/i.test(row.subject || '') ? (row.subject || '') : ('Re: ' + (row.subject || ''));
-                    if (reply) reply.value = ((row.mailbox || '').trim());
-                }, 40);
-            });
-        }
+        const replyBtn    = $('ipvReplyBtn');
+        const replyAllBtn = $('ipvReplyAllBtn');
+        const forwardBtn  = $('ipvForwardBtn');
+        const deleteBtn   = $('ipvDeleteBtn');
+        if (replyBtn)    replyBtn.addEventListener('click',    function () { doReply(row); });
+        if (replyAllBtn) replyAllBtn.addEventListener('click', function () { doReplyAll(row); });
+        if (forwardBtn)  forwardBtn.addEventListener('click',  function () { doForward(row); });
+        if (deleteBtn)   deleteBtn.addEventListener('click',   function () { deleteRow(row); });
     }
+
+    /* ── list rendering with checkboxes + bulk toolbar ──── */
     function filteredRows() {
         return state.rows.filter(function (r) {
             return state.mailbox === ALL || r.mailbox === state.mailbox;
         });
     }
+    function ensureToolbar() {
+        const wrap = document.querySelector('.inbox-list-wrap');
+        if (!wrap) return null;
+        let bar = wrap.querySelector('.inbox-bulk-toolbar');
+        if (bar) return bar;
+        bar = document.createElement('div');
+        bar.className = 'inbox-bulk-toolbar';
+        bar.style.cssText = 'display:flex;align-items:center;gap:.6rem;padding:.5rem .85rem;border-bottom:1px solid #e3e8ef;background:#f8fafb;font-size:.85rem;';
+        bar.innerHTML =
+            '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;color:#5a6877;">' +
+                '<input type="checkbox" id="inboxSelectAll" style="cursor:pointer;"> Select all</label>' +
+            '<span id="inboxSelectedCount" style="color:#5a6877;font-size:.78rem;"></span>' +
+            '<span style="flex:1;"></span>' +
+            '<button type="button" id="inboxMassDeleteBtn" disabled style="padding:.35rem .8rem;border-radius:6px;border:1px solid #e74c3c;background:#fff;color:#c0392b;font-weight:600;font-size:.82rem;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;">' +
+                '<i class="fas fa-trash"></i> Delete selected</button>';
+        const header = wrap.querySelector('.table-header');
+        if (header && header.nextSibling) wrap.insertBefore(bar, header.nextSibling);
+        else wrap.appendChild(bar);
+        bar.querySelector('#inboxSelectAll').addEventListener('change', function (ev) {
+            const want = ev.target.checked;
+            const visible = filteredRows();
+            if (want) visible.forEach(function (r) { state.checked.add(r.id); });
+            else      visible.forEach(function (r) { state.checked.delete(r.id); });
+            renderRows();
+        });
+        bar.querySelector('#inboxMassDeleteBtn').addEventListener('click', massDelete);
+        return bar;
+    }
+    function refreshToolbar() {
+        const bar = document.querySelector('.inbox-bulk-toolbar');
+        if (!bar) return;
+        const visible = filteredRows();
+        const allTicked = visible.length > 0 && visible.every(function (r) { return state.checked.has(r.id); });
+        const anyTicked = state.checked.size > 0;
+        const selAll = bar.querySelector('#inboxSelectAll');
+        if (selAll) {
+            selAll.checked = allTicked;
+            selAll.indeterminate = anyTicked && !allTicked;
+        }
+        const cnt = bar.querySelector('#inboxSelectedCount');
+        if (cnt) cnt.textContent = anyTicked ? (state.checked.size + ' selected') : '';
+        const massBtn = bar.querySelector('#inboxMassDeleteBtn');
+        if (massBtn) massBtn.disabled = !anyTicked;
+    }
     function renderRows() {
         const body = $('inboxReceivedBody');
         const label = $('inboxMbxLabel');
         if (label) label.textContent = mailboxLabel(state.mailbox);
+        ensureToolbar();
         if (!body) return;
         const rows = filteredRows().sort(function (a, b) {
             return new Date(b.receivedAt || 0) - new Date(a.receivedAt || 0);
         });
         if (!rows.length) {
-            body.innerHTML = '<tr><td colspan="4" class="table-empty">No emails found for this mailbox.</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" class="table-empty">No emails found for this mailbox.</td></tr>';
             setPreview(null);
+            refreshToolbar();
             return;
         }
         body.innerHTML = rows.map(function (r) {
+            const checked = state.checked.has(r.id) ? 'checked' : '';
             return '<tr class="' + (r.unread ? 'unread ' : '') + (state.selectedId === r.id ? 'selected' : '') + '" data-mail-id="' + esc(r.id) + '">' +
+                '<td class="inbox-cb-cell" style="width:32px;text-align:center;"><input type="checkbox" class="inbox-row-cb" data-mail-id="' + esc(r.id) + '" ' + checked + '></td>' +
                 '<td>' + esc(fmtDate(r.receivedAt || r.date)) + '</td>' +
                 '<td>' + esc(r.from || '') + '</td>' +
                 '<td>' + esc(r.subject || '(no subject)') + '</td>' +
@@ -218,7 +420,8 @@
             '</tr>';
         }).join('');
         Array.prototype.forEach.call(body.querySelectorAll('tr[data-mail-id]'), function (tr) {
-            tr.addEventListener('click', function () {
+            tr.addEventListener('click', function (ev) {
+                if (ev.target.closest('.inbox-cb-cell')) return;
                 const id = tr.getAttribute('data-mail-id');
                 state.selectedId = id;
                 const row = state.rows.find(function (r) { return r.id === id; });
@@ -227,12 +430,21 @@
                 setPreview(row || null);
             });
         });
+        Array.prototype.forEach.call(body.querySelectorAll('input.inbox-row-cb'), function (cb) {
+            cb.addEventListener('click', function (ev) { ev.stopPropagation(); });
+            cb.addEventListener('change', function () {
+                const id = cb.getAttribute('data-mail-id');
+                if (cb.checked) state.checked.add(id); else state.checked.delete(id);
+                refreshToolbar();
+            });
+        });
         const selected = state.rows.find(function (r) { return r.id === state.selectedId; }) || rows[0];
         state.selectedId = selected.id;
         Array.prototype.forEach.call(body.querySelectorAll('tr[data-mail-id]'), function (tr) {
             tr.classList.toggle('selected', tr.getAttribute('data-mail-id') === state.selectedId);
         });
         setPreview(selected);
+        refreshToolbar();
     }
     function bindTabs() {
         Array.prototype.forEach.call(document.querySelectorAll('.inbox-mbx-tab'), function (btn) {
@@ -242,6 +454,7 @@
                     b.classList.toggle('active', b === btn);
                     b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
                 });
+                state.checked.clear();
                 renderRows();
             });
         });
@@ -264,10 +477,7 @@
     async function subscribe() {
         if (!window.__firebaseReady) return;
         const fb = await window.__firebaseReady;
-        if (state.unsub) {
-            try { state.unsub(); } catch (_) {}
-            state.unsub = null;
-        }
+        if (state.unsub) { try { state.unsub(); } catch (_) {} state.unsub = null; }
         const q = fb.firestore.query(
             fb.firestore.collection(fb.db, 'receivedEmails'),
             fb.firestore.orderBy('receivedAt', 'desc'),
@@ -282,6 +492,7 @@
                     id: doc.id,
                     from: data.from || '',
                     to: data.to || '',
+                    cc: data.cc || '',
                     subject: data.subject || '',
                     mailbox: String(data.mailbox || '').toLowerCase(),
                     unread: !!data.unread,
@@ -295,9 +506,12 @@
                 state.seenIds.add(doc.id);
             });
             state.rows = incoming;
+            const liveIds = new Set(incoming.map(function (r) { return r.id; }));
+            Array.from(state.checked).forEach(function (id) {
+                if (!liveIds.has(id)) state.checked.delete(id);
+            });
             setCounts();
             renderRows();
-
             if (fresh.length && isAdminUser()) {
                 const visibleFresh = fresh.filter(function (r) {
                     return MAILBOXES.some(function (m) { return m.id === r.mailbox; });
@@ -307,7 +521,7 @@
                     if (window.Toast && typeof window.Toast.info === 'function') {
                         window.Toast.info('New mail in ' + mailboxLabel(latest.mailbox) + ': ' + (latest.subject || '(no subject)'));
                     }
-                    notifyNative('New mail in ' + mailboxLabel(latest.mailbox), (latest.from || '') + ' — ' + (latest.subject || '(no subject)'));
+                    notifyNative('New mail in ' + mailboxLabel(latest.mailbox), (latest.from || '') + ' \u2014 ' + (latest.subject || '(no subject)'));
                     beep();
                     flashTitle(visibleFresh.length);
                 }
@@ -315,47 +529,33 @@
         }, function (err) {
             console.error('[inbox-receiver] snapshot failed:', err);
             const body = $('inboxReceivedBody');
-            if (body) {
-                body.innerHTML = '<tr><td colspan="4" class="table-empty" style="color:#c0392b;">Failed to load inbox: ' + esc(err.message || err) + '</td></tr>';
-            }
+            if (body) body.innerHTML = '<tr><td colspan="5" class="table-empty" style="color:#c0392b;">Failed to load inbox: ' + esc(err.message || err) + '</td></tr>';
         });
     }
     function initRefresh() {
         const btn = $('inboxRefreshBtn');
         if (!btn) return;
         btn.addEventListener('click', function () {
-            subscribe().catch(function (err) {
-                console.error('[inbox-receiver] refresh failed:', err);
-            });
+            subscribe().catch(function (err) { console.error('[inbox-receiver] refresh failed:', err); });
             if (typeof window.loadInboxSent === 'function') window.loadInboxSent();
         });
     }
-    /* ── Resizable split divider ───────────────────────────
-       Drag the small bar between the list and the preview to
-       change the split. Stored in localStorage as a percentage
-       of the .inbox-split width (8 % .. 75 %). Default = 40 %
-       (so the preview gets ~60 %). */
     function initResizableSplit() {
         const split = $('inboxSplit');
         const divider = $('inboxDivider');
         if (!split || !divider) return;
         const STORAGE_KEY = 'inboxSplitRatio';
-        const MIN_PCT = 18;   // list column minimum
-        const MAX_PCT = 75;   // list column maximum
-
+        const MIN_PCT = 18, MAX_PCT = 75;
         function applyPct(pct) {
             const clamped = Math.max(MIN_PCT, Math.min(MAX_PCT, pct));
             split.style.setProperty('--inbox-list-w', clamped.toFixed(2) + '%');
         }
-        // Initial: saved or default 40%
         let saved = parseFloat(localStorage.getItem(STORAGE_KEY) || '');
         if (!isFinite(saved) || saved < MIN_PCT || saved > MAX_PCT) saved = 40;
         applyPct(saved);
-
         let dragging = false;
         function onDown(ev) {
-            ev.preventDefault();
-            dragging = true;
+            ev.preventDefault(); dragging = true;
             divider.classList.add('active');
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none';
@@ -365,8 +565,7 @@
             const rect = split.getBoundingClientRect();
             if (!rect.width) return;
             const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
-            const pct = (x / rect.width) * 100;
-            applyPct(pct);
+            applyPct((x / rect.width) * 100);
         }
         function onUp() {
             if (!dragging) return;
@@ -374,12 +573,8 @@
             divider.classList.remove('active');
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
-            // Persist current value
-            const cur = split.style.getPropertyValue('--inbox-list-w');
-            const num = parseFloat(cur);
-            if (isFinite(num)) {
-                try { localStorage.setItem(STORAGE_KEY, String(num)); } catch (_) {}
-            }
+            const num = parseFloat(split.style.getPropertyValue('--inbox-list-w'));
+            if (isFinite(num)) try { localStorage.setItem(STORAGE_KEY, String(num)); } catch (_) {}
         }
         divider.addEventListener('mousedown', onDown);
         divider.addEventListener('touchstart', onDown, { passive: false });
@@ -387,12 +582,10 @@
         document.addEventListener('touchmove', onMove, { passive: false });
         document.addEventListener('mouseup', onUp);
         document.addEventListener('touchend', onUp);
-        // Double-click resets to default 40 %
         divider.addEventListener('dblclick', function () {
             applyPct(40);
             try { localStorage.setItem(STORAGE_KEY, '40'); } catch (_) {}
         });
-        // Keyboard nudges (← / →) when divider is focused
         divider.addEventListener('keydown', function (ev) {
             if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
             ev.preventDefault();
@@ -406,13 +599,9 @@
         bindTabs();
         initRefresh();
         initResizableSplit();
-        subscribe().catch(function (err) {
-            console.error('[inbox-receiver] init failed:', err);
-        });
+        subscribe().catch(function (err) { console.error('[inbox-receiver] init failed:', err); });
     }
-
     window.AdminInboxReceiver = { init: init, refresh: subscribe };
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });
     } else {

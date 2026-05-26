@@ -153,10 +153,14 @@ service cloud.firestore {
     // compromised admin token can't rewrite mail content.
     match /receivedEmails/{id} {
       allow read:   if isAdmin();
+      // Admins can flip the read state (whitelisted fields) AND they
+      // can delete a mail from the dashboard. The Worker still owns
+      // create — browsers can never inject fake mail.
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['unread', 'readAt', 'readBy']);
-      allow create, delete: if false;
+      allow delete: if isAdmin();
+      allow create: if false;
     }
 
     // Default deny everything else
