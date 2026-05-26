@@ -150,7 +150,10 @@ function isValidEmail(s) {
 }
 
 // ── Firebase ID-token verification ──────────────────────────────
-const JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/[email protected]';
+// Firebase ID tokens are signed with the keys published at this URL (JWK format).
+// Note: the legacy x509 endpoint is /robot/v1/metadata/x509/... — we want the JWK
+// variant so the keys can be imported straight into WebCrypto (subtle.importKey).
+const JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 let _jwksCache = null;
 let _jwksCachedAt = 0;
 const JWKS_TTL_MS = 60 * 60 * 1000;
