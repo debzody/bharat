@@ -88,6 +88,7 @@
         /* Hide every sidebar link except Packages + Gallery for staff */
         html[data-dashboard-role="staff"] .sidebar-link[data-section="overview"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="bookings"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="inbox"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="analytics"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="customers"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="revenue"],
@@ -169,6 +170,9 @@
             </a>
             <a href="#" class="topnav-item sidebar-link" data-section="gallery">
                 <i class="fas fa-images"></i><span>Gallery</span>
+            </a>
+            <a href="#" class="topnav-item sidebar-link" data-section="inbox">
+                <i class="fas fa-inbox"></i><span>Inbox</span>
             </a>
             <a href="#" class="topnav-item sidebar-link" data-section="analytics">
                 <i class="fas fa-chart-area"></i><span>Analytics</span>
@@ -455,6 +459,46 @@
             </div>
             <div class="admin-gallery-grid" id="galGrid">
                 <p class="chart-empty" style="grid-column:1/-1;">Loading…</p>
+            </div>
+        </section>
+
+        <!-- Inbox Section (admin-only) -->
+        <section class="dashboard-section" id="section-inbox">
+            <div class="section-header">
+                <h2><i class="fas fa-inbox"></i> Admin Inbox</h2>
+                <div class="section-actions">
+                    <button class="btn-add-package" id="inboxComposeBtn">
+                        <i class="fas fa-pen"></i> Compose
+                    </button>
+                    <button class="btn-add-package" id="inboxRefreshBtn" style="background:#3498db;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <p style="color:#666;font-size:0.92rem;margin-top:.4rem;line-height:1.6;">
+                Send emails as <strong>booking@andamanvoyages.in</strong> directly from this dashboard — no need to leave for Gmail/Zoho.
+                Powered by <a href="https://app.brevo.com/transactional/dashboard" target="_blank" rel="noopener">Brevo's transactional API</a>
+                via the <code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">inbox-mail</code> Cloudflare Worker.
+                Inbound replies + Brevo Conversations chats will land here in a future phase.
+            </p>
+            <div class="table-card" style="margin-top:1rem;">
+                <div class="table-header"><h3><i class="fas fa-paper-plane"></i> Sent</h3></div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sent at</th>
+                                <th>To</th>
+                                <th>Subject</th>
+                                <th>By admin</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inboxSentBody">
+                            <tr><td colspan="5" class="table-empty">Click <strong>Refresh</strong> to load history, or <strong>Compose</strong> to send your first email.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -1069,6 +1113,127 @@
                 </div>
             </div>
             <style>
+                /* ── Compose modal (Inbox tab) ───────────────── */
+                .inbox-compose-modal {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 32, 39, 0.72);
+                    backdrop-filter: blur(3px);
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    padding: 1rem;
+                }
+                .inbox-compose-modal.open { display: flex; }
+                .ic-card {
+                    width: 100%;
+                    max-width: 640px;
+                    background: #fff;
+                    border-radius: 14px;
+                    box-shadow: 0 24px 60px rgba(0,0,0,.32);
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    max-height: 90vh;
+                }
+                .ic-head {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 1rem 1.25rem;
+                    border-bottom: 1px solid #e3e8ef;
+                    background: linear-gradient(135deg, #0d7a8a, #16a085);
+                    color: #fff;
+                }
+                .ic-head h3 {
+                    margin: 0;
+                    font-size: 1.05rem;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: .5rem;
+                }
+                .ic-close {
+                    background: rgba(255,255,255,.18);
+                    border: 0;
+                    color: #fff;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                }
+                .ic-close:hover { background: rgba(255,255,255,.32); }
+                .ic-body {
+                    padding: 1.1rem 1.25rem;
+                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: .75rem;
+                }
+                .ic-body label {
+                    display: flex;
+                    flex-direction: column;
+                    gap: .3rem;
+                    font-size: .82rem;
+                    font-weight: 600;
+                    color: #5a6877;
+                }
+                .ic-req { color: #e74c3c; }
+                .ic-body input,
+                .ic-body textarea {
+                    padding: .55rem .75rem;
+                    border: 1px solid #cfd9df;
+                    border-radius: 8px;
+                    font-family: inherit;
+                    font-size: .92rem;
+                    color: #2c3e50;
+                }
+                .ic-body input:focus,
+                .ic-body textarea:focus {
+                    outline: none;
+                    border-color: #0d7a8a;
+                    box-shadow: 0 0 0 3px rgba(13,122,138,.18);
+                }
+                .ic-body textarea { resize: vertical; min-height: 160px; font-family: inherit; }
+                .ic-status {
+                    font-size: .88rem;
+                    min-height: 1.2em;
+                }
+                .ic-foot {
+                    padding: .85rem 1.25rem;
+                    border-top: 1px solid #e3e8ef;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: .5rem;
+                    background: #f9fbfc;
+                }
+                .ic-foot button {
+                    padding: .55rem 1.1rem;
+                    border-radius: 8px;
+                    font-family: inherit;
+                    font-size: .9rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    border: 1px solid transparent;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .4rem;
+                }
+                .ic-cancel {
+                    background: #fff;
+                    color: #5a6877;
+                    border-color: #cfd9df;
+                }
+                .ic-cancel:hover { background: #f0f3f5; }
+                .ic-send {
+                    background: linear-gradient(135deg, #0d7a8a, #16a085);
+                    color: #fff;
+                    box-shadow: 0 2px 8px rgba(13,122,138,.25);
+                }
+                .ic-send:hover:not(:disabled) { filter: brightness(1.05); }
+                .ic-send:disabled { opacity: .6; cursor: not-allowed; }
+
                 .gd-mgr {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1224,11 +1389,20 @@
         </div>
     </div>
 
+    <!-- ── Inbox Worker URL ──────────────────────────────────────
+         Paste the URL of your deployed inbox-mail Cloudflare Worker
+         (e.g. https://inbox-mail.<account>.workers.dev). Until set,
+         the Compose modal will surface a clear error so admins know
+         the backend isn't wired up yet. -->
+    <script>
+        window.INBOX_WORKER_URL = 'https://inbox-mail.deb-andaman.workers.dev';
+    </script>
     <script src="js/firebase-config.js?v=21"></script>
     <script src="js/dataStore.js?v=26"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
+    <script src="js/inbox.js?v=1"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());
