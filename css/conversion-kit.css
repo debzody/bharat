@@ -4,7 +4,15 @@
    js/conversion-kit.js.
    ─────────────────────────────────────────────────────────── */
 
-/* 1. Sticky urgency bar (package.html only) */
+/* 1. Sticky urgency bar (package.html only)
+   ------------------------------------------------------------
+   DISABLED: the red countdown bar was removed per request — it
+   felt too "scammy" and pushed the topbar down. We hide it via
+   CSS (belt + braces with the JS DEFAULT being `false` now) so
+   even a stale SettingsStore cache cannot bring it back. To
+   re-enable, simply remove this `display:none !important` rule.
+   ------------------------------------------------------------ */
+#ck-urgency-bar { display: none !important; }
 #ck-urgency-bar {
     position: fixed;
     top: 0; left: 0; right: 0;

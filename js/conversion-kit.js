@@ -20,7 +20,10 @@
     if (path.indexOf('/dashboard') === 0 || path.indexOf('/migrate') === 0) return;
 
     var DEFAULTS = {
-        urgencyBarEnabled:        true,
+        // Red urgency bar + countdown timer disabled per request — felt
+        // too pushy / scammy. Can still be re-enabled per-tenant via
+        // SettingsStore (admin → conversion kit settings).
+        urgencyBarEnabled:        false,
         urgencyBarMessage:        '\uD83D\uDD25 Bookings closing soon \u2014 reserve your seats today',
         whatsappFabEnabled:       true,
         whatsappFabNumber:        '918880195191',

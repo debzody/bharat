@@ -25,10 +25,11 @@
   --mmt-yellow:#ffd166;
   --surface:#ffffff;
   --surface-alt:#f7fafc;
-  /* Site-wide topbar height. Reduced 10% (was 86px) per request to make
-     the floating header less visually heavy. The bar itself uses
+  /* Site-wide topbar height. Reduced 10% (was 86px), then a further 20%
+     reduction (77px → 62px) per request to make the floating header
+     even less visually heavy. The bar itself uses
      calc(var(--tb-h) - …) for its actual height + spacing. */
-  --tb-h:77px;
+  --tb-h:62px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -171,7 +172,7 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
   .topnav-item{padding:.3rem .55rem;min-width:56px}
 }
 @media (max-width:768px){
-  :root{--tb-h:72px}
+  :root{--tb-h:58px}
   .topbar{top:.4rem;left:.4rem;right:.4rem;height:calc(var(--tb-h) - .8rem);padding:0 .8rem;gap:.4rem;border-radius:14px}
   .topbar-logo img{height:44px;border-radius:11px}
   .brand-line1{font-size:1.1rem}
@@ -798,9 +799,10 @@ body.hero-page .topbar,
     box-shadow:none;
     top:0;left:0;right:0;
     height:auto;
-    /* Vertical padding reduced ~10% with --tb-h to shrink the bar's
-       visual height without touching its width. */
-    padding:.7rem 2rem;
+    /* Vertical padding reduced ~10% with --tb-h, then -20% more
+       (.7rem → .56rem) to shrink the bar's visual height
+       without touching its width. */
+    padding:.56rem 2rem;
     gap:.5rem;
 }
 .topbar.scrolled,
@@ -810,7 +812,7 @@ body.hero-page .topbar,
     -webkit-backdrop-filter:saturate(180%) blur(12px) !important;
     border-color:rgba(255,255,255,.06) !important;
     box-shadow:0 4px 20px rgba(0,0,0,.18) !important;
-    padding-top:.7rem !important;padding-bottom:.7rem !important;
+    padding-top:.56rem !important;padding-bottom:.56rem !important;
 }
 /* Fade the brand-line2 ("Andaman Specialists") on scroll for visual hierarchy
    like the mockup, and keep brand-line1 fully white & legible. */
@@ -822,7 +824,8 @@ body.hero-page .topbar,
    with transparent corners — DON'T crop it with border-radius (that would
    chop the inner emblem). Just size it cleanly with a soft drop-shadow. */
 .topbar-logo img{
-    width:64px !important;height:64px !important;
+    /* Reduced 20% (64 → 51) to fit the slimmer top bar. */
+    width:51px !important;height:51px !important;
     border-radius:0 !important;
     background:transparent !important;
     object-fit:contain !important;
@@ -832,7 +835,8 @@ body.hero-page .topbar,
 }
 @media (max-width:768px){
     .topbar-logo img{
-        width:52px !important;height:52px !important;
+        /* Reduced 20% (52 → 42) for the slimmer mobile top bar. */
+        width:42px !important;height:42px !important;
     }
 }
 .topbar-logo .brand-line1,
