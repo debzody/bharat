@@ -90,21 +90,23 @@ function fieldsFromObject(obj) {
     return fields;
 }
 
-/* Idempotent create: write /<collection>/<docId> only if it doesn't
- * already exist. Uses Firestore's `currentDocument.exists=false`
- * precondition so retries don't double-write.
+/* Idempotent create: POST to /<collection>?documentId=<docId>.
+ *
+ * Firestore's `createDocument` REST endpoint already rejects with 409
+ * ALREADY_EXISTS when a doc with the same ID already exists, so we
+ * don't need any extra precondition headers. (The `currentDocument`
+ * precondition is only valid on the `patch` / `delete` endpoints.)
  *
  * Returns true if the doc was created, false if it already existed
- * (which is fine — Cloudflare may retry on transient errors and we
- * want SHA-256(Message-ID) to dedupe). Anything else throws. */
+ * (Cloudflare may retry on transient errors and SHA-256(Message-ID)
+ * keeps the doc ID stable across retries). Anything else throws. */
 export async function firestoreCreateIfMissing(env, token, collection, docId, data) {
     const projectId = env.FIREBASE_PROJECT_ID;
     if (!projectId) throw new Error('FIREBASE_PROJECT_ID not configured');
 
     const url = 'https://firestore.googleapis.com/v1/projects/' + projectId +
         '/databases/(default)/documents/' + encodeURIComponent(collection) +
-        '?documentId=' + encodeURIComponent(docId) +
-        '&currentDocument.exists=false';
+        '?documentId=' + encodeURIComponent(docId);
 
     const res = await fetch(url, {
         method: 'POST',
@@ -118,8 +120,6 @@ export async function firestoreCreateIfMissing(env, token, collection, docId, da
     if (res.ok) return true;
 
     const txt = await res.text().catch(() => '');
-    // Firestore returns 409 ALREADY_EXISTS when the precondition
-    // catches a duplicate. Treat as success — idempotent write.
     if (res.status === 409 || /already exists/i.test(txt)) return false;
     throw new Error('Firestore create failed: ' + res.status + ' ' + txt);
 }
