@@ -110,6 +110,7 @@ export default {
             // Best-effort: a Firestore failure must NOT break the user-
             // facing email send, so we swallow + log.
             try {
+                console.log('customize-email: starting mirror for ref', body.ref, 'has MIRROR_TOKEN:', !!env.MIRROR_TOKEN);
                 await mirrorToFirestore(env, {
                     ref:        body.ref,
                     fromEmail, fromName,
@@ -118,8 +119,9 @@ export default {
                     textBody, htmlBody,
                     traveller:  body.traveller || {},
                 });
+                console.log('customize-email: mirror succeeded for ref', body.ref);
             } catch (err) {
-                console.warn('customize-email: firestore mirror failed:', err && err.message || err);
+                console.error('customize-email: firestore mirror failed:', err && err.stack || err && err.message || String(err));
             }
 
             return cors(json({ ok: true, ref: body.ref }, 200), origin, allowed);
@@ -172,9 +174,8 @@ function validate(b) {
  * Doc ID is SHA-256(customize:<ref>) so retries from the browser
  * dedupe naturally. */
 async function mirrorToFirestore(env, info) {
-    const url   = (env.MIRROR_URL   || 'https://email-router.pittu-das2.workers.dev/mirror').trim();
     const token = (env.MIRROR_TOKEN || '').trim();
-    if (!url || !token) {
+    if (!token || !env.EMAIL_ROUTER) {
         // Mirror not configured — skip silently. The gmail send still works.
         return;
     }
@@ -204,7 +205,10 @@ async function mirrorToFirestore(env, info) {
         replyTo:      replyTo,
         source:       'customize-form'
     };
-    const res = await fetch(url, {
+    // Service binding — Cloudflare routes this in-zone, no 1042 error.
+    // The host part of the URL is ignored when calling a service binding;
+    // only the path (/mirror) matters.
+    const res = await env.EMAIL_ROUTER.fetch('https://internal/mirror', {
         method: 'POST',
         headers: {
             'Content-Type':  'application/json',

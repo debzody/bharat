@@ -39,6 +39,17 @@
         {
             "name": "SEND_EMAIL"
         }
+    ],
+
+    // ── Service binding to email-router ────────────────────────
+    // Lets us call email-router's /mirror endpoint as
+    // env.EMAIL_ROUTER.fetch(...) — Cloudflare handles the
+    // intra-zone routing internally (no error 1042).
+    "services": [
+        {
+            "binding": "EMAIL_ROUTER",
+            "service": "email-router"
+        }
     ]
 
     // ── Optional: secret for extra abuse defence ────────────────
