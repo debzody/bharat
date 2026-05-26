@@ -531,28 +531,52 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // ── Upload new photos for this day ──────────────────
+        // Two-step flow:
+        //   1) User picks file(s) → we open a metadata dialog with all
+        //      five MANDATORY fields (Title, Category, Date, Place,
+        //      Package). Defaults are pre-populated from the current
+        //      package + day so the common case is one click, but the
+        //      user MUST review them before upload starts.
+        //   2) Once they hit "Upload", we feed each file through
+        //      GalleryStore.uploadGalleryImage with the user-confirmed
+        //      meta. Cancelling resets the file input.
         el.querySelector('.btn-day-upload').addEventListener('click', () => fileEl.click());
         fileEl.addEventListener('change', async () => {
             const files = Array.from(fileEl.files || []);
             if (!files.length) return;
             if (!window.GalleryStore || typeof window.GalleryStore.uploadGalleryImage !== 'function') {
                 setStatus('Gallery uploader not available.', true);
+                fileEl.value = '';
                 return;
             }
-            const pkg = packagesData[pkgIdx];
+            const pkg  = packagesData[pkgIdx];
             const dayN = packagesData[pkgIdx].days[dayIdx].day;
-            for (let i = 0; i < files.length; i++) {
-                setStatus('Uploading ' + (i+1) + '/' + files.length + ': ' + files[i].name + '…');
-                try {
+            // Smart defaults — these are pre-filled, but the dialog
+            // forces the user to read/confirm before upload.
+            const defaults = {
+                title:      pkg.name + ' — Day ' + dayN,
+                category:   '',
+                date:       new Date().toISOString().slice(0, 10),
+                place:      '',
+                packageRef: pkg.id || pkg.name
+            };
+
+            try {
+                const meta = await openDayUploadMetaDialog(defaults, files);
+                if (!meta) {                  // user cancelled
+                    fileEl.value = '';
+                    setStatus('');
+                    return;
+                }
+                for (let i = 0; i < files.length; i++) {
+                    setStatus('Uploading ' + (i+1) + '/' + files.length + ': ' + files[i].name + '…');
                     const item = await window.GalleryStore.uploadGalleryImage(files[i], {
-                        title:      pkg.name + ' — Day ' + dayN + (files.length > 1 ? ' (' + (i+1) + ')' : ''),
-                        category:   pkg.name + ' Day ' + dayN,
-                        date:       new Date().toISOString().slice(0, 10),
-                        place:      '',
-                        packageRef: pkg.id || pkg.name,
+                        title:      files.length > 1 ? meta.title + ' (' + (i+1) + ')' : meta.title,
+                        category:   meta.category,
+                        date:       meta.date,
+                        place:      meta.place,
+                        packageRef: meta.packageRef,
                         order:      9999
-                        // NOTE: gallery.js doesn't currently store dayNumber by name,
-                        // but `category` includes it so it's recoverable.
                     });
                     // Cache + attach to day
                     if (!window._iteGalleryCache) window._iteGalleryCache = {};
@@ -561,22 +585,181 @@ document.addEventListener('DOMContentLoaded', function () {
                         packagesData[pkgIdx].days[dayIdx].imageIds = [];
                     }
                     packagesData[pkgIdx].days[dayIdx].imageIds.push(item.id);
-                } catch (err) {
-                    console.error('Day-photo upload failed:', err);
-                    setStatus('Upload failed: ' + (err && err.message ? err.message : err), true);
-                    fileEl.value = '';
-                    return;
                 }
+                fileEl.value = '';
+                setStatus('✓ Uploaded ' + files.length + ' photo(s). Click Save & Publish to keep the link.');
+                refreshStrip();
+            } catch (err) {
+                console.error('Day-photo upload failed:', err);
+                setStatus('Upload failed: ' + (err && err.message ? err.message : err), true);
+                fileEl.value = '';
             }
-            fileEl.value = '';
-            setStatus('✓ Uploaded ' + files.length + ' photo(s). Click Save & Publish to keep the link.');
-            refreshStrip();
         });
 
         // Initial paint
         refreshStrip();
 
         return el;
+    }
+
+    // ── Day-photo upload metadata dialog ────────────────────────
+    // Pops a modal where the user MUST confirm/edit Title, Category,
+    // Date, Place and Package before the per-day upload starts. The
+    // five fields mirror the main Gallery upload form (same dropdown
+    // values pulled from SettingsStore). Resolves to the meta object
+    // when the user clicks Upload, or `null` if they cancel/close.
+    function openDayUploadMetaDialog(defaults, files) {
+        return new Promise((resolve) => {
+            // Lazy-create the modal once
+            let modal = document.getElementById('iteDayUploadModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'iteDayUploadModal';
+                modal.className = 'gal-edit-modal';
+                modal.innerHTML = `
+                    <div class="gal-edit-card" style="max-width:560px;">
+                        <div class="gal-edit-head">
+                            <h3>
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                Photo details — required
+                            </h3>
+                            <button type="button" class="gal-edit-close" aria-label="Close"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="gal-edit-body">
+                            <p style="margin:0 0 .35rem;font-size:.86rem;color:#5a6877;line-height:1.5;">
+                                These tags are required so the photos appear correctly in the public
+                                gallery (year / place / package grouping). Defaults are pre-filled
+                                from the package and day — review and edit if needed.
+                            </p>
+                            <p id="iteDayUploadFileNote" style="margin:0 0 .35rem;font-size:.82rem;color:#16a085;font-weight:600;"></p>
+                            <label>Title <span class="agf-req" style="color:#e74c3c;">*</span>
+                                <input type="text" data-f="title" placeholder="e.g. Day 2 — Havelock arrival">
+                            </label>
+                            <label>Category <span class="agf-req" style="color:#e74c3c;">*</span>
+                                <select data-f="category" data-dropdown="category">
+                                    <option value="">— Choose category —</option>
+                                </select>
+                            </label>
+                            <div class="gal-edit-row2">
+                                <label>Date <span class="agf-req" style="color:#e74c3c;">*</span>
+                                    <input type="date" data-f="date">
+                                </label>
+                                <label>Place <span class="agf-req" style="color:#e74c3c;">*</span>
+                                    <select data-f="place" data-dropdown="place">
+                                        <option value="">— Choose place —</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <label>Package <span class="agf-req" style="color:#e74c3c;">*</span>
+                                <select data-f="packageRef" data-dropdown="package">
+                                    <option value="">— Choose package —</option>
+                                </select>
+                            </label>
+                            <div id="iteDayUploadError" style="display:none;color:#c0392b;font-size:.86rem;margin-top:.25rem;padding:.55rem .75rem;background:#fdedec;border-radius:6px;border:1px solid #f5b7b1;"></div>
+                        </div>
+                        <div class="gal-edit-foot">
+                            <button type="button" class="gal-edit-cancel">Cancel</button>
+                            <button type="button" class="gal-edit-save" data-action="upload">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Populate dropdowns from SettingsStore (admin-managed lists)
+            if (typeof window.__populateGalleryDropdowns === 'function') {
+                window.__populateGalleryDropdowns(modal);
+            }
+
+            // Pre-fill defaults
+            const setVal = (f, v) => {
+                const el = modal.querySelector('[data-f="' + f + '"]');
+                if (el) el.value = (v == null ? '' : v);
+            };
+            setVal('title',      defaults.title);
+            setVal('category',   defaults.category || '');
+            setVal('date',       defaults.date);
+            setVal('place',      defaults.place || '');
+            setVal('packageRef', defaults.packageRef || '');
+
+            // Show file count / names so the user knows what they're tagging
+            const note = modal.querySelector('#iteDayUploadFileNote');
+            if (note) {
+                const fileNames = (files || []).map(f => f.name).slice(0, 3).join(', ');
+                const more = (files || []).length > 3 ? ` (+${(files || []).length - 3} more)` : '';
+                note.textContent = '📎 ' + (files || []).length + ' file(s): ' + fileNames + more;
+            }
+
+            // Hide any previous error
+            const errEl = modal.querySelector('#iteDayUploadError');
+            if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+            // Wire close / cancel — clone to drop previous listeners
+            function close(result) {
+                modal.classList.remove('open');
+                resolve(result);
+            }
+            const closeBtn  = modal.querySelector('.gal-edit-close');
+            const cancelBtn = modal.querySelector('.gal-edit-cancel');
+            const uploadBtn = modal.querySelector('[data-action="upload"]');
+            const newClose  = closeBtn.cloneNode(true);
+            const newCancel = cancelBtn.cloneNode(true);
+            const newUpload = uploadBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newClose,  closeBtn);
+            cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+            uploadBtn.parentNode.replaceChild(newUpload, uploadBtn);
+
+            newClose.addEventListener('click',  () => close(null));
+            newCancel.addEventListener('click', () => close(null));
+            modal.onclick = (e) => { if (e.target === modal) close(null); };
+
+            newUpload.addEventListener('click', () => {
+                const getVal = (f) => {
+                    const el = modal.querySelector('[data-f="' + f + '"]');
+                    return el ? String(el.value || '').trim() : '';
+                };
+                const meta = {
+                    title:      getVal('title'),
+                    category:   getVal('category'),
+                    date:       getVal('date'),
+                    place:      getVal('place'),
+                    packageRef: getVal('packageRef')
+                };
+                // Validate — every field is mandatory
+                const missing = [];
+                if (!meta.title)      missing.push('Title');
+                if (!meta.category)   missing.push('Category');
+                if (!meta.date)       missing.push('Date');
+                if (!meta.place)      missing.push('Place');
+                if (!meta.packageRef) missing.push('Package');
+                if (missing.length) {
+                    if (errEl) {
+                        errEl.style.display = 'block';
+                        errEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please fill: ' +
+                            missing.map(m => '<strong>' + m + '</strong>').join(', ');
+                    }
+                    // Flash the first missing field
+                    const map = { Title:'title', Category:'category', Date:'date', Place:'place', Package:'packageRef' };
+                    const firstEl = modal.querySelector('[data-f="' + map[missing[0]] + '"]');
+                    if (firstEl) {
+                        firstEl.classList.add('agf-field-flash');
+                        setTimeout(() => firstEl.classList.remove('agf-field-flash'), 1600);
+                        try { firstEl.focus(); } catch (_) {}
+                    }
+                    return;
+                }
+                close(meta);
+            });
+
+            modal.classList.add('open');
+            // Auto-focus title for quick edits
+            setTimeout(() => {
+                const t = modal.querySelector('[data-f="title"]');
+                if (t) try { t.focus(); t.select && t.select(); } catch (_) {}
+            }, 50);
+        });
     }
 
     // ── Gallery cache + picker (used by per-day gallery) ────────
