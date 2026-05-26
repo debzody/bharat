@@ -476,30 +476,74 @@
                 </div>
             </div>
             <p style="color:#666;font-size:0.92rem;margin-top:.4rem;line-height:1.6;">
-                Send emails as <strong>booking@</strong>, <strong>info@</strong> or <strong>cancellation@andamanvoyages.in</strong>
-                directly from this dashboard — no need to leave for Gmail/Zoho. Pick the mailbox in the Compose modal's
-                <em>From</em> dropdown.
-                Powered by <a href="https://app.brevo.com/transactional/dashboard" target="_blank" rel="noopener">Brevo's transactional API</a>
-                via the <code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">inbox-mail</code> Cloudflare Worker.
-                Inbound replies + Brevo Conversations chats will land here in a future phase.
+                Outbound replies go through Brevo (<code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">inbox-mail</code> Worker);
+                inbound mail is captured by Cloudflare Email Routing and persisted via the
+                <code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">email-router</code> Worker.
+                The <strong>Received</strong> tab below mirrors everything sent to
+                <strong>booking@</strong>, <strong>info@</strong> and
+                <strong>cancellation@andamanvoyages.in</strong>; click any row to preview, then hit Reply to prefill Compose.
             </p>
-            <div class="table-card" style="margin-top:1rem;">
-                <div class="table-header"><h3><i class="fas fa-paper-plane"></i> Sent</h3></div>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Sent at</th>
-                                <th>To</th>
-                                <th>Subject</th>
-                                <th>By admin</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inboxSentBody">
-                            <tr><td colspan="5" class="table-empty">Click <strong>Refresh</strong> to load history, or <strong>Compose</strong> to send your first email.</td></tr>
-                        </tbody>
-                    </table>
+
+            <!-- Sent / Received tabs -->
+            <div class="inbox-tabs" role="tablist" style="margin-top:1rem;">
+                <button type="button" class="inbox-tab active" data-inbox-tab="received" role="tab" aria-selected="true">
+                    <i class="fas fa-inbox"></i> Received <span class="inbox-tab-count" id="inboxReceivedCount"></span>
+                </button>
+                <button type="button" class="inbox-tab" data-inbox-tab="sent" role="tab" aria-selected="false">
+                    <i class="fas fa-paper-plane"></i> Sent
+                </button>
+            </div>
+
+            <!-- Received pane (default visible) -->
+            <div class="inbox-pane" id="inboxReceivedPane" data-inbox-pane="received">
+                <div class="inbox-split">
+                    <div class="inbox-list-wrap table-card">
+                        <div class="table-header"><h3><i class="fas fa-inbox"></i> Inbox</h3></div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Received</th>
+                                        <th>From</th>
+                                        <th>Subject</th>
+                                        <th>Mailbox</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inboxReceivedBody">
+                                    <tr><td colspan="4" class="table-empty">Click <strong>Refresh</strong> to load.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="inbox-preview-wrap" id="inboxPreview">
+                        <div class="inbox-preview-empty">
+                            <i class="fas fa-envelope-open"></i>
+                            <p>Select an email to preview.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sent pane -->
+            <div class="inbox-pane" id="inboxSentPane" data-inbox-pane="sent" style="display:none;">
+                <div class="table-card" style="margin-top:1rem;">
+                    <div class="table-header"><h3><i class="fas fa-paper-plane"></i> Sent</h3></div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sent at</th>
+                                    <th>To</th>
+                                    <th>Subject</th>
+                                    <th>By admin</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inboxSentBody">
+                                <tr><td colspan="5" class="table-empty">Click <strong>Refresh</strong> to load history, or <strong>Compose</strong> to send your first email.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1115,6 +1159,183 @@
                 </div>
             </div>
             <style>
+                /* ── Sent / Received tabs (Inbox tab) ──────────── */
+                .inbox-tabs {
+                    display: flex;
+                    gap: .35rem;
+                    border-bottom: 2px solid #e3e8ef;
+                    padding: 0;
+                }
+                .inbox-tab {
+                    background: transparent;
+                    border: 0;
+                    border-bottom: 3px solid transparent;
+                    padding: .65rem 1rem;
+                    margin-bottom: -2px;
+                    font-family: inherit;
+                    font-size: .9rem;
+                    font-weight: 600;
+                    color: #5a6877;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .45rem;
+                    transition: color .15s, border-color .15s;
+                }
+                .inbox-tab:hover { color: #0d7a8a; }
+                .inbox-tab.active {
+                    color: #0d7a8a;
+                    border-bottom-color: #0d7a8a;
+                }
+                .inbox-tab-count {
+                    background: #eef3f5;
+                    color: #5a6877;
+                    font-size: .72rem;
+                    padding: .1rem .55rem;
+                    border-radius: 999px;
+                    font-weight: 700;
+                }
+                .inbox-tab.active .inbox-tab-count {
+                    background: #0d7a8a;
+                    color: #fff;
+                }
+
+                /* Two-pane Received layout: list on the left, preview right */
+                .inbox-split {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+                    gap: 1rem;
+                    margin-top: 1rem;
+                    align-items: start;
+                }
+                @media (max-width: 980px) {
+                    .inbox-split { grid-template-columns: 1fr; }
+                }
+                .inbox-list-wrap .data-table tbody tr {
+                    cursor: pointer;
+                    transition: background .12s;
+                }
+                .inbox-list-wrap .data-table tbody tr:hover {
+                    background: #f0f8fa;
+                }
+                .inbox-list-wrap .data-table tbody tr.selected {
+                    background: #d6eaee;
+                }
+                .inbox-list-wrap .data-table tbody tr.unread td {
+                    font-weight: 600;
+                    color: #0d2c3a;
+                }
+                .inbox-preview-wrap {
+                    background: #fff;
+                    border: 1px solid #e3e8ef;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 8px rgba(10,31,68,0.04);
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 320px;
+                    max-height: 78vh;
+                }
+                .inbox-preview-empty {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: #9aa7b1;
+                    gap: .65rem;
+                    padding: 2rem;
+                    text-align: center;
+                }
+                .inbox-preview-empty i { font-size: 2.6rem; opacity: .55; }
+                .inbox-preview-empty p { margin: 0; font-size: .92rem; }
+                .ipv-head {
+                    padding: .85rem 1rem;
+                    border-bottom: 1px solid #e3e8ef;
+                    background: linear-gradient(135deg, #f6fafb 0%, #eef6f8 100%);
+                }
+                .ipv-subject {
+                    margin: 0 0 .35rem;
+                    font-size: 1.02rem;
+                    font-weight: 700;
+                    color: #0d2c3a;
+                    word-break: break-word;
+                }
+                .ipv-meta {
+                    font-size: .82rem;
+                    color: #5a6877;
+                    line-height: 1.5;
+                }
+                .ipv-meta strong { color: #2c3e50; font-weight: 600; }
+                .ipv-meta .ipv-row { margin: .12rem 0; word-break: break-word; }
+                .ipv-actions {
+                    padding: .55rem 1rem;
+                    border-bottom: 1px solid #e3e8ef;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: .4rem;
+                    background: #f9fbfc;
+                }
+                .ipv-actions button {
+                    padding: .4rem .85rem;
+                    border-radius: 6px;
+                    font-family: inherit;
+                    font-size: .82rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    border: 1px solid #cfd9df;
+                    background: #fff;
+                    color: #5a6877;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .35rem;
+                    transition: background .12s, border-color .12s, color .12s;
+                }
+                .ipv-actions button:hover {
+                    background: #eef6f8;
+                    border-color: #0d7a8a;
+                    color: #0d7a8a;
+                }
+                .ipv-actions .ipv-reply {
+                    background: linear-gradient(135deg, #0d7a8a, #16a085);
+                    border-color: transparent;
+                    color: #fff;
+                    box-shadow: 0 2px 6px rgba(13,122,138,.22);
+                }
+                .ipv-actions .ipv-reply:hover {
+                    color: #fff;
+                    filter: brightness(1.05);
+                }
+                .ipv-body {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 1rem 1.1rem;
+                    font-size: .92rem;
+                    line-height: 1.55;
+                    color: #2c3e50;
+                }
+                .ipv-body pre {
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    font-family: inherit;
+                    margin: 0;
+                }
+                .ipv-attach {
+                    border-top: 1px solid #e3e8ef;
+                    padding: .65rem 1rem;
+                    background: #f9fbfc;
+                    font-size: .82rem;
+                    color: #5a6877;
+                }
+                .ipv-attach ul { margin: .35rem 0 0; padding-left: 1.1rem; }
+                .ipv-spam {
+                    background: #fdedec;
+                    color: #a04000;
+                    padding: .45rem .75rem;
+                    font-size: .82rem;
+                    border-bottom: 1px solid #f5cba7;
+                }
+
                 /* ── Compose modal (Inbox tab) ───────────────── */
                 .inbox-compose-modal {
                     position: fixed;
@@ -1420,7 +1641,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
-    <script src="js/inbox.js?v=2"></script>
+    <script src="js/inbox.js?v=3"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());
