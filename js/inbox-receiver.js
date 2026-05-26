@@ -114,6 +114,23 @@
             }
         }
     }
+    async function markRead(row) {
+        if (!row || !row.unread) return;
+        row.unread = false;
+        // Update local rows so counters update immediately
+        const rec = state.rows.find(function (r) { return r.id === row.id; });
+        if (rec) rec.unread = false;
+        setCounts();
+        try {
+            const fb = await window.__firebaseReady;
+            await fb.firestore.updateDoc(
+                fb.firestore.doc(fb.db, 'receivedEmails', row.id),
+                { unread: false, readAt: new Date().toISOString() }
+            );
+        } catch (err) {
+            console.warn('[inbox-receiver] markRead failed:', err);
+        }
+    }
     function setPreview(row) {
         const box = $('inboxPreview');
         if (!box) return;
@@ -192,8 +209,9 @@
             tr.addEventListener('click', function () {
                 const id = tr.getAttribute('data-mail-id');
                 state.selectedId = id;
-                renderRows();
                 const row = state.rows.find(function (r) { return r.id === id; });
+                if (row) markRead(row);
+                renderRows();
                 setPreview(row || null);
             });
         });
