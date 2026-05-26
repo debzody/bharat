@@ -300,12 +300,12 @@
 
         // Cancellation rule values for this tier — keeps the UI in sync
         // with /terms#cancellation without re-reading anything.
-        // Sliding scale (per head):
-        //   30+ days  → flat fee retained, balance refunded
-        //   8–29 days → 50% of advance retained
-        //   0–7 days  → no refund
-        var cxlFee30   = isLuxuryTier ? 7000 : 4000;        // ≥30d retained / head
-        var cxlRef30   = isLuxuryTier ? 4000 : 2000;        // ≥30d refund   / head
+        // Sliding scale (per head, refund grows the earlier you cancel):
+        //   30+ days  → ₹4,000 (Budget/Std) / ₹6,500 (Luxury) refunded
+        //   8–29 days → 50% of advance retained (rest refunded)
+        //   0–7 days  → no refund — full advance forfeited
+        var cxlRef30   = isLuxuryTier ? 6500 : 4000;        // ≥30d refund   / head
+        var cxlFee30   = perHead - cxlRef30;                 // ≥30d retained / head
         var cxlFee8    = Math.round(perHead / 2);            // 50% of advance
         var cxlRef8    = perHead - cxlFee8;                  // remaining 50%
         var tierLabel  = isLuxuryTier ? 'Luxury / Premium / Honeymoon' : 'Budget / Standard';
@@ -491,8 +491,8 @@
                 '<tbody>',
                   '<tr style="border-bottom:1px solid #e3e8ef;">',
                     '<td style="padding:.7rem .8rem;font-weight:700;">30 days or more</td>',
-                    '<td style="padding:.7rem .8rem;">₹4,000 / head retained →<br><strong style="color:#0a5a68;">₹2,000 / head refunded</strong></td>',
-                    '<td style="padding:.7rem .8rem;">₹7,000 / head retained →<br><strong style="color:#0a5a68;">₹4,000 / head refunded</strong></td>',
+                    '<td style="padding:.7rem .8rem;">₹2,000 / head retained →<br><strong style="color:#0a5a68;">₹4,000 / head refunded</strong></td>',
+                    '<td style="padding:.7rem .8rem;">₹4,500 / head retained →<br><strong style="color:#0a5a68;">₹6,500 / head refunded</strong></td>',
                   '</tr>',
                   '<tr style="border-bottom:1px solid #e3e8ef;background:#f9fbfc;">',
                     '<td style="padding:.7rem .8rem;font-weight:700;">8 – 29 days</td>',
@@ -509,7 +509,7 @@
             '</div>',
             '<p style="margin-top:1rem;"><strong>Worked example:</strong> A family of 4 books a Standard package and pays ₹6,000 × 4 = ₹24,000 advance.',
             '<ul>',
-              '<li>Cancel <strong>35 days</strong> before travel → refund = ₹2,000 × 4 = <strong>₹8,000</strong>.</li>',
+              '<li>Cancel <strong>35 days</strong> before travel → refund = ₹4,000 × 4 = <strong>₹16,000</strong>.</li>',
               '<li>Cancel <strong>20 days</strong> before travel → refund = ₹3,000 × 4 = <strong>₹12,000</strong>.</li>',
               '<li>Cancel <strong>5 days</strong> before travel → <strong>no refund</strong>; full ₹24,000 forfeited.</li>',
             '</ul></p>',
