@@ -321,39 +321,84 @@
         const { db, auth, firestore } = await window.__firebaseReady;
         const user = auth.currentUser;
         if (!user) throw new Error('You must be signed in as the admin to publish.');
-        // Staff users can update existing packages but cannot publish a
-        // new package list (which deletes anything missing from the array).
-        // Treat publishPackages() the same as a wholesale write-and-delete
-        // operation, which is admin-only.
-        if (!isAdminEmail(user.email)) throw new Error('Only an admin user can publish packages.');
 
-        // Strategy: write/merge each provided package, delete packages in
-        // Firestore that aren't in the new list. Single batch.
+        // Permission model:
+        //   • Admin → full publish: write/merge every package AND delete
+        //     any package in Firestore that's missing from the new array.
+        //   • Staff → "save" only: update existing packages they can see.
+        //     Staff CANNOT create new packages (firestore.rules denies it)
+        //     and CANNOT delete (rules deny it). The dashboard hides those
+        //     buttons; this function additionally guards against accidental
+        //     deletes when a staff user hits Save & Publish.
+        const admin = isAdminEmail(user.email);
+        const staff = isStaffEmail(user.email);
+        if (!admin && !staff) {
+            throw new Error('Only an admin or staff user can publish packages.');
+        }
+
         const colRef = firestore.collection(db, 'packages');
         const existingSnap = await firestore.getDocs(colRef);
+        const existingIds = new Set();
+        existingSnap.forEach(d => existingIds.add(d.id));
         const newIds = new Set(packages.map(p => String(p.id)));
         const batch = firestore.writeBatch(db);
 
+        if (admin) {
+            // Full write — set every package, delete missing ones.
+            packages.forEach((pkg, idx) => {
+                const id = String(pkg.id || ('pkg_' + Date.now() + '_' + idx));
+                const docRef = firestore.doc(db, 'packages', id);
+                const payload = {
+                    ...pkg,
+                    id,
+                    order: idx,
+                    updatedAt: firestore.serverTimestamp()
+                };
+                batch.set(docRef, payload, { merge: false });
+            });
+            existingSnap.forEach(d => {
+                if (!newIds.has(d.id)) {
+                    batch.delete(firestore.doc(db, 'packages', d.id));
+                }
+            });
+            await batch.commit();
+            return { count: packages.length, role: 'admin' };
+        }
+
+        // ── Staff path ────────────────────────────────────────
+        // Update only packages whose id already exists in Firestore.
+        // Skip new ones (firestore.rules would reject them anyway), and
+        // never issue deletes. Use update() (not set()) so we patch in
+        // place without wiping unknown server-side fields.
+        let updated = 0, skipped = 0;
         packages.forEach((pkg, idx) => {
-            const id = String(pkg.id || ('pkg_' + Date.now() + '_' + idx));
+            const id = String(pkg.id || '');
+            if (!id || !existingIds.has(id)) {
+                skipped++;
+                return;
+            }
             const docRef = firestore.doc(db, 'packages', id);
+            // Strip the id field from the patch so we don't overwrite it
+            // (and to keep the payload minimal).
+            const { id: _ignored, ...rest } = pkg;
             const payload = {
-                ...pkg,
-                id,
+                ...rest,
                 order: idx,
                 updatedAt: firestore.serverTimestamp()
             };
-            batch.set(docRef, payload, { merge: false });
+            batch.update(docRef, payload);
+            updated++;
         });
 
-        existingSnap.forEach(d => {
-            if (!newIds.has(d.id)) {
-                batch.delete(firestore.doc(db, 'packages', d.id));
-            }
-        });
-
+        if (updated === 0) {
+            throw new Error(
+                'Staff users can only update existing packages.\n\n' +
+                'No matching packages were found to update' +
+                (skipped ? ' (' + skipped + ' new package(s) skipped — ask an admin to add them).' : '.')
+            );
+        }
         await batch.commit();
-        return { count: packages.length };
+        return { count: updated, skipped, role: 'staff' };
     }
 
     window.PackagesStore = {

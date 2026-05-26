@@ -215,6 +215,34 @@
 .admin-gallery-upload-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .admin-gallery-upload-btn[disabled] { opacity: .55; cursor: not-allowed; transform: none; }
 
+/* Amber-warning state — files chosen but mandatory tags still empty.
+   The button is still clickable (clicking pops the missing-fields
+   dialog) so we tint it amber instead of locking it grey. */
+.admin-gallery-upload-btn.upload-needs-fields {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    box-shadow: 0 2px 10px rgba(230,126,34,.35);
+}
+.admin-gallery-upload-btn.upload-needs-fields:hover {
+    filter: brightness(1.05);
+}
+
+/* Brief flash on a missing field after the user clicks
+   "Fill them now" in the missing-fields dialog. Pulls focus visually
+   so the user immediately sees where to type. */
+@keyframes agf-field-flash-anim {
+    0%   { box-shadow: 0 0 0 0 rgba(231,76,60,0); }
+    25%  { box-shadow: 0 0 0 4px rgba(231,76,60,.35); }
+    50%  { box-shadow: 0 0 0 8px rgba(231,76,60,.18); }
+    100% { box-shadow: 0 0 0 0 rgba(231,76,60,0); }
+}
+.agf-field input.agf-field-flash,
+.agf-field select.agf-field-flash,
+.agf-field-flash {
+    animation: agf-field-flash-anim 1.4s ease-out 1;
+    border-color: #e74c3c !important;
+    background: #fffafa;
+}
+
 .admin-gallery-progress {
     margin-top: .65rem;
     background: #eef3f6;

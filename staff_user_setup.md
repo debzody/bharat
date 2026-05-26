@@ -111,3 +111,56 @@ likely cause is that the email allowlist drift between `js/firebase-config.js` a
 
 If you ever need a 3rd role (e.g. `manager`, `agent`), just clone the staff plumbing — there's
 nothing magical about the name.
+---
+
+## Changelog — May 2026 (package save + upload-dialog refactor)
+
+Two UX issues were fixed for staff users:
+
+### 1. Staff can now use **Save & Publish** on the Packages tab
+
+Previously, clicking **Save & Publish** as a staff user threw
+*"Only an admin user can publish packages."* `js/dataStore.js → publishPackages()`
+now branches on role:
+
+- **Admin path** (unchanged) — full write: every package is `set()` and
+  any package missing from the in-memory list is `delete()`-d.
+- **Staff path** (new) — `update()`-only on packages whose id already
+  exists in Firestore. Anything brand-new in the staff's working copy
+  is silently skipped (Firestore rules would reject the create anyway).
+  No deletes are ever issued.
+
+A successful staff save shows a banner like:
+*"✅ Saved! 3 package(s) updated and live globally."*
+
+If staff somehow accumulate brand-new package objects (e.g. via a
+restored cache from the public site), the banner adds:
+*"… N new package(s) were skipped — ask an admin to add them."*
+
+### 2. Image upload — modal dialog instead of a silently-disabled button
+
+Previously, the Upload button stayed locked while any of the five
+mandatory fields (Title, Category, Date, Place, Package) was empty,
+and there was no in-page guidance about *which* field was missing.
+
+Now:
+
+- The Upload button **enables as soon as files are picked** (regardless
+  of whether tags are filled). It tints amber while tags are still empty
+  to signal "you'll be asked for more info on click".
+- Clicking it without all required fields opens a **modal dialog** that
+  lists the missing fields by name and offers a **"Fill them now"**
+  button that scrolls + focuses + flashes the first empty field.
+- The validation runs for **both admin and staff** — admins get the
+  same dialog, so the public gallery never receives photos missing
+  the trip-grouping tags.
+
+Frontend wiring lives in `dashboard.html` (inline gallery script) plus
+two CSS hooks in `css/gallery.css`:
+
+- `.admin-gallery-upload-btn.upload-needs-fields` — amber gradient
+- `@keyframes agf-field-flash-anim` + `.agf-field-flash` — 1.4s pulse
+  on the field that the dialog jumped focus to.
+
+Cache versions bumped: `js/dataStore.js?v=27`, `js/dashboard.js?v=25`,
+`css/gallery.css?v=5`.
