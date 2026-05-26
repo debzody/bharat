@@ -476,7 +476,9 @@
                 </div>
             </div>
             <p style="color:#666;font-size:0.92rem;margin-top:.4rem;line-height:1.6;">
-                Send emails as <strong>booking@andamanvoyages.in</strong> directly from this dashboard — no need to leave for Gmail/Zoho.
+                Send emails as <strong>booking@</strong>, <strong>info@</strong> or <strong>cancellation@andamanvoyages.in</strong>
+                directly from this dashboard — no need to leave for Gmail/Zoho. Pick the mailbox in the Compose modal's
+                <em>From</em> dropdown.
                 Powered by <a href="https://app.brevo.com/transactional/dashboard" target="_blank" rel="noopener">Brevo's transactional API</a>
                 via the <code style="background:#eef3f5;padding:.1rem .35rem;border-radius:4px;">inbox-mail</code> Cloudflare Worker.
                 Inbound replies + Brevo Conversations chats will land here in a future phase.
@@ -1181,16 +1183,23 @@
                 }
                 .ic-req { color: #e74c3c; }
                 .ic-body input,
-                .ic-body textarea {
+                .ic-body textarea,
+                .ic-body select {
                     padding: .55rem .75rem;
                     border: 1px solid #cfd9df;
                     border-radius: 8px;
                     font-family: inherit;
                     font-size: .92rem;
                     color: #2c3e50;
+                    background: #fff;
+                }
+                .ic-body select {
+                    cursor: pointer;
+                    appearance: auto;
                 }
                 .ic-body input:focus,
-                .ic-body textarea:focus {
+                .ic-body textarea:focus,
+                .ic-body select:focus {
                     outline: none;
                     border-color: #0d7a8a;
                     box-shadow: 0 0 0 3px rgba(13,122,138,.18);
@@ -1396,13 +1405,22 @@
          the backend isn't wired up yet. -->
     <script>
         window.INBOX_WORKER_URL = 'https://inbox-mail.pittu-das2.workers.dev';
+        // Senders the Compose modal lets the admin pick from. Each address must:
+        //   1) be in the Worker's ALLOWED_SENDERS env var (workers/inbox-mail/wrangler.jsonc)
+        //   2) be a verified sender in your Brevo account.
+        // The first entry is the default selection.
+        window.INBOX_FROM_OPTIONS = [
+            { email: 'booking@andamanvoyages.in',      label: 'Bookings'      },
+            { email: 'info@andamanvoyages.in',         label: 'Info / Sales'  },
+            { email: 'cancellation@andamanvoyages.in', label: 'Cancellations' }
+        ];
     </script>
     <script src="js/firebase-config.js?v=21"></script>
     <script src="js/dataStore.js?v=26"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/dashboard.js?v=24"></script>
     <script src="js/gallery.js?v=3"></script>
-    <script src="js/inbox.js?v=1"></script>
+    <script src="js/inbox.js?v=2"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());

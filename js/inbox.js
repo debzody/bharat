@@ -48,6 +48,7 @@
         if (args.text)    body.text = args.text;
         if (args.replyTo) body.replyTo = args.replyTo;
         if (args.cc)      body.cc = args.cc;
+        if (args.from)    body.from = args.from;
 
         let res, json;
         try {
@@ -124,6 +125,23 @@
         modal = document.createElement('div');
         modal.id = 'inboxComposeModal';
         modal.className = 'inbox-compose-modal';
+        // Build the From-mailbox dropdown from window.INBOX_FROM_OPTIONS
+        // (defined in dashboard.html). Each entry must:
+        //   1) be in the Worker's ALLOWED_SENDERS env var
+        //   2) be a verified sender in your Brevo account.
+        // First entry = default. Falls back to a single Booking option
+        // if dashboard.html didn't declare any.
+        const fromOptions = (Array.isArray(window.INBOX_FROM_OPTIONS) && window.INBOX_FROM_OPTIONS.length)
+            ? window.INBOX_FROM_OPTIONS
+            : [{ email: 'booking@andamanvoyages.in', label: 'Bookings' }];
+        const fromOptionsHtml = fromOptions.map(function (opt, i) {
+            const safeEmail = escapeHtml(opt.email);
+            const safeLabel = escapeHtml(opt.label || opt.email);
+            return '<option value="' + safeEmail + '"' + (i === 0 ? ' selected' : '') + '>' +
+                       safeLabel + ' &lt;' + safeEmail + '&gt;' +
+                   '</option>';
+        }).join('');
+
         modal.innerHTML =
             '<div class="ic-card">' +
                 '<div class="ic-head">' +
@@ -131,6 +149,9 @@
                     '<button type="button" class="ic-close" aria-label="Close"><i class="fas fa-times"></i></button>' +
                 '</div>' +
                 '<div class="ic-body">' +
+                    '<label>From <span class="ic-req">*</span>' +
+                        '<select id="icFrom" required>' + fromOptionsHtml + '</select>' +
+                    '</label>' +
                     '<label>To <span class="ic-req">*</span><input type="email" id="icTo" placeholder="customer@example.com" required></label>' +
                     '<label>Subject <span class="ic-req">*</span><input type="text" id="icSubject" placeholder="Re: Your Andaman trip enquiry" required maxlength="300"></label>' +
                     '<label>Reply-To (optional)<input type="email" id="icReplyTo" placeholder="info@andamanvoyages.in"></label>' +
@@ -155,6 +176,8 @@
         });
 
         async function onSend() {
+            const fromSel  = $('icFrom');
+            const from     = fromSel ? fromSel.value.trim() : '';
             const to       = $('icTo').value.trim();
             const subject  = $('icSubject').value.trim();
             const replyTo  = $('icReplyTo').value.trim();
@@ -168,16 +191,18 @@
             }
             sendBtn.disabled = true;
             sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
-            setStatus(statusEl, 'Sending via Brevo…', false);
+            setStatus(statusEl, 'Sending via Brevo as ' + (from || 'default') + '…', false);
 
             try {
                 const result = await sendEmail({
                     to, subject,
                     html: plainToHtml(bodyText),
                     text: bodyText,
-                    replyTo: replyTo || undefined
+                    replyTo: replyTo || undefined,
+                    from: from || undefined
                 });
                 await logSent({
+                    from: from || '',
                     to, subject,
                     bodyText,
                     sentBy: result.sentBy || '',
