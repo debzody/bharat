@@ -790,6 +790,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // it never reaches Firestore — so it's a 100 %-safe sandbox.
     const seedFakeBookingsBtn  = document.getElementById('seedFakeBookingsBtn');
     const clearFakeBookingsBtn = document.getElementById('clearFakeBookingsBtn');
+    const BOOKINGS_ARCHIVE_KEY = 'bookingsArchive';
+
+    function readBookingsArchive() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(BOOKINGS_ARCHIVE_KEY) || '[]');
+            return Array.isArray(raw) ? raw : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function writeBookingsArchive(rows) {
+        localStorage.setItem(BOOKINGS_ARCHIVE_KEY, JSON.stringify(Array.isArray(rows) ? rows : []));
+    }
+
+    function isArchivableBooking(booking) {
+        if (!booking || typeof booking !== 'object') return false;
+        const status = String(booking.status || '').toLowerCase();
+        return status === 'cancelled' || !!booking.refundId || !!booking.refundedAt;
+    }
 
     function makeFakeBooking(overrides) {
         const now = Date.now();
@@ -863,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('bookings', JSON.stringify(merged));
             DB.bookings = merged;
             refreshAll();
-            const msg = '✓ Added ' + newOnes.length + ' test booking(s). They live only in this browser\'s localStorage — Cancel/refund will NOT charge any real card. Use "Clear Bookings" to wipe them.';
+            const msg = '✓ Added ' + newOnes.length + ' test booking(s). They live only in this browser\'s localStorage — Cancel/refund will NOT charge any real card. Use "Archive Closed Bookings" to move cancelled/refunded rows out of the active list.';
             if (window.Toast && window.Toast.success) window.Toast.success(msg);
             else alert(msg);
         });
@@ -871,11 +891,65 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (clearFakeBookingsBtn) {
         clearFakeBookingsBtn.addEventListener('click', () => {
-            if (!confirm('Wipe ALL bookings from this device\'s localStorage? Real bookings stored in Firestore are NOT affected (they live on the per-customer profile, not here).')) return;
-            localStorage.setItem('bookings', '[]');
-            DB.bookings = [];
+            const existing = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const active = [];
+            const toArchive = [];
+
+            existing.forEach((booking) => {
+                if (isArchivableBooking(booking)) toArchive.push(booking);
+                else active.push(booking);
+            });
+
+            if (!toArchive.length) {
+                if (window.Toast && window.Toast.info) {
+                    window.Toast.info('No cancelled or refunded local bookings to archive.');
+                } else {
+                    alert('No cancelled or refunded local bookings to archive.');
+                }
+                return;
+            }
+
+            if (!confirm(
+                'Archive ' + toArchive.length + ' cancelled/refunded local booking(s)?\n\n' +
+                '• Active bookings will stay in the dashboard\n' +
+                '• Archived rows will be moved to localStorage "' + BOOKINGS_ARCHIVE_KEY + '"\n' +
+                '• Firestore bookings are NOT touched'
+            )) return;
+
+            const archivedAt = new Date().toISOString();
+            const archive = readBookingsArchive();
+            const archiveMap = {};
+            archive.forEach((row) => {
+                const key = String((row && (row.booking_ref || row.id)) || '');
+                if (key) archiveMap[key] = row;
+            });
+            toArchive.forEach((booking) => {
+                const key = String((booking && (booking.booking_ref || booking.id)) || '');
+                const archivedRow = Object.assign({}, booking, {
+                    archivedAt: archivedAt,
+                    archivedReason: booking.refundId ? 'refunded_or_closed' : 'cancelled'
+                });
+                if (key) archiveMap[key] = archivedRow;
+                else archive.push(archivedRow);
+            });
+
+            const dedupedArchive = Object.keys(archiveMap).map((key) => archiveMap[key]);
+            localStorage.setItem('bookings', JSON.stringify(active));
+            writeBookingsArchive(dedupedArchive.concat(
+                archive.filter((row) => {
+                    const key = String((row && (row.booking_ref || row.id)) || '');
+                    return !key;
+                })
+            ));
+
+            DB.bookings = active;
             refreshAll();
-            if (window.Toast && window.Toast.success) window.Toast.success('Local bookings cleared.');
+            if (window.Toast && window.Toast.success) {
+                window.Toast.success(
+                    'Archived ' + toArchive.length + ' closed booking(s). ' +
+                    active.length + ' active booking(s) kept in the dashboard.'
+                );
+            }
         });
     }
 
