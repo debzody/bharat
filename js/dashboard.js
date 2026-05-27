@@ -513,6 +513,14 @@ document.addEventListener('DOMContentLoaded', function () {
             + '</div>';
     }
 
+    function setActiveBookingPreview(id, bookings) {
+        const bookingId = String(id || '');
+        activeBookingPreviewId = bookingId || null;
+        const rows = Array.isArray(bookings) ? bookings : [];
+        const booking = rows.find((row) => String(row.id) === bookingId) || null;
+        renderBookingPreview(booking);
+    }
+
     function renderAllBookings(filter, search) {
         const tbody = document.getElementById('allBookingsBody');
         let bookings = [...DB.bookings].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -635,7 +643,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return `
             <tr style="${rowStyle}" class="${previewSelected ? 'selected' : ''}" data-booking-row="1" data-id="${bookingId}">
                 <td><input type="checkbox" class="booking-row-select" data-id="${bookingId}" ${isSelected ? 'checked' : ''} aria-label="Select booking ${bookingId}"></td>
-                <td>#${String(b.id).slice(-6)}</td>
+                <td><button type="button" class="action-btn booking-open-preview" data-id="${bookingId}" style="padding:.25rem .55rem;">#${String(b.id).slice(-6)}</button></td>
                 <td>${getPackageName(b.package_name)}</td>
                 <td>${getUserName(b.userId)}</td>
                 <td>${b.duration || '-'}</td>
@@ -670,9 +678,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 tr.addEventListener('click', function (e) {
                     if (e.target.closest('button, a, input, label')) return;
                     const id = String(this.dataset.id || '');
-                    const booking = bookings.find((row) => String(row.id) === id);
-                    activeBookingPreviewId = id || null;
-                    renderBookingPreview(booking || null);
+                    setActiveBookingPreview(id, bookings);
+                    renderAllBookings(
+                        bookingFilter ? bookingFilter.value : 'all',
+                        bookingSearch ? bookingSearch.value : ''
+                    );
+                });
+            }
+        );
+
+        Array.prototype.forEach.call(
+            tbody.querySelectorAll('.booking-open-preview'),
+            function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const id = String(this.dataset.id || '');
+                    setActiveBookingPreview(id, bookings);
                     renderAllBookings(
                         bookingFilter ? bookingFilter.value : 'all',
                         bookingSearch ? bookingSearch.value : ''
@@ -711,7 +733,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeBookingPreviewId = String(bookings[0].id);
         }
         const previewBooking = bookings.find((row) => String(row.id) === String(activeBookingPreviewId)) || null;
-        renderBookingPreview(previewBooking);
+        renderBookingPreview(previewBooking || bookings[0] || null);
 
         // Stand-alone Refund handler — issues a refund without touching
         // the booking's status. Useful for goodwill refunds, partial
