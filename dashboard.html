@@ -359,6 +359,12 @@
                     <button class="btn-add-package" id="seedFakeBookingsBtn" style="background:#9b59b6;" title="Add 2 sample bookings to this device's localStorage so you can test the Cancel flow.">
                         <i class="fas fa-flask"></i> Seed Test Bookings
                     </button>
+                    <button class="btn-add-package" id="bulkArchiveBookingsBtn" style="background:#e67e22;" title="Archive selected local bookings into localStorage archive.">
+                        <i class="fas fa-box-archive"></i> Archive Selected
+                    </button>
+                    <button class="btn-add-package" id="bulkDeleteBookingsBtn" style="background:#c0392b;" title="Delete selected local bookings from this device only.">
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
                     <button class="btn-add-package" id="clearFakeBookingsBtn" style="background:#e74c3c;" title="Archive cancelled/refunded local bookings from this device. Active bookings stay untouched.">
                         <i class="fas fa-box-archive"></i> Archive Closed Bookings
                     </button>
@@ -369,6 +375,7 @@
                     <table class="data-table">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="bookingSelectAll" aria-label="Select all visible bookings"></th>
                                 <th>ID</th>
                                 <th>Package</th>
                                 <th>Customer</th>
@@ -381,7 +388,7 @@
                             </tr>
                         </thead>
                         <tbody id="allBookingsBody">
-                            <tr><td colspan="9" class="table-empty">No bookings yet</td></tr>
+                            <tr><td colspan="10" class="table-empty">No bookings yet</td></tr>
                         </tbody>
                     </table>
                 </div>

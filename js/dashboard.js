@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('bookings', JSON.stringify(this.bookings));
         }
     };
+    const selectedBookingIds = new Set();
 
     // ── Firestore booking loader (admin-only) ───────────────────
     // Pulls every doc from the `bookings/*` collection. Tagged with
@@ -474,7 +475,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (bookings.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="table-empty">No bookings found</td></tr>';
+            selectedBookingIds.clear();
+            tbody.innerHTML = '<tr><td colspan="10" class="table-empty">No bookings found</td></tr>';
+            updateBookingsBulkUi();
             return;
         }
 
@@ -568,8 +571,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Slightly deeper soft green
                 rowStyle = 'background:#e5f5e9;';
             }
+            const bookingId = String(b.id);
+            const isSelected = selectedBookingIds.has(bookingId);
             return `
             <tr style="${rowStyle}">
+                <td><input type="checkbox" class="booking-row-select" data-id="${bookingId}" ${isSelected ? 'checked' : ''} aria-label="Select booking ${bookingId}"></td>
                 <td>#${String(b.id).slice(-6)}</td>
                 <td>${getPackageName(b.package_name)}</td>
                 <td>${getUserName(b.userId)}</td>
@@ -582,6 +588,46 @@ document.addEventListener('DOMContentLoaded', function () {
             </tr>
         `;
         }).join('');
+
+        Array.prototype.forEach.call(
+            tbody.querySelectorAll('.booking-row-select'),
+            function (cb) {
+                cb.addEventListener('change', function () {
+                    const id = String(this.dataset.id || '');
+                    if (!id) return;
+                    if (this.checked) selectedBookingIds.add(id);
+                    else selectedBookingIds.delete(id);
+                    updateBookingsBulkUi();
+                });
+            }
+        );
+
+        const selectAll = document.getElementById('bookingSelectAll');
+        if (selectAll) {
+            const visibleIds = bookings.map((b) => String(b.id));
+            const selectableCount = visibleIds.length;
+            const selectedVisibleCount = visibleIds.filter((id) => selectedBookingIds.has(id)).length;
+            selectAll.checked = selectableCount > 0 && selectedVisibleCount === selectableCount;
+            selectAll.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < selectableCount;
+            if (!selectAll.__bulkWired) {
+                selectAll.__bulkWired = true;
+                selectAll.addEventListener('change', function () {
+                    const rows = Array.prototype.slice.call(
+                        document.querySelectorAll('#allBookingsBody .booking-row-select')
+                    );
+                    rows.forEach((rowCb) => {
+                        const id = String(rowCb.dataset.id || '');
+                        rowCb.checked = this.checked;
+                        if (!id) return;
+                        if (this.checked) selectedBookingIds.add(id);
+                        else selectedBookingIds.delete(id);
+                    });
+                    updateBookingsBulkUi();
+                });
+            }
+        }
+
+        updateBookingsBulkUi();
 
         // Stand-alone Refund handler — issues a refund without touching
         // the booking's status. Useful for goodwill refunds, partial
@@ -811,6 +857,143 @@ document.addEventListener('DOMContentLoaded', function () {
         return status === 'cancelled' || !!booking.refundId || !!booking.refundedAt;
     }
 
+    function getLocalOnlyBookings() {
+        return JSON.parse(localStorage.getItem('bookings') || '[]');
+    }
+
+    function persistBulkBookings(activeRows, archivedRows, opts) {
+        opts = opts || {};
+        localStorage.setItem('bookings', JSON.stringify(activeRows || []));
+        if (Array.isArray(archivedRows) && archivedRows.length) {
+            const existingArchive = readBookingsArchive();
+            const archiveMap = {};
+            existingArchive.forEach((row) => {
+                const key = String((row && (row.booking_ref || row.id)) || '');
+                if (key) archiveMap[key] = row;
+            });
+            archivedRows.forEach((row) => {
+                const key = String((row && (row.booking_ref || row.id)) || '');
+                if (key) archiveMap[key] = row;
+                else existingArchive.push(row);
+            });
+            const mergedArchive = Object.keys(archiveMap).map((key) => archiveMap[key]).concat(
+                existingArchive.filter((row) => {
+                    const key = String((row && (row.booking_ref || row.id)) || '');
+                    return !key;
+                })
+            );
+            writeBookingsArchive(mergedArchive);
+        }
+        DB.bookings = activeRows || [];
+        if (opts.clearSelected !== false) selectedBookingIds.clear();
+        refreshAll();
+    }
+
+    function updateBookingsBulkUi() {
+        const archiveBtn = document.getElementById('bulkArchiveBookingsBtn');
+        const deleteBtn = document.getElementById('bulkDeleteBookingsBtn');
+        const count = selectedBookingIds.size;
+        if (archiveBtn) {
+            archiveBtn.disabled = count === 0;
+            archiveBtn.innerHTML = '<i class="fas fa-box-archive"></i> Archive Selected' + (count ? ' (' + count + ')' : '');
+        }
+        if (deleteBtn) {
+            deleteBtn.disabled = count === 0;
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Selected' + (count ? ' (' + count + ')' : '');
+        }
+    }
+
+    function archiveSelectedBookings() {
+        const selectedIds = Array.from(selectedBookingIds);
+        if (!selectedIds.length) {
+            if (window.Toast && window.Toast.info) window.Toast.info('Select one or more bookings first.');
+            return;
+        }
+        const localRows = getLocalOnlyBookings();
+        const selectedSet = new Set(selectedIds);
+        const activeRows = [];
+        const archivedRows = [];
+        const skippedRows = [];
+
+        localRows.forEach((row) => {
+            const id = String((row && row.id) || '');
+            if (!selectedSet.has(id)) {
+                activeRows.push(row);
+                return;
+            }
+            archivedRows.push(Object.assign({}, row, {
+                archivedAt: new Date().toISOString(),
+                archivedReason: isArchivableBooking(row) ? 'selected_archive_closed' : 'selected_archive_manual'
+            }));
+        });
+
+        selectedIds.forEach((id) => {
+            if (!localRows.some((row) => String((row && row.id) || '') === id)) skippedRows.push(id);
+        });
+
+        if (!archivedRows.length) {
+            if (window.Toast && window.Toast.info) {
+                window.Toast.info('Selected bookings are not available in localStorage on this device.');
+            }
+            return;
+        }
+
+        if (!confirm(
+            'Archive ' + archivedRows.length + ' selected local booking(s)?\n\n' +
+            '• They will be removed from the active dashboard list\n' +
+            '• They will be stored in localStorage "' + BOOKINGS_ARCHIVE_KEY + '"\n' +
+            '• Firestore-only rows are skipped'
+        )) return;
+
+        persistBulkBookings(activeRows, archivedRows);
+        if (window.Toast && window.Toast.success) {
+            window.Toast.success(
+                'Archived ' + archivedRows.length + ' selected booking(s).' +
+                (skippedRows.length ? ' Skipped ' + skippedRows.length + ' Firestore-only row(s).' : '')
+            );
+        }
+    }
+
+    function deleteSelectedBookings() {
+        const selectedIds = Array.from(selectedBookingIds);
+        if (!selectedIds.length) {
+            if (window.Toast && window.Toast.info) window.Toast.info('Select one or more bookings first.');
+            return;
+        }
+        const localRows = getLocalOnlyBookings();
+        const selectedSet = new Set(selectedIds);
+        const activeRows = [];
+        let deletedCount = 0;
+
+        localRows.forEach((row) => {
+            const id = String((row && row.id) || '');
+            if (selectedSet.has(id)) {
+                deletedCount++;
+                return;
+            }
+            activeRows.push(row);
+        });
+
+        if (!deletedCount) {
+            if (window.Toast && window.Toast.info) {
+                window.Toast.info('Selected bookings are not available in localStorage on this device.');
+            }
+            return;
+        }
+
+        if (!confirm(
+            'Delete ' + deletedCount + ' selected local booking(s)?\n\n' +
+            '• This removes them from this device only\n' +
+            '• They will NOT be archived\n' +
+            '• Firestore-only rows are skipped'
+        )) return;
+
+        persistBulkBookings(activeRows, [], { clearSelected: true });
+        if (window.Toast && window.Toast.success) {
+            window.Toast.success('Deleted ' + deletedCount + ' selected local booking(s).');
+        }
+    }
+
     function makeFakeBooking(overrides) {
         const now = Date.now();
         // Travel date 35 days out → puts us in the 30+ day refund slab
@@ -917,33 +1100,13 @@ document.addEventListener('DOMContentLoaded', function () {
             )) return;
 
             const archivedAt = new Date().toISOString();
-            const archive = readBookingsArchive();
-            const archiveMap = {};
-            archive.forEach((row) => {
-                const key = String((row && (row.booking_ref || row.id)) || '');
-                if (key) archiveMap[key] = row;
-            });
-            toArchive.forEach((booking) => {
-                const key = String((booking && (booking.booking_ref || booking.id)) || '');
-                const archivedRow = Object.assign({}, booking, {
+            persistBulkBookings(
+                active,
+                toArchive.map((booking) => Object.assign({}, booking, {
                     archivedAt: archivedAt,
                     archivedReason: booking.refundId ? 'refunded_or_closed' : 'cancelled'
-                });
-                if (key) archiveMap[key] = archivedRow;
-                else archive.push(archivedRow);
-            });
-
-            const dedupedArchive = Object.keys(archiveMap).map((key) => archiveMap[key]);
-            localStorage.setItem('bookings', JSON.stringify(active));
-            writeBookingsArchive(dedupedArchive.concat(
-                archive.filter((row) => {
-                    const key = String((row && (row.booking_ref || row.id)) || '');
-                    return !key;
-                })
-            ));
-
-            DB.bookings = active;
-            refreshAll();
+                }))
+            );
             if (window.Toast && window.Toast.success) {
                 window.Toast.success(
                     'Archived ' + toArchive.length + ' closed booking(s). ' +
@@ -952,6 +1115,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    const bulkArchiveBookingsBtn = document.getElementById('bulkArchiveBookingsBtn');
+    const bulkDeleteBookingsBtn = document.getElementById('bulkDeleteBookingsBtn');
+    if (bulkArchiveBookingsBtn) bulkArchiveBookingsBtn.addEventListener('click', archiveSelectedBookings);
+    if (bulkDeleteBookingsBtn) bulkDeleteBookingsBtn.addEventListener('click', deleteSelectedBookings);
+    updateBookingsBulkUi();
 
     // ── Package Editor ──────────────────────────────────────────
     let packagesData = [];
