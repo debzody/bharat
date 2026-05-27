@@ -364,8 +364,24 @@ document.addEventListener('DOMContentLoaded', function () {
             return html || '-';
         }
 
-        tbody.innerHTML = bookings.map(b => `
-            <tr>
+        tbody.innerHTML = bookings.map(b => {
+            var rowStatus = String(b.status || 'confirmed').toLowerCase();
+            var rowSuggested = (window.Refund && window.Refund.computeRefundAmount)
+                ? window.Refund.computeRefundAmount(b) : 0;
+            var rowStyle = '';
+            // Soft full-row shades requested by user:
+            //   • confirmed/non-cancelled → green
+            //   • cancelled + refundable  → yellow
+            //   • refunded                → red
+            if (b && b.refundId) {
+                rowStyle = 'background:#fff5f5;';
+            } else if (rowStatus === 'cancelled' && rowSuggested > 0) {
+                rowStyle = 'background:#fffaf0;';
+            } else if (rowStatus !== 'cancelled') {
+                rowStyle = 'background:#f4fbf6;';
+            }
+            return `
+            <tr style="${rowStyle}">
                 <td>#${String(b.id).slice(-6)}</td>
                 <td>${getPackageName(b.package_name)}</td>
                 <td>${getUserName(b.userId)}</td>
@@ -376,7 +392,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${formatDate(b.createdAt)}</td>
                 <td>${actionCellHtml(b)}</td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         // Stand-alone Refund handler — issues a refund without touching
         // the booking's status. Useful for goodwill refunds, partial
