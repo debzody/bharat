@@ -250,8 +250,8 @@
                         <i class="fas fa-inbox"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-value" id="overviewInboxValue">Inbox</span>
-                        <span class="stat-label">Open Inbox</span>
+                        <span class="stat-value" id="overviewInboxValue">0</span>
+                        <span class="stat-label">Unread Mails</span>
                     </div>
                 </div>
             </div>
@@ -290,28 +290,52 @@
                 </div>
             </div>
 
-            <!-- Recent Bookings -->
-            <div class="table-card">
-                <div class="table-header">
-                    <h3><i class="fas fa-clock"></i> Recent Bookings</h3>
+            <!-- Recent Bookings + Unread Mail -->
+            <div class="charts-row" style="align-items:stretch;">
+                <div class="table-card" style="flex:1 1 62%;margin:0;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-clock"></i> Recent Bookings</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Customer</th>
+                                    <th>Package</th>
+                                    <th>Trip</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBookingsBody">
+                                <tr><td colspan="6" class="table-empty">No bookings yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Package</th>
-                                <th>Customer</th>
-                                <th>Duration</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentBookingsBody">
-                            <tr><td colspan="7" class="table-empty">No bookings yet</td></tr>
-                        </tbody>
-                    </table>
+
+                <div class="table-card" style="flex:1 1 38%;margin:0;">
+                    <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
+                        <h3 style="margin:0;"><i class="fas fa-inbox"></i> Unread Mails</h3>
+                        <button type="button" id="overviewOpenInboxBtn" class="action-btn" style="white-space:nowrap;">
+                            Open Inbox
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Received</th>
+                                    <th>From</th>
+                                    <th>Body / Mail ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overviewUnreadInboxBody">
+                                <tr><td colspan="3" class="table-empty">Loading unread mails…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1900,7 +1924,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
     <script src="js/refund.js?v=1"></script>
-    <script src="js/dashboard.js?v=36"></script>
+    <script src="js/dashboard.js?v=38"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=8"></script>

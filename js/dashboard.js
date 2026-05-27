@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
         analytics:'Analytics — Google Analytics 4',
         customers: 'Customers',
         revenue: 'Revenue Analytics',
+        inbox: 'Admin Inbox',
         settings: 'Site Settings'
     };
 
@@ -163,7 +164,8 @@ document.addEventListener('DOMContentLoaded', function () {
             { id: 'totalBookings',     section: 'bookings'  },
             { id: 'totalRevenue',      section: 'revenue'   },
             { id: 'totalCustomers',    section: 'customers' },
-            { id: 'confirmedBookings', section: 'bookings'  }
+            { id: 'confirmedBookings', section: 'bookings'  },
+            { id: 'overviewInboxValue', section: 'inbox'    }
         ];
         links.forEach(function (cfg) {
             var valEl = document.getElementById(cfg.id);
@@ -281,6 +283,107 @@ document.addEventListener('DOMContentLoaded', function () {
         renderRecentBookings();
     }
 
+    async function renderOverviewUnreadInbox() {
+        const body = document.getElementById('overviewUnreadInboxBody');
+        const openBtn = document.getElementById('overviewOpenInboxBtn');
+        if (openBtn && !openBtn.__wired) {
+            openBtn.__wired = true;
+            openBtn.addEventListener('click', function () {
+                activateSection('inbox');
+            });
+        }
+        if (!body) return;
+
+        body.innerHTML = '<tr><td colspan="3" class="table-empty">Loading unread mails…</td></tr>';
+
+        try {
+            if (!window.__firebaseReady) {
+                body.innerHTML = '<tr><td colspan="3" class="table-empty">Inbox service not ready.</td></tr>';
+                return;
+            }
+            const fb = await window.__firebaseReady;
+            const q = fb.firestore.query(
+                fb.firestore.collection(fb.db, 'receivedEmails'),
+                fb.firestore.where('unread', '==', true)
+            );
+            const snap = await fb.firestore.getDocs(q);
+            const rows = [];
+            snap.forEach(function (doc) {
+                const data = doc.data() || {};
+                rows.push({
+                    id: doc.id,
+                    from: data.from || '',
+                    subject: data.subject || '',
+                    text: data.text || data.bodyText || data.body || data.snippet || '',
+                    html: data.html || '',
+                    receivedAt: data.receivedAt || data.date || '',
+                    mailbox: data.mailbox || ''
+                });
+            });
+
+            rows.sort(function (a, b) {
+                return new Date(b.receivedAt || 0) - new Date(a.receivedAt || 0);
+            });
+
+            const inboxValue = document.getElementById('overviewInboxValue');
+            if (inboxValue) inboxValue.textContent = String(rows.length);
+
+            const top = rows.slice(0, 5);
+            if (!top.length) {
+                body.innerHTML = '<tr><td colspan="3" class="table-empty">No unread mails.</td></tr>';
+                return;
+            }
+
+            function shortFrom(v) {
+                var s = String(v || '').trim();
+                var m = s.match(/<([^>]+)>/);
+                return (m ? m[1] : s).slice(0, 32);
+            }
+            function shortSub(v) {
+                var s = String(v || '(no subject)').trim();
+                return s.length > 52 ? s.slice(0, 49) + '…' : s;
+            }
+            function fmtInboxDate(v) {
+                var d = new Date(v || '');
+                if (isNaN(d.getTime())) return '—';
+                return d.toLocaleString('en-IN', {
+                    day: '2-digit', month: 'short',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+            function shortBodyOrId(r) {
+                var bodyText = String(r.text || '').replace(/\s+/g, ' ').trim();
+                if (bodyText) return bodyText.length > 52 ? bodyText.slice(0, 49) + '…' : bodyText;
+                return String(r.id || '').slice(0, 18) || '—';
+            }
+            function bodyOrIdTitle(r) {
+                return String(r.text || '').trim() || String(r.id || '');
+            }
+
+            body.innerHTML = top.map(function (r) {
+                return '<tr data-open-inbox="1" style="cursor:pointer;">' +
+                    '<td>' + escHtml(fmtInboxDate(r.receivedAt)) + '</td>' +
+                    '<td title="' + escHtml(r.from) + '">' + escHtml(shortFrom(r.from)) + '</td>' +
+                    '<td title="' + escHtml(bodyOrIdTitle(r)) + '">' + escHtml(shortBodyOrId(r)) + '</td>' +
+                '</tr>';
+            }).join('');
+
+            Array.prototype.forEach.call(
+                body.querySelectorAll('tr[data-open-inbox="1"]'),
+                function (tr) {
+                    tr.addEventListener('click', function () {
+                        activateSection('inbox');
+                    });
+                }
+            );
+        } catch (err) {
+            console.warn('[dashboard] overview unread inbox load failed:', err);
+            const inboxValue = document.getElementById('overviewInboxValue');
+            if (inboxValue) inboxValue.textContent = '—';
+            body.innerHTML = '<tr><td colspan="3" class="table-empty">Could not load unread mails.</td></tr>';
+        }
+    }
+
     function renderRevenueBarChart() {
         const container = document.getElementById('revenueChart');
         const confirmed = DB.bookings.filter(b => b.status !== 'cancelled');
@@ -319,20 +422,35 @@ document.addEventListener('DOMContentLoaded', function () {
         const tbody = document.getElementById('recentBookingsBody');
         const recent = [...DB.bookings].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5);
 
+        function esc(v) {
+            return escHtml(v == null ? '' : String(v));
+        }
+
+        function bookingLabel(b) {
+            return b.booking_ref || b.id || '-';
+        }
+
+        function tripSummary(b) {
+            var parts = [];
+            if (b.duration) parts.push(String(b.duration));
+            if (b.guests != null && b.guests !== '') parts.push(String(b.guests) + ' guest' + (Number(b.guests) === 1 ? '' : 's'));
+            if (!parts.length && (b.travel_date || b.date)) parts.push(formatDate(b.travel_date || b.date));
+            return parts.join(' • ') || '-';
+        }
+
         if (recent.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="table-empty">No bookings yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="table-empty">No bookings yet</td></tr>';
             return;
         }
 
         tbody.innerHTML = recent.map(b => `
             <tr>
-                <td>#${String(b.id).slice(-6)}</td>
-                <td>${getPackageName(b.package_name)}</td>
-                <td>${getUserName(b.userId)}</td>
-                <td>${b.duration || '-'}</td>
-                <td>${formatCurrency(b.price || 0)}</td>
-                <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
-                <td>${formatDate(b.createdAt)}</td>
+                <td title="${esc(bookingLabel(b))}">${esc(bookingLabel(b))}</td>
+                <td>${esc(getUserName(b.userId))}</td>
+                <td>${esc(getPackageName(b.package_name))}</td>
+                <td title="${esc(tripSummary(b))}">${esc(tripSummary(b))}</td>
+                <td><span class="badge badge-${esc(b.status || 'confirmed')}">${esc((b.status || 'confirmed').toUpperCase())}</span></td>
+                <td>${esc(formatDate(b.createdAt))}</td>
             </tr>
         `).join('');
     }
@@ -2338,6 +2456,7 @@ document.addEventListener('DOMContentLoaded', function () {
         renderPackages();
         renderCustomers(customerSearch ? customerSearch.value : '');
         renderRevenue();
+        renderOverviewUnreadInbox();
     }
 
     // ── Pull Firestore bookings on page load ────────────────────
@@ -2919,7 +3038,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (Object.prototype.hasOwnProperty.call(s, f.key)) writeField(f, s[f.key]);
                 });
             } catch (err) {
-                console.warn('Conversion boosters load failed', err);
+                console.warn('Could not load conversion boosters:', err);
             }
         }
         loadIntoForm();
