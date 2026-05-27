@@ -481,6 +481,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const packageName = getPackageName(booking.package_name);
         const tripDate = booking.travel_date || booking.date || '';
         const status = String(booking.status || 'confirmed').toUpperCase();
+        const paymentState = String(
+            booking.payment_status ||
+            booking.paymentStatus ||
+            booking.razorpay_status ||
+            booking.status_text ||
+            (booking.refundId ? 'refunded' : '')
+        ).trim() || '-';
 
         preview.innerHTML = ''
             + '<div class="ipv-head">'
@@ -503,6 +510,7 @@ document.addEventListener('DOMContentLoaded', function () {
             +     '<div class="rd-row"><span class="rd-k">Duration</span><span class="rd-v">' + escHtml(String(booking.duration || '-')) + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Travel date</span><span class="rd-v">' + escHtml(tripDate ? formatDate(tripDate) : '-') + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment ID</span><span class="rd-v">' + escHtml(String(booking.payment_id || '-')) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v">' + escHtml(paymentState) + '</span></div>'
             +   '</div>'
             +   '<div class="rd-summary">'
             +     '<div class="rd-row"><span class="rd-k">Package amount</span><span class="rd-v">' + escHtml(formatCurrency(packagePrice)) + '</span></div>'
