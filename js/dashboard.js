@@ -513,12 +513,18 @@ document.addEventListener('DOMContentLoaded', function () {
             + '</div>';
     }
 
-    function setActiveBookingPreview(id, bookings) {
+    function setActiveBookingPreview(id, bookings, skipRerender) {
         const bookingId = String(id || '');
         activeBookingPreviewId = bookingId || null;
         const rows = Array.isArray(bookings) ? bookings : [];
         const booking = rows.find((row) => String(row.id) === bookingId) || null;
         renderBookingPreview(booking);
+        if (!skipRerender) {
+            renderAllBookings(
+                bookingFilter ? bookingFilter.value : 'all',
+                bookingSearch ? bookingSearch.value : ''
+            );
+        }
     }
 
     function renderAllBookings(filter, search) {
@@ -679,10 +685,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (e.target.closest('button, a, input, label')) return;
                     const id = String(this.dataset.id || '');
                     setActiveBookingPreview(id, bookings);
-                    renderAllBookings(
-                        bookingFilter ? bookingFilter.value : 'all',
-                        bookingSearch ? bookingSearch.value : ''
-                    );
                 });
             }
         );
@@ -695,10 +697,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     e.stopPropagation();
                     const id = String(this.dataset.id || '');
                     setActiveBookingPreview(id, bookings);
-                    renderAllBookings(
-                        bookingFilter ? bookingFilter.value : 'all',
-                        bookingSearch ? bookingSearch.value : ''
-                    );
                 });
             }
         );
@@ -730,10 +728,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         updateBookingsBulkUi();
         if (!activeBookingPreviewId && bookings.length) {
-            activeBookingPreviewId = String(bookings[0].id);
+            setActiveBookingPreview(String(bookings[0].id), bookings, true);
+        } else {
+            const previewBooking = bookings.find((row) => String(row.id) === String(activeBookingPreviewId)) || null;
+            renderBookingPreview(previewBooking || bookings[0] || null);
         }
-        const previewBooking = bookings.find((row) => String(row.id) === String(activeBookingPreviewId)) || null;
-        renderBookingPreview(previewBooking || bookings[0] || null);
 
         // Stand-alone Refund handler — issues a refund without touching
         // the booking's status. Useful for goodwill refunds, partial
