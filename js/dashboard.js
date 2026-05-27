@@ -727,11 +727,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         ' · Status: ' + (b.refundStatus || 'pending') + '">' +
                         'Refunded ' + formatCurrency(b.refundAmount || 0) +
                         '</span>';
-            } else if (isRzp && status === 'cancelled') {
-                // Cancelled rows show a refund button so admin can perform
-                // goodwill or partial refunds at their discretion.
+            } else if (isRzp && status === 'cancelled' && Number(b.advance_paid) > 0) {
+                // Cancelled rows with an advance payment show a refund button.
+                // Only show when advance_paid > 0 — if ₹0 was collected
+                // there is nothing to refund and Razorpay will reject the call.
                 // Label shows the policy-suggested amount (may be ₹0 for the
-                // 0-7 day no-refund slab). Admin can always click to enter a
+                // 0-7 day no-refund slab). Admin can still click to enter a
                 // custom / goodwill amount via the refund dialog.
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
