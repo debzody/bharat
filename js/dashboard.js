@@ -320,57 +320,47 @@ document.addEventListener('DOMContentLoaded', function () {
         //     where the admin types a custom amount.
         function actionCellHtml(b) {
             var html = '';
-            var status = b.status || 'confirmed';
+            var status = String(b.status || 'confirmed').toLowerCase();
             var canCancel = status !== 'cancelled';
             var isRzp = window.Refund && window.Refund.isRazorpayPayment &&
                         window.Refund.isRazorpayPayment(b);
             var alreadyRefunded = !!(b && b.refundId);
 
+            // Soft action-chip palette requested by user:
+            //   • Confirmed rows / buttons → soft green
+            //   • Cancelled-but-refundable → soft yellow
+            //   • Refunded badge → soft red
+            var cancelStyle = 'background:#edf8f1;color:#1f7a46;border:1px solid #cfead8;';
+            var refundStyle = 'background:#fff8eb;color:#a66307;border:1px solid #f3dfb6;';
+            var refundedStyle = 'background:#fdeeee;color:#b24a4a;border:1px solid #f3c9c9;';
+
+            // Confirmed rows should NOT show any Refund button.
             if (canCancel) {
-                html += '<button class="action-btn action-btn-cancel" data-id="' + b.id + '">Cancel</button>';
+                html += '<button class="action-btn action-btn-cancel" ' +
+                        'style="' + cancelStyle + '" data-id="' + b.id + '">Cancel</button>';
             }
+
             if (alreadyRefunded) {
-                html += ' <span class="badge badge-refunded" title="Refund ID ' + (b.refundId || '') +
+                html += ' <span class="badge badge-refunded" ' +
+                        'style="' + refundedStyle + '"' +
+                        ' title="Refund ID ' + (b.refundId || '') +
                         ' · Status: ' + (b.refundStatus || 'pending') + '">' +
                         'Refunded ' + formatCurrency(b.refundAmount || 0) +
                         '</span>';
-            } else if (isRzp) {
-                // Pre-compute the suggested refund so the button label
-                // shows the amount the admin will be sending — saves a
-                // click and matches the cancel-flow UX.
+            } else if (isRzp && status === 'cancelled') {
+                // Cancelled rows may show a refund button ONLY when the
+                // customer-facing slab suggests a positive amount.
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
-                var advance = Number(b.advance_paid) || 0;
-
                 if (suggested > 0) {
-                    html += ' <button class="action-btn action-btn-refund" data-id="' + b.id +
+                    html += ' <button class="action-btn action-btn-refund" ' +
+                            'style="' + refundStyle + '" data-id="' + b.id +
                             '" title="Refund ₹' + suggested.toLocaleString('en-IN') +
                             ' to the original payment method via Razorpay (admin can override the amount).">Refund ' +
                             formatCurrency(suggested) + '</button>';
-                } else if (advance > 0 && status !== 'cancelled') {
-                    // Slab-based suggested refund is ₹0 (typically: travel
-                    // is within 7 days, or already happened). Show a
-                    // muted "Refund…" button so the admin can still issue
-                    // a goodwill / manual refund and pick the amount —
-                    // but ONLY for confirmed bookings. Cancelled bookings
-                    // hide it because:
-                    //   • The cancel flow already had a chance to auto-
-                    //     refund per slab. If slab=0 was the right answer
-                    //     at cancel time, showing a Refund… chip on top
-                    //     just clutters the row.
-                    //   • An admin who really needs to issue a goodwill
-                    //     refund on a cancelled-without-refund booking
-                    //     can still do it from the Razorpay dashboard.
-                    html += ' <button class="action-btn action-btn-refund" data-id="' + b.id +
-                            '" style="background:#f7f9fc;color:#5a6877;border:1px dashed #cfd9df;"' +
-                            ' title="No auto-refund per cancellation slab, but you can still issue a manual / goodwill refund up to ₹' +
-                            advance.toLocaleString('en-IN') + '.">Refund…</button>';
                 }
-                // advance == 0  → nothing was actually charged, so no
-                // refund button (defensive — Razorpay would 422 anyway).
-                // status === 'cancelled' && suggested == 0 → no button
-                // (see comment above).
             }
+
             return html || '-';
         }
 
