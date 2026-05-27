@@ -301,6 +301,23 @@ document.addEventListener('DOMContentLoaded', function () {
         //   • Refund  → only on Razorpay-paid bookings that haven't been
         //               refunded yet. After a refund the cell shows a
         //               muted "Refunded ₹X" badge instead of the button.
+        // Build the action-cell HTML for one booking row.
+        //
+        // Refund-button visibility policy (2026-05 update):
+        //   • The button shows on EVERY Razorpay-paid booking that hasn't
+        //     already been refunded — including cancelled bookings AND
+        //     bookings inside the 0-7 day "no refund" customer slab.
+        //   • Why: the slab maths are the *suggested* customer-facing
+        //     auto-refund. Admin discretion overrides that — goodwill
+        //     refunds, partial refunds, or fixing a duplicate charge
+        //     are valid reasons to refund regardless of slab. The
+        //     handler already supports a custom-amount prompt; we just
+        //     need to surface the button.
+        //   • The button label still shows the suggested amount when
+        //     non-zero (so the admin sees the slab maths up-front), and
+        //     falls back to "Refund…" when the suggested amount is 0
+        //     (slab=0 OR cancelled long ago) — clicking opens the prompt
+        //     where the admin types a custom amount.
         function actionCellHtml(b) {
             var html = '';
             var status = b.status || 'confirmed';
@@ -313,7 +330,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 html += '<button class="action-btn action-btn-cancel" data-id="' + b.id + '">Cancel</button>';
             }
             if (alreadyRefunded) {
-                html += ' <span class="badge badge-refunded" title="Refund ID ' + (b.refundId || '') + '">' +
+                html += ' <span class="badge badge-refunded" title="Refund ID ' + (b.refundId || '') +
+                        ' · Status: ' + (b.refundStatus || 'pending') + '">' +
                         'Refunded ' + formatCurrency(b.refundAmount || 0) +
                         '</span>';
             } else if (isRzp) {
@@ -322,12 +340,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 // click and matches the cancel-flow UX.
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
+                var advance = Number(b.advance_paid) || 0;
+
                 if (suggested > 0) {
                     html += ' <button class="action-btn action-btn-refund" data-id="' + b.id +
                             '" title="Refund ₹' + suggested.toLocaleString('en-IN') +
-                            ' to the original payment method via Razorpay">Refund ' +
+                            ' to the original payment method via Razorpay (admin can override the amount).">Refund ' +
                             formatCurrency(suggested) + '</button>';
+                } else if (advance > 0) {
+                    // Slab-based suggested refund is ₹0 (typically: travel
+                    // is within 7 days, or already happened). Show a
+                    // muted "Refund…" button so the admin can still issue
+                    // a goodwill / manual refund and pick the amount.
+                    html += ' <button class="action-btn action-btn-refund" data-id="' + b.id +
+                            '" style="background:#f7f9fc;color:#5a6877;border:1px dashed #cfd9df;"' +
+                            ' title="No auto-refund per cancellation slab, but you can still issue a manual / goodwill refund up to ₹' +
+                            advance.toLocaleString('en-IN') + '.">Refund…</button>';
                 }
+                // advance == 0  → nothing was actually charged, so no
+                // refund button (defensive — Razorpay would 422 anyway).
             }
             return html || '-';
         }
@@ -367,17 +398,29 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Show the suggested amount in the confirm so the admin
-                // can sanity-check the slab maths before sending.
+                // Suggested amount per the customer-facing slab policy.
+                // May be 0 (slab=0 / past-travel / cancelled) — in that
+                // case the prompt still opens so the admin can issue a
+                // manual / goodwill refund, capped by advance_paid.
                 const suggested = window.Refund.computeRefundAmount
                     ? window.Refund.computeRefundAmount(booking) : 0;
-                if (suggested <= 0) {
-                    if (window.Toast) window.Toast.warning('Nothing to refund (0–7 day no-refund slab or zero advance).');
+                const advance = Number(booking.advance_paid) || 0;
+                if (advance <= 0) {
+                    if (window.Toast) window.Toast.warning('Nothing to refund — no advance was charged for this booking.');
                     return;
                 }
 
                 const me = JSON.parse(localStorage.getItem('currentUser') || 'null');
                 const refundedBy = (me && (me.email || me.username)) || 'admin';
+
+                // Default the prompt to the suggested amount, OR fall back
+                // to the full advance when slab=0 — that's the typical
+                // "goodwill full refund" admin override path.
+                const promptDefault = suggested > 0 ? suggested : advance;
+                const slabLine = suggested > 0
+                    ? 'Suggested refund (per cancellation slab): ₹' + suggested.toLocaleString('en-IN')
+                    : '⚠️ Slab-based suggested refund is ₹0 (within 7 days of travel / past travel).\n' +
+                      '   Manual refund cap = advance paid: ₹' + advance.toLocaleString('en-IN');
 
                 // Optional override — let the admin type a custom amount
                 // (e.g. partial refund). Empty / cancel → use suggested.
@@ -385,21 +428,25 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Refund this booking?\n\n' +
                     'Booking ref: ' + (booking.booking_ref || booking.id) + '\n' +
                     'Customer: ' + ((booking.traveler && booking.traveler.name) || '-') + '\n' +
-                    'Suggested refund (per cancellation slab): ₹' + suggested.toLocaleString('en-IN') + '\n\n' +
-                    'Enter a custom amount in ₹ to override, or leave blank to use the suggested.\n' +
+                    slabLine + '\n\n' +
+                    'Enter the amount (₹) to refund, or leave the default to use it.\n' +
                     'The refund goes to the original Razorpay payment method.',
-                    String(suggested)
+                    String(promptDefault)
                 );
                 // null = user pressed Cancel → abort.
                 if (customStr === null) return;
-                let amount = suggested;
+                let amount = promptDefault;
                 if (customStr.trim() !== '') {
                     const n = Number(customStr.replace(/[^0-9.]/g, ''));
                     if (!isFinite(n) || n <= 0) {
                         if (window.Toast) window.Toast.error('Invalid refund amount.');
                         return;
                     }
-                    amount = Math.min(n, Number(booking.advance_paid) || n);
+                    amount = Math.min(n, advance);
+                }
+                if (amount <= 0) {
+                    if (window.Toast) window.Toast.error('Refund amount must be greater than zero.');
+                    return;
                 }
 
                 const origLabel = btn.innerHTML;
