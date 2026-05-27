@@ -1038,11 +1038,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const count = selectedBookingIds.size;
         if (archiveBtn) {
             archiveBtn.disabled = count === 0;
-            archiveBtn.innerHTML = '<i class="fas fa-box-archive"></i> Archive Selected' + (count ? ' (' + count + ')' : '');
+            archiveBtn.innerHTML = '<i class="fas fa-box-archive"></i> Archive' + (count ? ' (' + count + ')' : '');
         }
         if (deleteBtn) {
             deleteBtn.disabled = count === 0;
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Selected' + (count ? ' (' + count + ')' : '');
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete' + (count ? ' (' + count + ')' : '');
         }
     }
 
@@ -2887,7 +2887,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.className = 'btn-add-package';
         btn.style.background = '#16a085';
         btn.title = 'Re-pull every booking from the Firestore bookings/* collection (admin only).';
-        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh from Firestore';
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
         btn.addEventListener('click', async () => {
             const orig = btn.innerHTML;
             btn.disabled = true;
