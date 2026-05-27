@@ -89,7 +89,11 @@
     }
 
     function alreadyRefunded(booking) {
-        return !!(booking && booking.refundId);
+        return !!(booking && (
+            booking.refundId ||
+            String(booking.refundStatus || '').toLowerCase() === 'refunded' ||
+            booking.refundedAt
+        ));
     }
 
     async function getIdToken() {
