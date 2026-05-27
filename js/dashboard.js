@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── All Bookings ────────────────────────────────────────────
     function getBookingPaymentState(booking) {
-        if (!booking || typeof booking !== 'object') return '-';
+        if (!booking || typeof booking !== 'object') return { label: '-', class: '' };
         const paymentId = String(booking.payment_id || '');
         const raw = String(
             booking.payment_status ||
@@ -469,19 +469,21 @@ document.addEventListener('DOMContentLoaded', function () {
             ''
         ).trim().toLowerCase();
 
-        if (booking.refundId || booking.refundedAt || raw === 'refunded') return 'Refunded';
-        if (raw === 'failed') return 'Failed';
-        if (raw === 'captured') return 'Captured';
-        if (raw === 'authorized') return 'Authorized';
-        if (/^FREE-/i.test(paymentId) || raw === 'no_advance_required') return 'No Advance';
+        if (booking.refundId || booking.refundedAt || raw === 'refunded') return { label: 'Refunded', class: 'badge-failed' };
+        if (raw === 'failed') return { label: 'Failed', class: 'badge-failed' };
+        if (raw === 'captured') return { label: 'Captured', class: 'badge-captured' };
+        if (raw === 'authorized') return { label: 'Authorized', class: 'badge-authorized' };
+        if (/^FREE-/i.test(paymentId) || raw === 'no_advance_required') return { label: 'No Advance', class: 'badge-authorized' };
         if (String(booking.status || '').toLowerCase() === 'cancelled') {
             const refundDue = (window.Refund && window.Refund.computeRefundAmount)
                 ? Number(window.Refund.computeRefundAmount(booking) || 0)
                 : 0;
-            return refundDue > 0 ? 'Refund Pending' : 'Cancelled';
+            return { label: refundDue > 0 ? 'Refund Pending' : 'Cancelled', class: 'badge-failed' };
         }
-        if (raw === 'partial_advance') return 'Advance Paid';
-        return raw ? raw.replace(/_/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); }) : '-';
+        if (raw === 'partial_advance') return { label: 'Advance Paid', class: 'badge-authorized' };
+        if (raw) return { label: raw.replace(/_/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); }), class: 'badge-authorized' };
+        console.debug('[dashboard] Unknown payment status for booking:', booking);
+        return { label: '-', class: '' };
     }
 
     function renderBookingPreview(booking) {
@@ -530,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function () {
             +     '<div class="rd-row"><span class="rd-k">Duration</span><span class="rd-v">' + escHtml(String(booking.duration || '-')) + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Travel date</span><span class="rd-v">' + escHtml(tripDate ? formatDate(tripDate) : '-') + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment ID</span><span class="rd-v">' + escHtml(String(booking.payment_id || '-')) + '</span></div>'
-            +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v">' + escHtml(paymentState) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v"><span class="badge ' + paymentState.class + '">' + escHtml(paymentState.label) + '</span></span></div>'
             +   '</div>'
             +   '<div class="rd-summary">'
             +     '<div class="rd-row"><span class="rd-k">Package amount</span><span class="rd-v">' + escHtml(formatCurrency(packagePrice)) + '</span></div>'
@@ -685,7 +687,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${b.guests || '-'}</td>
                 <td>${formatCurrency(b.price || 0)}</td>
                 <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
-                <td>${escHtml(paymentState)}</td>
+                <td><span class="badge ${paymentState.class}">${escHtml(paymentState.label)}</span></td>
                 <td>${formatDate(b.createdAt)}</td>
                 <td>${actionCellHtml(b)}</td>
             </tr>
