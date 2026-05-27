@@ -129,6 +129,23 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Refunds audit log — one doc per refund attempt (success or
+    // failure). Written by js/refund.js after the refund Worker
+    // returns. Useful for accounting + GST and for rebuilding the
+    // refund history without scanning every booking doc.
+    //   • Authenticated admins/staff can read everything.
+    //   • Authenticated users can CREATE their own audit row (the
+    //     client-side helper writes it after a successful refund call;
+    //     the actual money movement happens server-side in the Worker
+    //     so this is just a paper trail).
+    //   • Updates / deletes are admin-only — refund history is
+    //     append-only.
+    match /refunds/{refundId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
+    }
+
     // Sent emails — log of every email the admin Inbox tab has sent
     // through the inbox-mail Cloudflare Worker. Admins can read full
     // history; create is allowed for any authenticated admin from the

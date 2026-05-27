@@ -253,13 +253,34 @@ document.addEventListener('DOMContentLoaded', function () {
         // confirmation. The email is best-effort: any Firestore / rules /
         // extension issue is logged but never blocks the UI.
         tbody.querySelectorAll('.action-btn-cancel').forEach(btn => {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', async function () {
                 const rawId = this.dataset.id;
-                if (!confirm('Cancel this booking?\n\nThis will:\n• Mark the booking as cancelled in the dashboard\n• Email the customer + cancellation@andamanvoyages.in with the booking + refund-policy reminder')) return;
                 const booking = DB.bookings.find(b =>
                     String(b.id) === String(rawId)
                 );
                 if (!booking) return;
+
+                // Compute the suggested refund up-front so the admin
+                // sees what'll happen before they confirm.
+                let suggestedRefund = 0;
+                if (window.Refund && window.Refund.computeRefundAmount) {
+                    suggestedRefund = window.Refund.computeRefundAmount(booking);
+                }
+                const isRzp = window.Refund && window.Refund.isRazorpayPayment &&
+                              window.Refund.isRazorpayPayment(booking);
+
+                let confirmMsg = 'Cancel this booking?\n\nThis will:\n' +
+                    '• Mark the booking as cancelled\n' +
+                    '• Email the customer + cancellation@andamanvoyages.in';
+                if (isRzp && suggestedRefund > 0) {
+                    confirmMsg += '\n• Auto-refund ₹' + suggestedRefund.toLocaleString('en-IN') +
+                                  ' to the original payment method (Razorpay)';
+                } else if (isRzp) {
+                    confirmMsg += '\n• No refund (0–7 day no-refund slab)';
+                } else {
+                    confirmMsg += '\n• No auto-refund (FREE / non-Razorpay payment)';
+                }
+                if (!confirm(confirmMsg)) return;
 
                 booking.status = 'cancelled';
                 booking.cancelledAt = new Date().toISOString();
@@ -270,19 +291,51 @@ document.addEventListener('DOMContentLoaded', function () {
                 const me = JSON.parse(localStorage.getItem('currentUser') || 'null');
                 const cancelledBy = (me && (me.email || me.username)) || 'admin';
 
+                // ── Cancellation email (admin token → Brevo Worker) ──
+                let mailMsg = '';
                 if (window.BookingEmails && window.BookingEmails.sendBookingCancellation) {
-                    window.BookingEmails.sendBookingCancellation(booking, {
-                        cancelledBy: cancelledBy,
-                        reason: 'Cancelled from admin dashboard'
-                    }).then(function (sent) {
-                        if (window.Toast && window.Toast.success) {
-                            window.Toast.success(sent
-                                ? 'Booking cancelled. Cancellation email queued for cancellation@andamanvoyages.in.'
-                                : 'Booking cancelled (email NOT sent — see console).');
+                    try {
+                        const sent = await window.BookingEmails.sendBookingCancellation(booking, {
+                            cancelledBy: cancelledBy,
+                            reason: 'Cancelled from admin dashboard'
+                        });
+                        mailMsg = sent ? 'Email sent.' : 'Email NOT sent.';
+                    } catch (e) { mailMsg = 'Email error.'; }
+                } else {
+                    mailMsg = 'Email helper not loaded.';
+                }
+
+                // ── Auto-process refund if applicable ─────────────────
+                let refundMsg = '';
+                if (window.Refund && window.Refund.processRefund) {
+                    try {
+                        const refund = await window.Refund.processRefund(booking, {
+                            reason: 'Cancelled from admin dashboard by ' + cancelledBy
+                        });
+                        if (refund && refund.ok && !refund.skipped) {
+                            await window.Refund.saveRefundToBooking(booking, refund);
+                            window.Refund.logRefund(booking, refund, cancelledBy);
+                            // Mirror on the local DB record so the table re-render shows it
+                            booking.refundId = refund.refundId;
+                            booking.refundAmount = refund.amount;
+                            booking.refundStatus = refund.status || 'pending';
+                            booking.refundedAt = new Date().toISOString();
+                            DB.saveBookings();
+                            refreshAll();
+                            refundMsg = ' ₹' + Number(refund.amount).toLocaleString('en-IN') +
+                                        ' refund ' + (refund.status === 'processed' ? 'processed' : 'initiated') + '.';
+                        } else if (refund && refund.skipped) {
+                            refundMsg = ' Refund skipped (' + refund.reason + ').';
+                        } else if (refund && !refund.ok) {
+                            refundMsg = ' Refund FAILED: ' + (refund.error || 'unknown') + '.';
                         }
-                    });
-                } else if (window.Toast && window.Toast.success) {
-                    window.Toast.success('Booking cancelled. (Email helper not loaded — refresh the page.)');
+                    } catch (e) {
+                        refundMsg = ' Refund threw: ' + (e && e.message);
+                    }
+                }
+
+                if (window.Toast && window.Toast.success) {
+                    window.Toast.success('Booking cancelled. ' + mailMsg + refundMsg);
                 }
             });
         });
