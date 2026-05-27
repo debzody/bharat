@@ -1,13 +1,79 @@
 // Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function () {
     // ── Data Layer ──────────────────────────────────────────────
+    // DB.bookings is a merge of:
+    //   1. localStorage `bookings`  → seeded test bookings + legacy/local entries
+    //   2. Firestore `bookings/*`   → REAL customer bookings (Razorpay live + test mode)
+    //
+    // Admins can read the entire `bookings/*` collection per firestore.rules
+    // (line ~98). Without this Firestore pull, real Razorpay test-mode bookings
+    // made by customers never appeared in the admin dashboard, which meant the
+    // Refund button was missing too — admins thought refunds were broken when
+    // really the booking just wasn't loaded.
     const DB = {
         users: JSON.parse(localStorage.getItem('users') || '[]'),
         bookings: JSON.parse(localStorage.getItem('bookings') || '[]'),
+        // Cache of bookings pulled from Firestore on this page-load.
+        // Refilled by loadFirestoreBookings(); merged into DB.bookings by
+        // refreshAll() so renders stay in sync.
+        firestoreBookings: [],
         saveBookings() {
             localStorage.setItem('bookings', JSON.stringify(this.bookings));
         }
     };
+
+    // ── Firestore booking loader (admin-only) ───────────────────
+    // Pulls every doc from the `bookings/*` collection. Tagged with
+    // `_fsId` so the cancel + refund flows (which already key off
+    // _fsId in js/refund.js → saveRefundToBooking) keep working
+    // unchanged. Returns [] on any error so a Firestore outage just
+    // falls back to the localStorage view.
+    async function loadFirestoreBookings() {
+        if (!window.__firebaseReady) return [];
+        try {
+            const fb = await window.__firebaseReady;
+            const coll = fb.firestore.collection(fb.db, 'bookings');
+            const snap = await fb.firestore.getDocs(coll);
+            const out = [];
+            snap.forEach((doc) => {
+                const data = doc.data() || {};
+                // Preserve the Firestore doc id so refund / cancel writes
+                // hit the right document. Don't clobber a hand-set `id`
+                // from the booking payload — fall back to it instead.
+                data._fsId = doc.id;
+                if (!data.id) data.id = doc.id;
+                out.push(data);
+            });
+            return out;
+        } catch (err) {
+            console.warn('[dashboard] Firestore bookings load failed (rules? offline?):', err);
+            return [];
+        }
+    }
+
+    // Merge Firestore bookings on top of localStorage ones.
+    //   • De-dupes by booking_ref (preferred) or id.
+    //   • Firestore wins on conflict — it's the authoritative store.
+    //   • localStorage-only entries (admin-seeded test bookings, legacy
+    //     guest bookings without a Firestore mirror) are kept verbatim.
+    function mergeBookingsForDashboard(lsArr, fsArr) {
+        const byKey = {};
+        const keyOf = (b) => String(b && (b.booking_ref || b.id) || '');
+
+        (lsArr || []).forEach((b) => {
+            const k = keyOf(b);
+            if (k) byKey[k] = b;
+        });
+        (fsArr || []).forEach((b) => {
+            const k = keyOf(b);
+            if (!k) return;
+            // Firestore data is authoritative; merge LS fields under FS so
+            // admin edits saved server-side win (status, refundId, etc).
+            const existing = byKey[k] || {};
+            byKey[k] = Object.assign({}, existing, b);
+        });
+        return Object.keys(byKey).map((k) => byKey[k]);
+    }
 
     const PACKAGES = {
         budget: { name: 'Budget Andaman Escape', price: 15999, color: '#3498db' },
@@ -496,14 +562,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function makeFakeBooking(overrides) {
         const now = Date.now();
+        // Travel date 35 days out → puts us in the 30+ day refund slab
+        // (so computeRefundAmount returns a non-zero amount and the
+        // Refund button actually appears in the table). Without this,
+        // the seeded booking sat in the 0-7 day slab → ₹0 refund →
+        // button hidden, which is what tripped admins up before.
+        const travelInDays = 35;
+        const travel = new Date(now + travelInDays * 24 * 60 * 60 * 1000)
+            .toISOString().slice(0, 10);
+        // Synthetic Razorpay-style payment id (`pay_TEST…`). The Refund
+        // button visibility check (js/refund.js → isRazorpayPayment)
+        // requires the id to start with `pay_` AND not be `FREE-…`.
+        // Using `pay_TEST…` makes the button render so the UX can be
+        // validated end-to-end. The actual refund call will then fail
+        // gracefully at Razorpay because the id doesn't exist on their
+        // side — admin gets a clear "id does not exist" toast, which is
+        // the expected outcome for a fake booking.
+        const fakePid = 'pay_TEST' +
+            now.toString(36) + Math.random().toString(36).slice(2, 6);
+        // Per-head advance for a Standard pkg = ₹6,000 × 2 heads = ₹12,000.
+        // Override per-call as needed.
         return Object.assign({
             id: 'TEST-' + now + '-' + Math.floor(Math.random() * 1000),
             userId: 'fake-user-' + Math.floor(Math.random() * 9999),
             package_name: 'standard',
             duration: '6 Nights / 7 Days',
             guests: 2,
+            adults: 2,
+            children: 0,
             price: 21999,
+            advance_paid: 12000,
+            balance_due: 9999,
+            travel_date: travel,
             status: 'confirmed',
+            payment_id: fakePid,
+            payment_status: 'partial_advance',
             createdAt: new Date(now).toISOString()
         }, overrides || {});
     }
@@ -1812,10 +1905,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Refresh All ─────────────────────────────────────────────
+    // DB.bookings is the union of localStorage (legacy + admin-seeded
+    // test bookings) and the Firestore bookings collection (real
+    // customer bookings, including Razorpay test-mode runs).
+    // DB.firestoreBookings is the cached Firestore list — we only re-pull
+    // it when the admin clicks "Refresh from Firestore" or the page loads,
+    // to avoid hammering the free-tier read budget on every storage event.
     function refreshAll() {
         // Reload data from localStorage
         DB.users = JSON.parse(localStorage.getItem('users') || '[]');
-        DB.bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+        const ls = JSON.parse(localStorage.getItem('bookings') || '[]');
+        DB.bookings = mergeBookingsForDashboard(ls, DB.firestoreBookings || []);
 
         renderOverview();
         renderAllBookings(
@@ -1827,13 +1927,66 @@ document.addEventListener('DOMContentLoaded', function () {
         renderRevenue();
     }
 
-    // Initial render
+    // ── Pull Firestore bookings on page load ────────────────────
+    // This is what makes real Razorpay test-mode bookings (made by
+    // customers from /checkout) actually appear in the admin's
+    // "All Bookings" table — and therefore show the Refund button.
+    // Wrapped in its own async closure so the rest of the dashboard
+    // renders synchronously from localStorage first (instant paint),
+    // then upgrades the table once Firestore responds (a second or two later).
+    async function refreshFirestoreBookings(opts) {
+        opts = opts || {};
+        const fs = await loadFirestoreBookings();
+        DB.firestoreBookings = fs;
+        refreshAll();
+        if (opts.toast && window.Toast) {
+            const live = (fs || []).filter(b => !/^TEST-/i.test(String(b.id || ''))).length;
+            window.Toast.success('Pulled ' + (fs || []).length + ' bookings from Firestore (' + live + ' live, ' + ((fs || []).length - live) + ' test).');
+        }
+    }
+
+    // Initial render — fast path from localStorage
     refreshAll();
+    // Then upgrade with Firestore data (admin reads ALL bookings per rules).
+    refreshFirestoreBookings();
     // Also fetch customers from Firestore once on load (so the count and
     // table are ready by the time the user clicks the Customers tab).
     if (typeof refreshCustomers === 'function') {
         refreshCustomers();
     }
+
+    // ── "Refresh from Firestore" button — wired dynamically so we
+    // can drop it into the Bookings toolbar without touching the
+    // dashboard.html markup. The button sits next to the existing
+    // "Seed Test Bookings" / "Clear Bookings" admin controls.
+    (function injectRefreshFsBtn() {
+        const seedBtn = document.getElementById('seedFakeBookingsBtn');
+        if (!seedBtn || !seedBtn.parentNode) return;
+        // Don't add twice (HMR / re-init guard)
+        if (document.getElementById('refreshFsBookingsBtn')) return;
+        const btn = document.createElement('button');
+        btn.id = 'refreshFsBookingsBtn';
+        btn.className = 'btn-add-package';
+        btn.style.background = '#16a085';
+        btn.title = 'Re-pull every booking from the Firestore bookings/* collection (admin only).';
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh from Firestore';
+        btn.addEventListener('click', async () => {
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading…';
+            try {
+                await refreshFirestoreBookings({ toast: true });
+            } catch (e) {
+                if (window.Toast) window.Toast.error('Failed to load bookings: ' + (e && e.message));
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
+        });
+        // Insert before the "Seed Test Bookings" button so it reads:
+        // [Refresh from Firestore]  [Seed Test Bookings]  [Clear Bookings]
+        seedBtn.parentNode.insertBefore(btn, seedBtn);
+    })();
 
     // ── Site Settings (Firestore-backed) ────────────────────────
     const settingsToggle = document.getElementById('paymentsEnabledToggle');
