@@ -725,10 +725,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 // goodwill or partial refunds at their discretion.
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
+                var fallbackRefund = Number(b.advance_paid) || 0;
                 html += ' <button class="action-btn action-btn-refund" ' +
                         'style="' + refundStyle + '" data-id="' + b.id +
                         '" title="Issue refund via Razorpay (admin can override the amount).">' +
-                        (suggested > 0 ? 'Refund ' + formatCurrency(suggested) : 'Issue Refund') + '</button>';
+                        (suggested > 0
+                            ? 'Refund ' + formatCurrency(suggested)
+                            : 'Refund ' + formatCurrency(fallbackRefund)) + '</button>';
             }
 
             return html || '-';
