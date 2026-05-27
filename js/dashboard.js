@@ -492,7 +492,19 @@ document.addEventListener('DOMContentLoaded', function () {
         return { label: '-', class: '' };
     }
 
-    function renderBookingPreview(booking) {
+    async function fetchRazorpayPaymentStatus(paymentId) {
+        if (!window.REFUND_WORKER_URL) return null;
+        try {
+            const res = await fetch(`${window.REFUND_WORKER_URL}/payment-status/${paymentId}`);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            console.warn('Failed to fetch payment status:', e);
+            return null;
+        }
+    }
+
+    async function renderBookingPreview(booking) {
         const preview = document.getElementById('bookingPreview');
         if (!preview) return;
         if (!booking) {
@@ -517,6 +529,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const status = String(booking.status || 'confirmed').toUpperCase();
         const paymentState = getBookingPaymentState(booking);
 
+        // Fetch live status if it's a Razorpay payment
+        let liveStatus = null;
+        if (booking.payment_id && !/^FREE-/i.test(booking.payment_id)) {
+            liveStatus = await fetchRazorpayPaymentStatus(booking.payment_id);
+        }
+
         preview.innerHTML = ''
             + '<div class="ipv-head">'
             +   '<h3 class="ipv-subject">' + escHtml(packageName) + '</h3>'
@@ -539,6 +557,7 @@ document.addEventListener('DOMContentLoaded', function () {
             +     '<div class="rd-row"><span class="rd-k">Travel date</span><span class="rd-v">' + escHtml(tripDate ? formatDate(tripDate) : '-') + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment ID</span><span class="rd-v">' + escHtml(String(booking.payment_id || '-')) + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v"><span class="badge ' + paymentState.class + '">' + escHtml(paymentState.label) + '</span></span></div>'
+            +     (liveStatus ? '<div class="rd-row"><span class="rd-k">Razorpay (Live)</span><span class="rd-v"><span class="badge badge-authorized">' + escHtml(liveStatus.status.toUpperCase()) + '</span></span></div>' : '')
             +   '</div>'
             +   '<div class="rd-summary">'
             +     '<div class="rd-row"><span class="rd-k">Package amount</span><span class="rd-v">' + escHtml(formatCurrency(packagePrice)) + '</span></div>'
