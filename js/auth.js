@@ -286,14 +286,40 @@ async function loadBookings() {
 
 async function createBooking(bookingData) {
   if (!currentUser) throw new Error('Login required');
+  const uid = currentUser.id || currentUser.uid;
   const booking = {
     id: Date.now(),
-    userId: currentUser.id || currentUser.uid,
+    userId: uid,
     ...bookingData,
     createdAt: new Date().toISOString()
   };
+
+  // 1) Mirror to localStorage immediately so the cart/profile UI feels snappy
+  //    even before Firestore round-trip completes (and so existing localStorage-
+  //    backed code paths — dashboard's seed/Cancel buttons — keep working).
   DB.bookings.push(booking);
   DB.saveBookings();
+
+  // 2) Persist to Firestore /bookings so the booking shows up on every device
+  //    the user logs in on, and so the admin dashboard sees real bookings.
+  //    Doc id = booking_ref (stable, human-readable in Firebase console) so
+  //    re-saves dedupe naturally; falls back to a random id if no ref.
+  //    This step is best-effort — we never throw on Firestore failure
+  //    because the localStorage write above already succeeded and the
+  //    customer's UX shouldn't break if Firestore is briefly unreachable.
+  try {
+    if (window.__firebaseReady) {
+      const fb = await window.__firebaseReady;
+      const docId = String(booking.booking_ref || booking.id || ('AV-' + Date.now()));
+      const ref = fb.firestore.doc(fb.db, 'bookings', docId);
+      // setDoc with merge so a re-save (e.g. after admin cancellation)
+      // updates the existing record instead of creating a duplicate.
+      await fb.firestore.setDoc(ref, booking, { merge: true });
+    }
+  } catch (e) {
+    console.warn('[createBooking] Firestore mirror failed (kept in localStorage):', e);
+  }
+
   return booking;
 }
 
