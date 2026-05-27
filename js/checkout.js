@@ -13,8 +13,10 @@
     //   • Luxury / Premium / Honeymoon  → ₹11,000 / head
     //   • Budget / Standard / everything else → ₹6,000 / head
     //
-    // The 'test' package keeps its ₹1 charge so the live-payment smoke test
-    // still works without bumping it to ₹6,000.
+    // The 'test' package (and any package priced ≤ ₹1) is treated as a
+    // zero-advance booking — Razorpay is skipped entirely and the booking
+    // confirms instantly via the FREE- payment-id shortcut. This makes the
+    // smoke-test flow free for staff to run end-to-end without real money.
     var ADVANCE_LUXURY   = 11000;
     var ADVANCE_STANDARD = 6000;
     // Package-id → head price. Anything not in this map falls back to STANDARD.
@@ -30,13 +32,32 @@
     // If a "Launch advance" coupon is currently applied (admin-toggleable
     // in Dashboard → Conversion Boosters), use the flat coupon amount
     // (e.g. ₹2,000) instead of the package's normal ₹6K/₹11K.
+    // Detect the smoke-test package — used to bypass the Razorpay
+    // gateway entirely so staff can run the full booking flow end-to-end
+    // without a real charge. The package itself still calculates its
+    // normal trip cost / advance / balance (so the UI looks identical
+    // to a real booking) — only the Razorpay step is skipped, and the
+    // booking is confirmed straight away with a synthetic FREE-* id.
+    //
+    // We match by:
+    //   • exact pkgId === 'test' (the seeded default)
+    //   • pkgId / name containing the word "test" (admin-created variants
+    //     like "payment-test", "Payment Test Package", "test-2026")
+    function isTestPackage() {
+        if (!state.cart) return false;
+        var id = String(state.cart.pkgId || '').toLowerCase();
+        var nm = String(state.cart.name  || '').toLowerCase();
+        if (id === 'test') return true;
+        if (/(^|[\s\-_])test([\s\-_]|$)/.test(id)) return true;
+        if (/(^|[\s\-_])test([\s\-_]|$)/.test(nm)) return true;
+        return false;
+    }
+
     function advancePerHead() {
         if (state.coupon && typeof state.coupon.advanceOverride === 'number' && state.coupon.advanceOverride > 0) {
             return state.coupon.advanceOverride;
         }
         if (!state.cart) return ADVANCE_STANDARD;
-        // Test package — keep the smoke-test cheap (₹1).
-        if (state.cart.pkgId === 'test' || state.cart.price <= 1) return 1;
         // Look up by package id; case-insensitive.
         var key = String(state.cart.pkgId || '').toLowerCase();
         if (ADVANCE_BY_PKG[key]) return ADVANCE_BY_PKG[key];
@@ -342,6 +363,11 @@
         var people = headCount();
         var perHead = advancePerHead();
         var isLuxuryTier = perHead === ADVANCE_LUXURY;
+        // Test packages still display the normal advance/total lines (so
+        // the booking flow looks identical to staff doing a smoke test),
+        // but the Pay button + handler bypass Razorpay entirely. We use
+        // this flag below to swap the button label and skip the popup.
+        var isTest = isTestPackage();
 
         // Cancellation rule values for this tier — keeps the UI in sync
         // with /terms#cancellation without re-reading anything.
@@ -373,12 +399,20 @@
             // When advance is 0 (admin-issued comp / 100 %-discount coupon) we
             // collapse the "Pay now" line and just promise full settlement
             // during/after the trip — the Razorpay step is skipped entirely.
+            // For test packages we DISPLAY the normal advance figure (so
+            // staff can verify the math) but mark it as "TEST — no charge"
+            // and the Pay button below skips Razorpay.
             '<div class="advance-split">' +
-                (advance > 0
-                    ? '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' ' + (people === 1 ? 'traveller' : 'travellers') + ')</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>'
-                    : '<div class="row" style="color:#0a5a68;"><span><i class="fas fa-gift"></i> Pay now</span><span class="adv-amt"><strong>FREE</strong> &mdash; no advance required</span></div>') +
-                '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> ' + (advance > 0 ? 'Balance during or after travel' : 'Pay during or after travel') + '</span><span>' + R + fmt(balance) + '</span></div>' +
+                (isTest
+                    ? '<div class="row" style="color:#0a5a68;"><span><i class="fas fa-flask"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' &mdash; test package)</small></span><span class="adv-amt"><strong>' + R + fmt(advance) + '</strong> <small style="color:#7a8b96;">(test &mdash; no charge)</small></span></div>'
+                    : (advance > 0
+                        ? '<div class="row"><span><i class="fas fa-credit-card"></i> Pay now <small>(' + R + fmt(perHead) + ' &times; ' + people + ' ' + (people === 1 ? 'traveller' : 'travellers') + ')</small></span><span class="adv-amt">' + R + fmt(advance) + '</span></div>'
+                        : '<div class="row" style="color:#0a5a68;"><span><i class="fas fa-gift"></i> Pay now</span><span class="adv-amt"><strong>FREE</strong> &mdash; no advance required</span></div>')) +
+                '<div class="row" style="color:#5a6877;font-size:.9rem;"><span><i class="fas fa-handshake"></i> ' + ((advance > 0 && !isTest) ? 'Balance during or after travel' : 'Pay during or after travel') + '</span><span>' + R + fmt(balance) + '</span></div>' +
             '</div>' +
+            (isTest
+                ? '<div style="background:#fff8e7;color:#8a6d3b;border-left:3px solid #f39c12;padding:.65rem .9rem;border-radius:6px;margin:.6rem 0 1rem;font-size:.85rem;line-height:1.5;"><i class="fas fa-flask"></i> <strong>Test booking</strong> &mdash; this package skips the Razorpay payment step. The booking will be confirmed instantly with no money charged. Use this to validate the end-to-end flow.</div>'
+                : '') +
 
             // Mandatory T&C / Cancellation acceptance — Pay button stays
             // disabled until this is ticked. Customers must explicitly
@@ -397,10 +431,12 @@
                 '</span>' +
             '</label>' +
 
-            '<button class="btn-pay" id="payBtn" disabled>' +
-                (advance > 0
-                    ? '<i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm'
-                    : '<i class="fas fa-check-circle"></i> Confirm Booking &mdash; No Payment Now') +
+            '<button class="btn-pay" id="payBtn" disabled' + (isTest ? ' data-test-booking="1"' : '') + '>' +
+                (isTest
+                    ? '<i class="fas fa-flask"></i> Confirm Test Booking &mdash; No Payment'
+                    : (advance > 0
+                        ? '<i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm'
+                        : '<i class="fas fa-check-circle"></i> Confirm Booking &mdash; No Payment Now')) +
             '</button>' +
             // Embedded Razorpay container — checkout renders inline here (no popup)
             '<div id="rzp-embed-container" class="rzp-embed-container" style="display:none;"></div>' +
@@ -747,6 +783,30 @@
         var phone = document.getElementById('travelerPhone').value.trim();
         var date = (document.getElementById('travelerDate') || {}).value || '';
         var notes = (document.getElementById('travelerNotes') || {}).value || '';
+
+        // ── Test-package shortcut ───────────────────────────────
+        // The "Payment Test Package" (any package with 'test' in its id
+        // or name) skips Razorpay entirely so staff can validate the
+        // booking flow end-to-end without a live charge. The booking
+        // record stores the *displayed* advance/total so reports look
+        // right, but payment_id is prefixed TEST- so admins can spot
+        // and filter test rows out of revenue stats.
+        if (isTestPackage()) {
+            try {
+                window.Analytics && window.Analytics.beginCheckout({
+                    id:    state.cart.pkgId,
+                    name:  state.cart.name,
+                    price: total,
+                    category: 'package'
+                }, total);
+            } catch (e) {}
+            // Force advance/balance to 0 so the booking record + email
+            // never claim "₹X paid" for a test booking — the customer
+            // (staff) didn't actually pay anything.
+            var testResp = { razorpay_payment_id: 'TEST-' + ref };
+            onPaymentSuccess(testResp, ref, total, 0, total, name, email, phone, date, notes);
+            return;
+        }
 
         // ── Zero-advance shortcut ────────────────────────────────
         // If the cart's advance is ₹0 (admin-issued comp / 100%-discount
