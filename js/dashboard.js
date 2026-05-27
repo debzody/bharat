@@ -543,7 +543,14 @@ document.addEventListener('DOMContentLoaded', function () {
             actionsHtml += '<button type="button" class="action-btn action-btn-cancel" data-preview-cancel="' + escHtml(String(booking.id)) + '" style="background:#fff3f3;color:#e74c3c;border:1px solid #f5c6cb;"><i class="fas fa-ban"></i> Cancel Booking</button>';
         }
         if (isRazorpay && !isAlreadyRefunded) {
-            actionsHtml += '<button type="button" class="action-btn action-btn-refund" data-preview-refund="' + escHtml(String(booking.id)) + '" style="background:#fff5e6;color:#a04000;border:1px solid #f1c27d;margin-left:.4rem;"><i class="fas fa-undo-alt"></i> Issue Refund</button>';
+            const previewSuggestedRefund = (window.Refund && window.Refund.computeRefundAmount)
+                ? Number(window.Refund.computeRefundAmount(booking) || 0)
+                : 0;
+            const previewFallbackRefund = Number(booking.advance_paid) || 0;
+            const previewRefundLabel = previewSuggestedRefund > 0
+                ? 'Refund ' + formatCurrency(previewSuggestedRefund)
+                : 'Refund ' + formatCurrency(previewFallbackRefund);
+            actionsHtml += '<button type="button" class="action-btn action-btn-refund" data-preview-refund="' + escHtml(String(booking.id)) + '" style="background:#fff5e6;color:#a04000;border:1px solid #f1c27d;margin-left:.4rem;"><i class="fas fa-undo-alt"></i> ' + escHtml(previewRefundLabel) + '</button>';
         }
         if (isAlreadyRefunded) {
             actionsHtml += '<span class="badge badge-failed" style="margin-left:.4rem;">Refunded ' + formatCurrency(booking.refundAmount || 0) + '</span>';
