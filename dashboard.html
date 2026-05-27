@@ -1007,6 +1007,55 @@
                 </div>
             </div>
 
+            <!-- ── Razorpay LIVE / TEST mode switch ───────────────────────
+                 When TEST is ON, js/checkout.js reads the test key from the
+                 input below and uses it for all checkouts on the public site —
+                 customers can pay with test cards (4111…1111) and no real
+                 money moves. When OFF (default), the hard-coded LIVE key in
+                 js/checkout.js is used. The Razorpay SECRET (refund Worker)
+                 is NEVER stored here — it lives in Cloudflare Worker secrets.
+            -->
+            <div class="settings-card" style="margin-top:1.5rem;background:#fff8e7;border-left:3px solid #f39c12;">
+                <div class="settings-row">
+                    <div class="settings-label-block">
+                        <h3>
+                            <i class="fas fa-flask" style="color:#f39c12;"></i>
+                            Razorpay Mode &mdash; <span id="razorpayModeBadge" style="display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.78rem;font-weight:700;background:#0a5a68;color:#fff;vertical-align:middle;">LIVE</span>
+                        </h3>
+                        <p>
+                            Toggle <strong>ON</strong> to switch the public checkout to Razorpay's <strong>Test Mode</strong> &mdash; ideal for end-to-end QA of booking, cancellation and auto-refund without spending a single rupee. Toggle <strong>OFF</strong> to revert to LIVE keys (real money). The change applies the moment Settings are saved &mdash; no redeploy needed.
+                        </p>
+                        <p style="margin-top:.4rem;color:#7a8b96;font-size:.85rem;">
+                            ⚠️ <strong>Don't forget to also swap the refund Worker secrets</strong> when you flip this toggle &mdash; otherwise refunds will fail with <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">id does not exist</code> because LIVE secrets can't refund TEST payments and vice-versa. See <a href="razorpay_test_mode_guide.md" target="_blank" style="color:#0a5a68;">razorpay_test_mode_guide.md</a> &rarr; Step 3.
+                        </p>
+                    </div>
+                    <label class="toggle-switch" title="Switch between LIVE and TEST Razorpay keys">
+                        <input type="checkbox" id="razorpayTestModeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-row" style="margin-top:1rem;flex-direction:column;align-items:stretch;gap:.5rem;">
+                    <label for="razorpayTestKeyInput" style="font-weight:600;color:#333;">
+                        Razorpay <strong>Test</strong> Key ID (only used when toggle is ON)
+                    </label>
+                    <input type="text" id="razorpayTestKeyInput"
+                           placeholder="rzp_test_XXXXXXXXXXXXXX"
+                           autocomplete="off" spellcheck="false"
+                           style="width:100%;padding:.65rem .85rem;border:1px solid #e0e0e0;border-radius:8px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.9rem;letter-spacing:.3px;">
+                    <small style="color:#888;line-height:1.5;">
+                        Get this from <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noopener" style="color:#0a5a68;">Razorpay Dashboard &rarr; Test Mode &rarr; API Keys</a>. Must start with <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">rzp_test_</code>. The key SECRET is never stored here &mdash; it's set as a Cloudflare Worker secret via <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">wrangler secret put</code>.
+                    </small>
+                </div>
+
+                <div class="settings-actions" style="margin-top:1.2rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+                    <button class="btn-save-packages" id="saveRazorpayModeBtn">
+                        <i class="fas fa-save"></i> Save Razorpay Mode
+                    </button>
+                    <span id="razorpayModeInfo" style="color:#666;font-size:.9rem;"></span>
+                </div>
+            </div>
+
             <!-- Developer Console / DevTools lock -->
             <div class="settings-card" style="margin-top:1.5rem;">
                 <div class="settings-row">
@@ -1833,11 +1882,11 @@
         window.REFUND_WORKER_URL = 'https://refund.pittu-das2.workers.dev';
     </script>
     <script src="js/firebase-config.js?v=21"></script>
-    <script src="js/dataStore.js?v=27"></script>
+    <script src="js/dataStore.js?v=28"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
     <script src="js/refund.js?v=1"></script>
-    <script src="js/dashboard.js?v=29"></script>
+    <script src="js/dashboard.js?v=30"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=8"></script>

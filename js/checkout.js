@@ -2,8 +2,49 @@
 (function () {
     'use strict';
 
-    var RAZORPAY_KEY = 'rzp_live_SLfG8nnKN3tXPC';
+    // Razorpay key id used by the checkout.
+    //   • LIVE (default): real cards / real money — production.
+    //   • TEST: rzp_test_… key → fake gateway (use the test cards listed at
+    //     https://razorpay.com/docs/payments/payments/test-card-details/).
+    //
+    // Admins can flip the site to TEST mode from Dashboard → Settings →
+    // Razorpay Test Mode (writes /settings/site.razorpayTestMode in
+    // Firestore). When that flag is true AND `razorpayTestKeyId` is
+    // populated, we use the test key here. Everything else (refund
+    // Worker secrets, booking flow, emails) is unchanged.
+    var RAZORPAY_KEY_LIVE = 'rzp_live_SLfG8nnKN3tXPC';
+    var RAZORPAY_KEY = RAZORPAY_KEY_LIVE;            // overridden async by resolveRazorpayKey()
     var GST_RATE = 0.05;
+
+    // Resolve the Razorpay key from SettingsStore. If admin has flipped
+    // the site to TEST mode AND set a test key id, swap it in. Falls back
+    // to the hard-coded LIVE key on any failure (so prod is never broken
+    // by a Firestore hiccup).
+    function resolveRazorpayKey() {
+        return new Promise(function (resolve) {
+            try {
+                if (!window.SettingsStore || typeof window.SettingsStore.load !== 'function') {
+                    return resolve();
+                }
+                window.SettingsStore.load().then(function (s) {
+                    if (s && s.razorpayTestMode === true && s.razorpayTestKeyId) {
+                        RAZORPAY_KEY = String(s.razorpayTestKeyId).trim();
+                        // Visible warning so staff don't mistake test mode
+                        // for a real-money checkout.
+                        try {
+                            console.warn(
+                                '%c[Razorpay TEST MODE]%c using key ' + RAZORPAY_KEY +
+                                ' — no real money will move. Toggle off in Dashboard → Settings.',
+                                'background:#f39c12;color:#fff;padding:2px 6px;border-radius:3px;font-weight:700;',
+                                'color:#a04000;'
+                            );
+                        } catch (_) {}
+                    }
+                    resolve();
+                }).catch(function () { resolve(); });
+            } catch (_) { resolve(); }
+        });
+    }
 
     // ── Booking advance: flat per-head amounts ─────────────────────────
     // Replaces the older "5% of total trip cost" model. The exact rule is
@@ -1075,6 +1116,27 @@
         });
     }
 
+    // Render a small persistent banner at the top of the cart when the
+    // site is in Razorpay TEST mode, so staff don't accidentally think
+    // they're charging a real customer (and so QA testers spot a stale
+    // toggle the moment they land on /checkout). Re-renders idempotently.
+    function renderTestModeBanner() {
+        try {
+            if (RAZORPAY_KEY === RAZORPAY_KEY_LIVE) {
+                var b = document.getElementById('rzpTestBanner');
+                if (b) b.remove();
+                return;
+            }
+            if (document.getElementById('rzpTestBanner')) return;
+            var bar = document.createElement('div');
+            bar.id = 'rzpTestBanner';
+            bar.style.cssText = 'position:sticky;top:0;z-index:9000;background:#f39c12;color:#fff;font-weight:700;text-align:center;padding:.55rem 1rem;font-size:.92rem;letter-spacing:.2px;box-shadow:0 2px 6px rgba(0,0,0,.18);';
+            bar.innerHTML = '🧪 RAZORPAY TEST MODE — payments use the test gateway, no real money will move. ' +
+                            '<a href="https://razorpay.com/docs/payments/payments/test-card-details/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;">Test card details ↗</a>';
+            document.body.insertBefore(bar, document.body.firstChild);
+        } catch (_) {}
+    }
+
     // ── Init ──
     document.addEventListener('DOMContentLoaded', function () {
         state.cart = loadCart();
@@ -1083,6 +1145,10 @@
         // checked for a per-user override). Auth may resolve a moment later,
         // so we also re-resolve when the auth state changes.
         render();
+        // Resolve the Razorpay key (live vs test) early so the very first
+        // payment click already uses the right gateway. Banner is shown
+        // after the key resolves.
+        resolveRazorpayKey().then(renderTestModeBanner);
         // Resolve the logged-in customer's admin-set discount % (if any)
         // and any legacy advance-rate override, then re-render so the
         // order summary shows the discount line and the lower total.
