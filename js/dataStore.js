@@ -426,6 +426,19 @@
         // Can be overridden per-user via users/{uid}.advanceRate.
         advanceRate: 5,
 
+        // ── Razorpay TEST mode (admin-toggleable) ─────────────
+        // When `razorpayTestMode` is TRUE *and* `razorpayTestKeyId` is set
+        // to a valid `rzp_test_…` key, js/checkout.js will use the test
+        // key instead of the hard-coded LIVE key — Razorpay then runs in
+        // its sandbox, so test cards (4111…1111) work and no real money
+        // moves. Toggle off (or leave the test key blank) to revert
+        // checkout to the LIVE key the moment Settings are saved.
+        // The Razorpay SECRET (used by the refund Worker) is NEVER stored
+        // in Firestore — it lives only in Cloudflare Worker secrets.
+        // See razorpay_test_mode_guide.md for the full procedure.
+        razorpayTestMode:  false,
+        razorpayTestKeyId: '',
+
         // ── Conversion Boosters (admin-toggleable) ─────────────
         // Each flag is read by js/conversion-kit.js and the relevant
         // page scripts. Flip any of them off in the admin dashboard

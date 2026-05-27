@@ -2060,6 +2060,183 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Razorpay LIVE / TEST mode toggle (Settings) ───────────
+    // Reads & writes razorpayTestMode + razorpayTestKeyId on
+    // /settings/site. js/checkout.js then auto-picks up the
+    // change on the next public-page load (it calls
+    // SettingsStore.load() before opening the gateway). LIVE is
+    // the safe default — if anything goes sideways with the
+    // SettingsStore read, checkout falls back to the hard-coded
+    // live key in js/checkout.js.
+    const razorpayTestModeToggle = document.getElementById('razorpayTestModeToggle');
+    const razorpayTestKeyInput   = document.getElementById('razorpayTestKeyInput');
+    const razorpayModeBadge      = document.getElementById('razorpayModeBadge');
+    const razorpayModeInfo       = document.getElementById('razorpayModeInfo');
+    const saveRazorpayModeBtn    = document.getElementById('saveRazorpayModeBtn');
+
+    function paintRazorpayBadge(testOn, keyId) {
+        if (!razorpayModeBadge) return;
+        if (testOn && keyId) {
+            razorpayModeBadge.textContent = 'TEST';
+            razorpayModeBadge.style.background = '#f39c12';
+            razorpayModeBadge.title = 'Public checkout is using the Razorpay TEST gateway. No real money.';
+        } else if (testOn && !keyId) {
+            razorpayModeBadge.textContent = 'TEST (no key)';
+            razorpayModeBadge.style.background = '#c0392b';
+            razorpayModeBadge.title = 'Test mode is ON but no test key id is set — checkout is falling back to LIVE.';
+        } else {
+            razorpayModeBadge.textContent = 'LIVE';
+            razorpayModeBadge.style.background = '#0a5a68';
+            razorpayModeBadge.title = 'Public checkout is using the Razorpay LIVE gateway — real money.';
+        }
+    }
+
+    function paintRazorpayInfo(testOn, keyId) {
+        if (!razorpayModeInfo) return;
+        if (testOn && keyId) {
+            razorpayModeInfo.innerHTML =
+                '🧪 <strong>TEST MODE active</strong> &mdash; using key <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">' +
+                keyId.slice(0, 12) + '…</code>. No real money will move on /checkout.';
+            razorpayModeInfo.style.color = '#a04000';
+        } else if (testOn && !keyId) {
+            razorpayModeInfo.innerHTML =
+                '⚠️ Test mode is ON but the test key field is empty &mdash; ' +
+                'checkout will fall back to LIVE keys. Paste your <code>rzp_test_…</code> key above.';
+            razorpayModeInfo.style.color = '#c0392b';
+        } else {
+            razorpayModeInfo.innerHTML =
+                '✅ <strong>LIVE MODE</strong> &mdash; the public checkout uses real Razorpay keys. Real money is processed.';
+            razorpayModeInfo.style.color = '#0a5a68';
+        }
+    }
+
+    async function loadRazorpayModeSetting() {
+        if (!window.SettingsStore) return;
+        try {
+            const s = await window.SettingsStore.load();
+            const on  = s.razorpayTestMode === true;
+            const key = String(s.razorpayTestKeyId || '').trim();
+            if (razorpayTestModeToggle) razorpayTestModeToggle.checked = on;
+            if (razorpayTestKeyInput)   razorpayTestKeyInput.value     = key;
+            paintRazorpayBadge(on, key);
+            paintRazorpayInfo(on, key);
+        } catch (e) {
+            console.warn('Could not load Razorpay-mode setting:', e);
+        }
+    }
+    loadRazorpayModeSetting();
+
+    // Live preview as the admin types/toggles — keeps the badge and
+    // info line in sync BEFORE they hit Save, so they can see what
+    // their change is going to do without committing to it.
+    if (razorpayTestModeToggle) {
+        razorpayTestModeToggle.addEventListener('change', () => {
+            const on  = !!razorpayTestModeToggle.checked;
+            const key = (razorpayTestKeyInput && razorpayTestKeyInput.value || '').trim();
+            paintRazorpayBadge(on, key);
+            paintRazorpayInfo(on, key);
+        });
+    }
+    if (razorpayTestKeyInput) {
+        razorpayTestKeyInput.addEventListener('input', () => {
+            const on  = !!(razorpayTestModeToggle && razorpayTestModeToggle.checked);
+            const key = razorpayTestKeyInput.value.trim();
+            paintRazorpayBadge(on, key);
+            paintRazorpayInfo(on, key);
+        });
+    }
+
+    if (saveRazorpayModeBtn) {
+        saveRazorpayModeBtn.addEventListener('click', async () => {
+            if (!window.SettingsStore) {
+                if (window.Toast) window.Toast.error('Settings store not loaded. Refresh the page.');
+                return;
+            }
+            const on  = !!(razorpayTestModeToggle && razorpayTestModeToggle.checked);
+            const key = razorpayTestKeyInput ? razorpayTestKeyInput.value.trim() : '';
+
+            // Validate the test key shape when the toggle is being turned ON.
+            // Razorpay test keys ALWAYS start with `rzp_test_` (live keys
+            // start with `rzp_live_`). Reject mistakes loudly so the admin
+            // doesn't accidentally point checkout at a non-existent key
+            // and 500 every customer at the gateway.
+            if (on) {
+                if (!key) {
+                    if (window.Toast) window.Toast.warning('Paste your Razorpay TEST Key ID before turning test mode on.');
+                    if (razorpayTestKeyInput) razorpayTestKeyInput.focus();
+                    return;
+                }
+                if (!/^rzp_test_[A-Za-z0-9]{6,}$/.test(key)) {
+                    if (window.Toast) {
+                        window.Toast.error(
+                            'That doesn\'t look like a Razorpay test key. ' +
+                            'It must start with "rzp_test_" — get it from Razorpay Dashboard → Test Mode → API Keys.',
+                            { duration: 8000 }
+                        );
+                    }
+                    if (razorpayTestKeyInput) razorpayTestKeyInput.focus();
+                    return;
+                }
+            }
+
+            // Final safety prompt when flipping FROM live → test on prod.
+            // We only ask if the toggle is actually changing state.
+            try {
+                const cached = (window.SettingsStore.cached && window.SettingsStore.cached()) || {};
+                const wasOn = cached.razorpayTestMode === true;
+                if (on !== wasOn) {
+                    const msg = on
+                        ? '⚠️ Switch the public checkout to Razorpay TEST MODE?\n\n' +
+                          '• Real customers will see the test gateway and CANNOT actually pay.\n' +
+                          '• Use this for QA / staging only.\n\n' +
+                          'Continue?'
+                        : '✅ Switch the public checkout back to Razorpay LIVE MODE?\n\n' +
+                          '• Real money will start processing again.\n' +
+                          '• Make sure the refund Worker is also using LIVE secrets (see razorpay_test_mode_guide.md → Step 3).\n\n' +
+                          'Continue?';
+                    if (typeof window.confirm === 'function' && !window.confirm(msg)) {
+                        return;
+                    }
+                }
+            } catch (_) {}
+
+            saveRazorpayModeBtn.disabled = true;
+            saveRazorpayModeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+            try {
+                await window.SettingsStore.save({
+                    razorpayTestMode:  on,
+                    razorpayTestKeyId: key
+                });
+                paintRazorpayBadge(on, key);
+                paintRazorpayInfo(on, key);
+                if (window.Toast) {
+                    window.Toast.success(on
+                        ? 'Razorpay TEST mode is now active. Public checkout will use the test key on next page load.'
+                        : 'Razorpay LIVE mode is now active. Real payments will be processed again.', { duration: 6000 });
+                }
+                // Friendly reminder if turning TEST on — admins regularly
+                // forget to also swap the refund Worker secret.
+                if (on && window.Toast) {
+                    setTimeout(() => {
+                        window.Toast.info(
+                            '🔑 Reminder: also update the refund Worker secrets to TEST credentials, ' +
+                            'otherwise refunds will fail. See razorpay_test_mode_guide.md → Step 3.',
+                            { duration: 9000 }
+                        );
+                    }, 1500);
+                }
+            } catch (err) {
+                if (window.Toast) window.Toast.error(err.message || 'Failed to save Razorpay mode.');
+                else alert('❌ ' + (err.message || 'Failed to save.'));
+            } finally {
+                setTimeout(() => {
+                    saveRazorpayModeBtn.disabled = false;
+                    saveRazorpayModeBtn.innerHTML = '<i class="fas fa-save"></i> Save Razorpay Mode';
+                }, 1500);
+            }
+        });
+    }
+
     // Auto-refresh when localStorage changes (e.g. from another tab)
     window.addEventListener('storage', refreshAll);
 
