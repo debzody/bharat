@@ -405,6 +405,18 @@
     background: #f8d7da;
     color: #721c24;
 }
+.badge-failed {
+    background: #f8d7da;
+    color: #c0392b;
+}
+.badge-authorized {
+    background: #eef1f4;
+    color: #4a5568;
+}
+.badge-captured {
+    background: #d4edda;
+    color: #155724;
+}
 
 /* Action Buttons */
 .action-btn {
@@ -764,13 +776,13 @@ select.pkg-input {
 
 /* Toolbar buttons */
 .btn-add-package {
-    padding: 0.6rem 1.1rem;
+    padding: 0.4rem 0.8rem;
     background: #fff;
     border: 2px solid #0d7a8a;
     color: #0d7a8a;
-    border-radius: 8px;
+    border-radius: 6px;
     font-family: inherit;
-    font-size: 0.88rem;
+    font-size: 0.78rem;
     font-weight: 600;
     cursor: pointer;
     display: flex;
