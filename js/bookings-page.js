@@ -290,6 +290,43 @@
         // Disable button immediately to prevent double-clicks
         if (btn) {
             btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…';
+        }
+
+        // ── Block cancel if Razorpay payment is AUTHORIZED (not captured) ──
+        // An AUTHORIZED payment has only a card hold; money hasn't moved.
+        // Razorpay rejects refunds on uncaptured payments, so we must not
+        // allow the booking to be cancelled in this state. The card hold
+        // will expire automatically; the admin needs to capture or void it
+        // via the Razorpay Dashboard first.
+        var isRzp = booking.payment_id && /^pay_/.test(String(booking.payment_id || '')) &&
+                    !/^FREE-/i.test(String(booking.payment_id || ''));
+        if (isRzp && window.REFUND_WORKER_URL) {
+            try {
+                var statusRes = await fetch(window.REFUND_WORKER_URL.replace(/\/+$/, '') +
+                    '/payment-status/' + encodeURIComponent(booking.payment_id));
+                if (statusRes.ok) {
+                    var statusData = await statusRes.json();
+                    if (statusData && String(statusData.status || '').toLowerCase() === 'authorized') {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-times-circle"></i> Cancel';
+                        }
+                        showToast('error',
+                            'Cannot cancel yet — your payment is still being processed (AUTHORIZED). ' +
+                            'Please contact us at +91 88801 95191 or wait a few minutes and try again.'
+                        );
+                        return;
+                    }
+                }
+            } catch (_) {
+                // If live check fails, allow the cancel to proceed —
+                // better to let the customer cancel than to block them
+                // on a network error.
+            }
+        }
+
+        if (btn) {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling…';
         }
 
