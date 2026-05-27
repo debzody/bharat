@@ -381,6 +381,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // the booking's status. Useful for goodwill refunds, partial
         // refunds, or fixing duplicate charges. Cancellation has its
         // own button below; the two flows are intentionally separate.
+        //
+        // 2026-05 UI refresh: switched from window.prompt() (which leaks
+        // booking refs into a browser-chrome dialog and looks unprofessional)
+        // to a proper modal built with openRefundDialog(). Same logic, way
+        // nicer UX — admin sees a clean form with the booking summary,
+        // an editable amount field, slab info, and Cancel/Refund buttons.
         tbody.querySelectorAll('.action-btn-refund').forEach(btn => {
             btn.addEventListener('click', async function () {
                 const rawId = this.dataset.id;
@@ -400,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Suggested amount per the customer-facing slab policy.
                 // May be 0 (slab=0 / past-travel / cancelled) — in that
-                // case the prompt still opens so the admin can issue a
+                // case the dialog still opens so the admin can issue a
                 // manual / goodwill refund, capped by advance_paid.
                 const suggested = window.Refund.computeRefundAmount
                     ? window.Refund.computeRefundAmount(booking) : 0;
@@ -413,41 +419,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 const me = JSON.parse(localStorage.getItem('currentUser') || 'null');
                 const refundedBy = (me && (me.email || me.username)) || 'admin';
 
-                // Default the prompt to the suggested amount, OR fall back
-                // to the full advance when slab=0 — that's the typical
-                // "goodwill full refund" admin override path.
-                const promptDefault = suggested > 0 ? suggested : advance;
-                const slabLine = suggested > 0
-                    ? 'Suggested refund (per cancellation slab): ₹' + suggested.toLocaleString('en-IN')
-                    : '⚠️ Slab-based suggested refund is ₹0 (within 7 days of travel / past travel).\n' +
-                      '   Manual refund cap = advance paid: ₹' + advance.toLocaleString('en-IN');
-
-                // Optional override — let the admin type a custom amount
-                // (e.g. partial refund). Empty / cancel → use suggested.
-                const customStr = window.prompt(
-                    'Refund this booking?\n\n' +
-                    'Booking ref: ' + (booking.booking_ref || booking.id) + '\n' +
-                    'Customer: ' + ((booking.traveler && booking.traveler.name) || '-') + '\n' +
-                    slabLine + '\n\n' +
-                    'Enter the amount (₹) to refund, or leave the default to use it.\n' +
-                    'The refund goes to the original Razorpay payment method.',
-                    String(promptDefault)
-                );
-                // null = user pressed Cancel → abort.
-                if (customStr === null) return;
-                let amount = promptDefault;
-                if (customStr.trim() !== '') {
-                    const n = Number(customStr.replace(/[^0-9.]/g, ''));
-                    if (!isFinite(n) || n <= 0) {
-                        if (window.Toast) window.Toast.error('Invalid refund amount.');
-                        return;
-                    }
-                    amount = Math.min(n, advance);
-                }
-                if (amount <= 0) {
-                    if (window.Toast) window.Toast.error('Refund amount must be greater than zero.');
-                    return;
-                }
+                // Open the styled modal and wait for the admin to
+                // confirm an amount (or cancel).
+                const amount = await openRefundDialog(booking, {
+                    suggested: suggested,
+                    advance: advance
+                });
+                if (amount == null) return; // user cancelled
 
                 const origLabel = btn.innerHTML;
                 btn.disabled = true;
@@ -1949,6 +1927,306 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             `;
         }).join('');
+    }
+
+    // ── Refund Dialog (custom modal) ────────────────────────────
+    // Replaces the default window.prompt() with a proper styled modal
+    // so the booking ref / customer / slab info doesn't leak into the
+    // browser-chrome dialog. Same behaviour: returns the chosen amount
+    // (number) on OK, or null on Cancel.
+    //
+    // Layout:
+    //   ┌────────────────────────────────────────────────┐
+    //   │  💸 Issue Refund                          [X] │
+    //   ├────────────────────────────────────────────────┤
+    //   │  Booking: BTT752243472R                       │
+    //   │  Customer: <name>                             │
+    //   │  Advance paid: ₹22,000                        │
+    //   │  Suggested (slab): ₹0  ⚠ goodwill only       │
+    //   │                                                │
+    //   │  Refund amount (₹)                             │
+    //   │  ┌────────────────────────────┐               │
+    //   │  │ 22000                      │               │
+    //   │  └────────────────────────────┘               │
+    //   │  Refund goes to original Razorpay payment.    │
+    //   ├────────────────────────────────────────────────┤
+    //   │                    [Cancel]  [💸 Refund ₹X]   │
+    //   └────────────────────────────────────────────────┘
+    function openRefundDialog(booking, opts) {
+        opts = opts || {};
+        const suggested = Number(opts.suggested) || 0;
+        const advance   = Number(opts.advance)   || 0;
+        const ref       = booking.booking_ref || booking.id || '—';
+        const custName  = (booking.traveler && booking.traveler.name) ||
+                          booking.customerName || booking.fullName ||
+                          (booking.userId ? '(user ' + String(booking.userId).slice(-6) + ')' : '—');
+        const promptDefault = suggested > 0 ? suggested : advance;
+
+        // Lazy-create the modal once. We mount it on document.body so it
+        // sits above the dashboard topbar (z-index 1000+).
+        let modal = document.getElementById('refundDialogModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'refundDialogModal';
+            // Reuse the inbox-compose-modal CSS class for its overlay
+            // styling — it's already defined inline in dashboard.html
+            // and gives us a clean white card on a dimmed backdrop.
+            modal.className = 'inbox-compose-modal';
+            modal.innerHTML = `
+                <div class="ic-card" style="max-width:480px;">
+                    <div class="ic-head">
+                        <h3><i class="fas fa-undo-alt"></i> Issue Refund</h3>
+                        <button type="button" class="ic-close" aria-label="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="ic-body" id="refundDialogBody"></div>
+                    <div class="ic-foot">
+                        <button type="button" class="ic-cancel">Cancel</button>
+                        <button type="button" class="ic-send" data-action="refund"><i class="fas fa-undo-alt"></i> Refund</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Build/refresh body each open so the booking-specific info is current.
+        const body = modal.querySelector('#refundDialogBody');
+        const slabRow = suggested > 0
+            ? `<div class="rd-row"><span class="rd-k">Slab refund</span>
+                 <span class="rd-v rd-good">${formatCurrency(suggested)}</span></div>`
+            : `<div class="rd-row"><span class="rd-k">Slab refund</span>
+                 <span class="rd-v rd-warn">₹0 — goodwill / manual only</span></div>`;
+        body.innerHTML = `
+            <div class="rd-summary">
+                <div class="rd-row"><span class="rd-k">Booking ref</span>
+                    <span class="rd-v"><code>${escHtml(ref)}</code></span></div>
+                <div class="rd-row"><span class="rd-k">Customer</span>
+                    <span class="rd-v">${escHtml(custName)}</span></div>
+                <div class="rd-row"><span class="rd-k">Advance paid</span>
+                    <span class="rd-v"><strong>${formatCurrency(advance)}</strong></span></div>
+                ${slabRow}
+            </div>
+            <label class="rd-amount-label">
+                Refund amount (₹) <span style="color:#999;font-weight:400;">— max ${formatCurrency(advance)}</span>
+                <div class="rd-amount-input-wrap">
+                    <span class="rd-rupee">₹</span>
+                    <input type="number" id="refundDialogAmount"
+                           min="1" max="${advance}" step="1"
+                           value="${promptDefault}"
+                           inputmode="numeric"
+                           autocomplete="off">
+                </div>
+                <small id="refundDialogHint" style="color:#5a6877;font-size:.78rem;margin-top:.3rem;display:block;">
+                    Refund goes to the original Razorpay payment method.
+                </small>
+            </label>
+            <div id="refundDialogError" class="rd-error" style="display:none;"></div>
+        `;
+
+        // Inject scoped styles once. Kept inline so this stays a
+        // single-file change — no separate CSS edit needed.
+        if (!document.getElementById('refundDialogStyles')) {
+            const styles = document.createElement('style');
+            styles.id = 'refundDialogStyles';
+            styles.textContent = `
+                #refundDialogModal .rd-summary {
+                    background: #f7fafb;
+                    border: 1px solid #e3e8ef;
+                    border-radius: 10px;
+                    padding: .85rem 1rem;
+                    margin-bottom: 1rem;
+                }
+                #refundDialogModal .rd-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: .75rem;
+                    padding: .25rem 0;
+                    font-size: .9rem;
+                }
+                #refundDialogModal .rd-row + .rd-row {
+                    border-top: 1px dashed #e3e8ef;
+                    padding-top: .35rem;
+                    margin-top: .15rem;
+                }
+                #refundDialogModal .rd-k {
+                    color: #5a6877;
+                    font-weight: 500;
+                    font-size: .82rem;
+                    text-transform: uppercase;
+                    letter-spacing: .03em;
+                }
+                #refundDialogModal .rd-v {
+                    color: #1c2b48;
+                    font-weight: 600;
+                    text-align: right;
+                }
+                #refundDialogModal .rd-v code {
+                    background: #fff;
+                    padding: .15rem .45rem;
+                    border-radius: 4px;
+                    border: 1px solid #d6dfe5;
+                    font-size: .82rem;
+                }
+                #refundDialogModal .rd-good { color: #0d7a8a; }
+                #refundDialogModal .rd-warn { color: #a04000; }
+                #refundDialogModal .rd-amount-label {
+                    display: block;
+                    font-size: .82rem;
+                    font-weight: 600;
+                    color: #5a6877;
+                    text-transform: uppercase;
+                    letter-spacing: .03em;
+                }
+                #refundDialogModal .rd-amount-input-wrap {
+                    display: flex;
+                    align-items: stretch;
+                    margin-top: .4rem;
+                    border: 1.5px solid #cfd9df;
+                    border-radius: 10px;
+                    background: #fff;
+                    overflow: hidden;
+                    transition: border-color .15s, box-shadow .15s;
+                }
+                #refundDialogModal .rd-amount-input-wrap:focus-within {
+                    border-color: #0d7a8a;
+                    box-shadow: 0 0 0 3px rgba(13,122,138,.18);
+                }
+                #refundDialogModal .rd-rupee {
+                    background: #f7fafb;
+                    border-right: 1px solid #e3e8ef;
+                    padding: .65rem .9rem;
+                    font-weight: 700;
+                    font-size: 1.1rem;
+                    color: #5a6877;
+                    display: flex;
+                    align-items: center;
+                }
+                #refundDialogModal #refundDialogAmount {
+                    flex: 1;
+                    border: 0;
+                    padding: .65rem .85rem;
+                    font: inherit;
+                    font-size: 1.05rem;
+                    font-weight: 700;
+                    color: #1c2b48;
+                    background: transparent;
+                    outline: none;
+                    -moz-appearance: textfield;
+                }
+                #refundDialogModal #refundDialogAmount::-webkit-outer-spin-button,
+                #refundDialogModal #refundDialogAmount::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+                #refundDialogModal .rd-error {
+                    margin-top: .65rem;
+                    padding: .55rem .75rem;
+                    background: #fdedec;
+                    border: 1px solid #f5b7b1;
+                    color: #c0392b;
+                    font-size: .85rem;
+                    border-radius: 8px;
+                }
+                #refundDialogModal .ic-send i { margin-right: .25rem; }
+            `;
+            document.head.appendChild(styles);
+        }
+
+        return new Promise((resolve) => {
+            const input   = modal.querySelector('#refundDialogAmount');
+            const errEl   = modal.querySelector('#refundDialogError');
+            const sendBtn = modal.querySelector('[data-action="refund"]');
+            const closeBtn  = modal.querySelector('.ic-close');
+            const cancelBtn = modal.querySelector('.ic-cancel');
+
+            // Update button label as the admin types so they can see the
+            // exact amount they're about to refund.
+            function syncSendBtn() {
+                const n = Number(input.value);
+                const safe = (isFinite(n) && n > 0) ? n : 0;
+                sendBtn.innerHTML = '<i class="fas fa-undo-alt"></i> Refund ' +
+                    (safe > 0 ? formatCurrency(safe) : '');
+            }
+
+            function showError(msg) {
+                if (!errEl) return;
+                errEl.style.display = 'block';
+                errEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + msg;
+            }
+            function clearError() {
+                if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+            }
+
+            function close(result) {
+                modal.classList.remove('open');
+                // Drop transient listeners so the next open starts clean.
+                input.oninput = null;
+                document.removeEventListener('keydown', onKey);
+                resolve(result);
+            }
+
+            function submit() {
+                clearError();
+                const raw = String(input.value || '').trim();
+                if (!raw) {
+                    showError('Please enter a refund amount.');
+                    input.focus();
+                    return;
+                }
+                const n = Number(raw.replace(/[^0-9.]/g, ''));
+                if (!isFinite(n) || n <= 0) {
+                    showError('Refund amount must be a positive number.');
+                    input.focus();
+                    return;
+                }
+                if (n > advance) {
+                    showError('Refund cannot exceed the advance paid (' +
+                        formatCurrency(advance) + ').');
+                    input.focus();
+                    return;
+                }
+                // All good — resolve with the validated amount.
+                close(Math.round(n));
+            }
+
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); close(null); }
+                if (e.key === 'Enter')  { e.preventDefault(); submit();   }
+            }
+
+            // Clone+replace handlers each open so we never stack them.
+            const newClose  = closeBtn.cloneNode(true);
+            const newCancel = cancelBtn.cloneNode(true);
+            const newSend   = sendBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newClose,  closeBtn);
+            cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+            sendBtn.parentNode.replaceChild(newSend,  sendBtn);
+
+            newClose.addEventListener('click',  () => close(null));
+            newCancel.addEventListener('click', () => close(null));
+            newSend.addEventListener('click',   submit);
+            modal.onclick = (e) => { if (e.target === modal) close(null); };
+
+            // Refresh references to the new (replaced) input/sendBtn
+            const inputRef   = modal.querySelector('#refundDialogAmount');
+            const sendBtnRef = modal.querySelector('[data-action="refund"]');
+            inputRef.oninput = function () {
+                clearError();
+                const n = Number(inputRef.value);
+                const safe = (isFinite(n) && n > 0) ? n : 0;
+                sendBtnRef.innerHTML = '<i class="fas fa-undo-alt"></i> Refund ' +
+                    (safe > 0 ? formatCurrency(safe) : '');
+            };
+            inputRef.oninput();   // initial paint of button label
+            document.addEventListener('keydown', onKey);
+
+            modal.classList.add('open');
+            // Auto-focus the amount field and select its contents so the
+            // admin can just type a new number to override.
+            setTimeout(() => {
+                try { inputRef.focus(); inputRef.select(); } catch (_) {}
+            }, 60);
+        });
     }
 
     // ── Refresh All ─────────────────────────────────────────────
