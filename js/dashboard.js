@@ -730,15 +730,20 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (isRzp && status === 'cancelled') {
                 // Cancelled rows show a refund button so admin can perform
                 // goodwill or partial refunds at their discretion.
+                // Label shows the policy-suggested amount (may be ₹0 for the
+                // 0-7 day no-refund slab). Admin can always click to enter a
+                // custom / goodwill amount via the refund dialog.
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
-                var fallbackRefund = Number(b.advance_paid) || 0;
+                var btnLabel = suggested > 0
+                    ? 'Refund ' + formatCurrency(suggested)
+                    : 'Refund ₹0 (custom)';
+                var btnTitle = suggested > 0
+                    ? 'Slab refund: ' + formatCurrency(suggested) + '. Click to confirm or adjust.'
+                    : '0–7 day no-refund slab. Click to issue a goodwill / custom refund.';
                 html += ' <button class="action-btn action-btn-refund" ' +
                         'style="' + refundStyle + '" data-id="' + b.id +
-                        '" title="Issue refund via Razorpay (admin can override the amount).">' +
-                        (suggested > 0
-                            ? 'Refund ' + formatCurrency(suggested)
-                            : 'Refund ' + formatCurrency(fallbackRefund)) + '</button>';
+                        '" title="' + btnTitle + '">' + btnLabel + '</button>';
             }
 
             return html || '-';
