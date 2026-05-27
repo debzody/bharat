@@ -1011,14 +1011,58 @@ document.addEventListener('DOMContentLoaded', function () {
                 );
                 if (!booking) return;
 
+                const isRzp = window.Refund && window.Refund.isRazorpayPayment &&
+                              window.Refund.isRazorpayPayment(booking);
+
+                // ── Block cancellation if payment is AUTHORIZED (not yet captured) ──
+                // An AUTHORIZED payment has a card hold but money hasn't moved.
+                // Cancelling the booking in this state is problematic because:
+                //   1. We can't refund an uncaptured payment (Razorpay rejects it).
+                //   2. The customer's card hold will eventually expire on its own.
+                // Admin must either: capture the payment first (then cancel + refund),
+                // or void/release it directly via the Razorpay Dashboard.
+                if (isRzp && booking.payment_id) {
+                    const btnEl = this;
+                    const origLabel = btnEl.innerHTML;
+                    btnEl.disabled = true;
+                    btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    let liveStatus = null;
+                    try {
+                        liveStatus = await fetchRazorpayPaymentStatus(booking.payment_id);
+                    } catch (_) {}
+
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = origLabel;
+
+                    if (liveStatus && String(liveStatus.status || '').toLowerCase() === 'authorized') {
+                        if (window.Toast) {
+                            window.Toast.error(
+                                'Cannot cancel — payment is AUTHORIZED but not yet captured.\n\n' +
+                                'Go to Razorpay Dashboard → Payments → ' + booking.payment_id +
+                                ' and either:\n• Capture it first, then cancel here\n• Void/release the authorization directly',
+                                { duration: 10000 }
+                            );
+                        } else {
+                            alert(
+                                'Cannot cancel this booking.\n\n' +
+                                'The Razorpay payment is AUTHORIZED but not yet CAPTURED.\n\n' +
+                                'Please go to your Razorpay Dashboard and either:\n' +
+                                '1. Capture the payment first, then cancel here\n' +
+                                '2. Void / release the authorization directly in Razorpay\n\n' +
+                                'Payment ID: ' + booking.payment_id
+                            );
+                        }
+                        return;
+                    }
+                }
+
                 // Compute the suggested refund up-front so the admin
                 // sees what'll happen before they confirm.
                 let suggestedRefund = 0;
                 if (window.Refund && window.Refund.computeRefundAmount) {
                     suggestedRefund = window.Refund.computeRefundAmount(booking);
                 }
-                const isRzp = window.Refund && window.Refund.isRazorpayPayment &&
-                              window.Refund.isRazorpayPayment(booking);
 
                 let confirmMsg = 'Cancel this booking?\n\nThis will:\n' +
                     '• Mark the booking as cancelled\n' +
