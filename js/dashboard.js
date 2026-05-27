@@ -535,6 +535,20 @@ document.addEventListener('DOMContentLoaded', function () {
             liveStatus = await fetchRazorpayPaymentStatus(booking.payment_id);
         }
 
+        const isRazorpay = window.Refund && window.Refund.isRazorpayPayment && window.Refund.isRazorpayPayment(booking);
+        const isAlreadyRefunded = !!booking.refundId;
+        const isCancelled = String(booking.status || '').toLowerCase() === 'cancelled';
+        let actionsHtml = '';
+        if (!isCancelled) {
+            actionsHtml += '<button type="button" class="action-btn action-btn-cancel" data-preview-cancel="' + escHtml(String(booking.id)) + '" style="background:#fff3f3;color:#e74c3c;border:1px solid #f5c6cb;"><i class="fas fa-ban"></i> Cancel Booking</button>';
+        }
+        if (isRazorpay && !isAlreadyRefunded) {
+            actionsHtml += '<button type="button" class="action-btn action-btn-refund" data-preview-refund="' + escHtml(String(booking.id)) + '" style="background:#fff5e6;color:#a04000;border:1px solid #f1c27d;margin-left:.4rem;"><i class="fas fa-undo-alt"></i> Issue Refund</button>';
+        }
+        if (isAlreadyRefunded) {
+            actionsHtml += '<span class="badge badge-failed" style="margin-left:.4rem;">Refunded ' + formatCurrency(booking.refundAmount || 0) + '</span>';
+        }
+
         preview.innerHTML = ''
             + '<div class="ipv-head">'
             +   '<h3 class="ipv-subject">' + escHtml(packageName) + '</h3>'
@@ -543,6 +557,7 @@ document.addEventListener('DOMContentLoaded', function () {
             +     '<div class="ipv-row"><strong>Status:</strong> ' + escHtml(status) + '</div>'
             +     '<div class="ipv-row"><strong>Created:</strong> ' + escHtml(formatDate(booking.createdAt)) + '</div>'
             +   '</div>'
+            +   (actionsHtml ? '<div class="ipv-actions" style="margin-top:.6rem;display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">' + actionsHtml + '</div>' : '')
             + '</div>'
             + '<div class="ipv-body">'
             +   '<div class="rd-summary" style="margin-bottom:1rem;">'
@@ -566,6 +581,49 @@ document.addEventListener('DOMContentLoaded', function () {
             +     '<div class="rd-row"><span class="rd-k">Refund</span><span class="rd-v">' + escHtml(booking.refundAmount ? formatCurrency(booking.refundAmount) : '-') + '</span></div>'
             +   '</div>'
             + '</div>';
+
+        // Wire up preview pane action buttons
+        const previewRefundBtn = preview.querySelector('[data-preview-refund]');
+        if (previewRefundBtn) {
+            previewRefundBtn.addEventListener('click', async function () {
+                const id = this.dataset.previewRefund;
+                if (!window.Refund || !window.Refund.processRefund) return;
+                const advance = Number(booking.advance_paid) || 0;
+                if (advance <= 0) {
+                    if (window.Toast) window.Toast.warning('No advance was paid for this booking.');
+                    return;
+                }
+                const suggested = window.Refund.computeRefundAmount ? window.Refund.computeRefundAmount(booking) : 0;
+                const amount = await openRefundDialog(booking, { suggested: suggested, advance: advance });
+                if (amount == null) return;
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refunding…';
+                try {
+                    const refund = await window.Refund.processRefund(booking, { amount: amount, reason: 'Manual refund from admin preview' });
+                    if (refund && refund.ok && !refund.skipped) {
+                        await window.Refund.saveRefundToBooking(booking, refund);
+                        booking.refundId = refund.refundId;
+                        booking.refundAmount = refund.amount;
+                        booking.refundStatus = refund.status || 'pending';
+                        DB.saveBookings();
+                        refreshAll();
+                        if (window.Toast) window.Toast.success('Refund initiated: ' + refund.refundId);
+                    } else {
+                        if (window.Toast) window.Toast.error('Refund failed: ' + (refund && refund.error || 'unknown'));
+                    }
+                } catch (e) {
+                    if (window.Toast) window.Toast.error('Refund threw: ' + (e && e.message));
+                }
+            });
+        }
+        const previewCancelBtn = preview.querySelector('[data-preview-cancel]');
+        if (previewCancelBtn) {
+            previewCancelBtn.addEventListener('click', function () {
+                const tableBtn = document.querySelector('#allBookingsBody .action-btn-cancel[data-id="' + booking.id + '"]');
+                if (tableBtn) tableBtn.click();
+                else if (window.Toast) window.Toast.info('Use the Cancel button in the row to cancel.');
+            });
+        }
     }
 
     function setActiveBookingPreview(id, bookings, skipRerender) {
