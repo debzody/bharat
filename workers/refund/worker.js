@@ -61,6 +61,9 @@ export default {
         if (request.method === 'POST' && url.pathname === '/refund') {
             return handleRefund(request, env);
         }
+        if (request.method === 'GET' && url.pathname.startsWith('/payment-status/')) {
+            return handlePaymentStatus(request, env);
+        }
         return jsonResponse(env, request, { error: 'Not found' }, 404);
     }
 };
@@ -193,6 +196,45 @@ async function handleRefund(request, env) {
         bookingRef:     bookingRef,
         initiatedBy:    callerEmail
     });
+}
+
+async function handlePaymentStatus(request, env) {
+    const url = new URL(request.url);
+    const parts = url.pathname.split('/');
+    const paymentId = parts[2];
+
+    if (!/^pay_[A-Za-z0-9]+$/.test(paymentId)) {
+        return jsonResponse(env, request, { error: 'Invalid paymentId' }, 400);
+    }
+
+    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+        return jsonResponse(env, request, { error: 'Razorpay keys not configured' }, 500);
+    }
+
+    const basicAuth = btoa(env.RAZORPAY_KEY_ID + ':' + env.RAZORPAY_KEY_SECRET);
+    const rpUrl = 'https://api.razorpay.com/v1/payments/' + encodeURIComponent(paymentId);
+
+    try {
+        const rpRes = await fetch(rpUrl, {
+            method: 'GET',
+            headers: { 'Authorization': 'Basic ' + basicAuth }
+        });
+        const rpJson = await rpRes.json();
+
+        if (!rpRes.ok) {
+            return jsonResponse(env, request, { error: 'Razorpay API error', details: rpJson }, rpRes.status);
+        }
+
+        return jsonResponse(env, request, {
+            ok: true,
+            status: rpJson.status,
+            id: rpJson.id,
+            amount: rpJson.amount / 100,
+            currency: rpJson.currency
+        });
+    } catch (err) {
+        return jsonResponse(env, request, { error: 'Worker error: ' + err.message }, 500);
+    }
 }
 
 // ── Firebase ID-token verification ──────────────────────────────
