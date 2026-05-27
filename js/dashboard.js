@@ -1038,11 +1038,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const count = selectedBookingIds.size;
         if (archiveBtn) {
             archiveBtn.disabled = count === 0;
-            archiveBtn.innerHTML = '<i class="fas fa-box-archive"></i> Archive' + (count ? ' (' + count + ')' : '');
+            archiveBtn.innerHTML = '<i class="fas fa-box-archive"></i> Arch.' + (count ? ' (' + count + ')' : '');
         }
         if (deleteBtn) {
             deleteBtn.disabled = count === 0;
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete' + (count ? ' (' + count + ')' : '');
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Del.' + (count ? ' (' + count + ')' : '');
         }
     }
 
