@@ -458,6 +458,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── All Bookings ────────────────────────────────────────────
+    function getBookingPaymentState(booking) {
+        if (!booking || typeof booking !== 'object') return '-';
+        const paymentId = String(booking.payment_id || '');
+        const raw = String(
+            booking.payment_status ||
+            booking.paymentStatus ||
+            booking.razorpay_status ||
+            booking.status_text ||
+            ''
+        ).trim().toLowerCase();
+
+        if (booking.refundId || booking.refundedAt || raw === 'refunded') return 'Refunded';
+        if (raw === 'failed') return 'Failed';
+        if (raw === 'captured') return 'Captured';
+        if (raw === 'authorized') return 'Authorized';
+        if (/^FREE-/i.test(paymentId) || raw === 'no_advance_required') return 'No Advance';
+        if (String(booking.status || '').toLowerCase() === 'cancelled') {
+            const refundDue = (window.Refund && window.Refund.computeRefundAmount)
+                ? Number(window.Refund.computeRefundAmount(booking) || 0)
+                : 0;
+            return refundDue > 0 ? 'Refund Pending' : 'Cancelled';
+        }
+        if (raw === 'partial_advance') return 'Advance Paid';
+        return raw ? raw.replace(/_/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); }) : '-';
+    }
+
     function renderBookingPreview(booking) {
         const preview = document.getElementById('bookingPreview');
         if (!preview) return;
@@ -481,13 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const packageName = getPackageName(booking.package_name);
         const tripDate = booking.travel_date || booking.date || '';
         const status = String(booking.status || 'confirmed').toUpperCase();
-        const paymentState = String(
-            booking.payment_status ||
-            booking.paymentStatus ||
-            booking.razorpay_status ||
-            booking.status_text ||
-            (booking.refundId ? 'refunded' : '')
-        ).trim() || '-';
+        const paymentState = getBookingPaymentState(booking);
 
         preview.innerHTML = ''
             + '<div class="ipv-head">'
@@ -654,13 +674,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const bookingId = String(b.id);
             const isSelected = selectedBookingIds.has(bookingId);
             const previewSelected = activeBookingPreviewId === bookingId;
-            const paymentState = String(
-                b.payment_status ||
-                b.paymentStatus ||
-                b.razorpay_status ||
-                b.status_text ||
-                (b.refundId ? 'refunded' : '')
-            ).trim() || '-';
+            const paymentState = getBookingPaymentState(b);
             return `
             <tr style="${rowStyle}" class="${previewSelected ? 'selected' : ''}" data-booking-row="1" data-id="${bookingId}">
                 <td><input type="checkbox" class="booking-row-select" data-id="${bookingId}" ${isSelected ? 'checked' : ''} aria-label="Select booking ${bookingId}"></td>
