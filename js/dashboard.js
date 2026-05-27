@@ -698,42 +698,79 @@ document.addEventListener('DOMContentLoaded', function () {
         //     falls back to "Refund…" when the suggested amount is 0
         //     (slab=0 OR cancelled long ago) — clicking opens the prompt
         //     where the admin types a custom amount.
+        // ── Action cell logic ───────────────────────────────────
+        // Business rules (driven by live Razorpay payment state):
+        //
+        //   AUTHORIZED  → payment held but NOT yet captured.
+        //                  Razorpay does not allow refunds on uncaptured
+        //                  payments. Show nothing — admin must capture or
+        //                  void via Razorpay dashboard first.
+        //
+        //   CAPTURED + confirmed  → Cancel button only. No refund until
+        //                           the booking is first cancelled.
+        //
+        //   CAPTURED + cancelled  → Refund button (slab amount or custom).
+        //                           advance_paid must be > 0.
+        //
+        //   Already refunded      → "Refunded ₹X" badge, no buttons.
+        //
+        //   FREE / non-Razorpay   → Cancel button only (no refund path).
+        //
+        // The "live" payment status is stored back to the booking doc by
+        // saveRefundToBooking / cancel handlers, so we read it from the
+        // booking object (Firestore-sourced) rather than making a live
+        // API call per row.
         function actionCellHtml(b) {
             var html = '';
             var status = String(b.status || 'confirmed').toLowerCase();
-            var canCancel = status !== 'cancelled';
             var isRzp = window.Refund && window.Refund.isRazorpayPayment &&
                         window.Refund.isRazorpayPayment(b);
-            var alreadyRefunded = !!(b && (b.refundId || b.refundedAt || String(b.refundStatus || '').toLowerCase() === 'refunded'));
+            var alreadyRefunded = !!(b && (
+                b.refundId ||
+                b.refundedAt ||
+                String(b.refundStatus  || '').toLowerCase() === 'refunded'
+            ));
 
-            // Soft action-chip palette requested by user:
-            //   • Confirmed rows / buttons → soft green
-            //   • Cancelled-but-refundable → soft yellow
-            //   • Refunded badge → soft red
-            var cancelStyle = 'background:#edf8f1;color:#1f7a46;border:1px solid #cfead8;';
-            var refundStyle = 'background:#fff8eb;color:#a66307;border:1px solid #f3dfb6;';
+            // Determine the Razorpay payment state from what's stored on
+            // the booking. The live fetch only happens in the preview pane.
+            var rzpState = String(
+                b.payment_status || b.paymentStatus || b.razorpay_status || ''
+            ).trim().toLowerCase();
+            // 'authorized' means the card hold exists but money hasn't moved —
+            // Razorpay rejects refunds at this stage.
+            var isAuthorized = (rzpState === 'authorized');
+
+            var cancelStyle  = 'background:#edf8f1;color:#1f7a46;border:1px solid #cfead8;';
+            var refundStyle  = 'background:#fff8eb;color:#a66307;border:1px solid #f3dfb6;';
             var refundedStyle = 'background:#fdeeee;color:#b24a4a;border:1px solid #f3c9c9;';
 
-            // Confirmed rows should NOT show any Refund button.
-            if (canCancel) {
-                html += '<button class="action-btn action-btn-cancel" ' +
-                        'style="' + cancelStyle + '" data-id="' + b.id + '">Cancel</button>';
-            }
-
+            // ── Already refunded → badge only, no further action ──
             if (alreadyRefunded) {
                 html += ' <span class="badge badge-refunded" ' +
                         'style="' + refundedStyle + '"' +
                         ' title="Refund ID ' + (b.refundId || '') +
-                        ' · Status: ' + (b.refundStatus || 'pending') + '">' +
+                        ' · Status: ' + (b.refundStatus || 'refunded') + '">' +
                         'Refunded ' + formatCurrency(b.refundAmount || 0) +
                         '</span>';
-            } else if (isRzp && status === 'cancelled' && Number(b.advance_paid) > 0) {
-                // Cancelled rows with an advance payment show a refund button.
-                // Only show when advance_paid > 0 — if ₹0 was collected
-                // there is nothing to refund and Razorpay will reject the call.
-                // Label shows the policy-suggested amount (may be ₹0 for the
-                // 0-7 day no-refund slab). Admin can still click to enter a
-                // custom / goodwill amount via the refund dialog.
+                return html;   // no cancel / refund buttons once refunded
+            }
+
+            // ── AUTHORIZED → nothing actionable (can't capture/void here) ──
+            if (isRzp && isAuthorized) {
+                return '<span style="font-size:.76rem;color:#888;" ' +
+                       'title="Payment is AUTHORIZED but not yet captured. ' +
+                       'Capture or void via Razorpay Dashboard first.">' +
+                       '⏳ Authorized</span>';
+            }
+
+            // ── Cancel button: show only when booking is not yet cancelled ──
+            if (status !== 'cancelled') {
+                html += '<button class="action-btn action-btn-cancel" ' +
+                        'style="' + cancelStyle + '" data-id="' + b.id + '">Cancel</button>';
+            }
+
+            // ── Refund button: cancelled + Razorpay + advance > 0 ──────────
+            if (isRzp && status === 'cancelled' && Number(b.advance_paid) > 0) {
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
                 var btnLabel = suggested > 0
