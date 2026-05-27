@@ -239,6 +239,13 @@
         </div>
     </footer>
 
+    <!-- Outbound mail Worker (Brevo-backed). Used by booking-emails.js
+         when the caller has an admin Firebase ID token — i.e. when an
+         admin/staff user cancels a booking from this page. Customer
+         users fall through to the Firebase "Trigger Email" extension
+         (Firestore mail/{ref} doc) which is admin-token-free. -->
+    <script>window.INBOX_WORKER_URL = 'https://inbox-mail.pittu-das2.workers.dev';</script>
+
     <script src="js/firebase-config.js?v=21"></script>
     <script src="js/analytics.js?v=1"></script>
     <script src="js/dataStore.js?v=25"></script>
