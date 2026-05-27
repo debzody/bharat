@@ -347,11 +347,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             '" title="Refund ₹' + suggested.toLocaleString('en-IN') +
                             ' to the original payment method via Razorpay (admin can override the amount).">Refund ' +
                             formatCurrency(suggested) + '</button>';
-                } else if (advance > 0) {
+                } else if (advance > 0 && status !== 'cancelled') {
                     // Slab-based suggested refund is ₹0 (typically: travel
                     // is within 7 days, or already happened). Show a
                     // muted "Refund…" button so the admin can still issue
-                    // a goodwill / manual refund and pick the amount.
+                    // a goodwill / manual refund and pick the amount —
+                    // but ONLY for confirmed bookings. Cancelled bookings
+                    // hide it because:
+                    //   • The cancel flow already had a chance to auto-
+                    //     refund per slab. If slab=0 was the right answer
+                    //     at cancel time, showing a Refund… chip on top
+                    //     just clutters the row.
+                    //   • An admin who really needs to issue a goodwill
+                    //     refund on a cancelled-without-refund booking
+                    //     can still do it from the Razorpay dashboard.
                     html += ' <button class="action-btn action-btn-refund" data-id="' + b.id +
                             '" style="background:#f7f9fc;color:#5a6877;border:1px dashed #cfd9df;"' +
                             ' title="No auto-refund per cancellation slab, but you can still issue a manual / goodwill refund up to ₹' +
@@ -359,6 +368,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 // advance == 0  → nothing was actually charged, so no
                 // refund button (defensive — Razorpay would 422 anyway).
+                // status === 'cancelled' && suggested == 0 → no button
+                // (see comment above).
             }
             return html || '-';
         }
