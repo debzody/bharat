@@ -469,20 +469,26 @@ document.addEventListener('DOMContentLoaded', function () {
             ''
         ).trim().toLowerCase();
 
+        // 1. Explicit Razorpay states
         if (booking.refundId || booking.refundedAt || raw === 'refunded') return { label: 'Refunded', class: 'badge-failed' };
-        if (raw === 'failed') return { label: 'Failed', class: 'badge-failed' };
-        if (raw === 'captured') return { label: 'Captured', class: 'badge-captured' };
+        if (raw === 'failed')     return { label: 'Failed', class: 'badge-failed' };
+        if (raw === 'captured')   return { label: 'Captured', class: 'badge-captured' };
         if (raw === 'authorized') return { label: 'Authorized', class: 'badge-authorized' };
+
+        // 2. Internal logic overrides
         if (/^FREE-/i.test(paymentId) || raw === 'no_advance_required') return { label: 'No Advance', class: 'badge-authorized' };
+        
         if (String(booking.status || '').toLowerCase() === 'cancelled') {
             const refundDue = (window.Refund && window.Refund.computeRefundAmount)
                 ? Number(window.Refund.computeRefundAmount(booking) || 0)
                 : 0;
             return { label: refundDue > 0 ? 'Refund Pending' : 'Cancelled', class: 'badge-failed' };
         }
+
+        // 3. Fallback
         if (raw === 'partial_advance') return { label: 'Advance Paid', class: 'badge-authorized' };
         if (raw) return { label: raw.replace(/_/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); }), class: 'badge-authorized' };
-        console.debug('[dashboard] Unknown payment status for booking:', booking);
+        
         return { label: '-', class: '' };
     }
 
