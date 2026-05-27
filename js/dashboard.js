@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ).trim().toLowerCase();
 
         // 1. Explicit Razorpay states
-        if (booking.refundId || booking.refundedAt || raw === 'refunded') return { label: 'Refunded', class: 'badge-failed' };
+        if (booking.refundId || booking.refundedAt || String(booking.refundStatus || '').toLowerCase() === 'refunded' || raw === 'refunded') return { label: 'Refunded', class: 'badge-failed' };
         if (raw === 'failed')     return { label: 'Failed', class: 'badge-failed' };
         if (raw === 'captured')   return { label: 'Captured', class: 'badge-captured' };
         if (raw === 'authorized') return { label: 'Authorized', class: 'badge-authorized' };
@@ -704,7 +704,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var canCancel = status !== 'cancelled';
             var isRzp = window.Refund && window.Refund.isRazorpayPayment &&
                         window.Refund.isRazorpayPayment(b);
-            var alreadyRefunded = !!(b && b.refundId);
+            var alreadyRefunded = !!(b && (b.refundId || b.refundedAt || String(b.refundStatus || '').toLowerCase() === 'refunded'));
 
             // Soft action-chip palette requested by user:
             //   • Confirmed rows / buttons → soft green
@@ -933,7 +933,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else if (refund && refund.skipped) {
                         if (window.Toast) window.Toast.info('Refund skipped: ' + refund.reason);
                     } else {
-                        if (window.Toast) window.Toast.error('Refund FAILED: ' + (refund && refund.error || 'unknown'));
+                        var refundErr = String(refund && refund.error || 'unknown');
+                        if (/fully refunded already/i.test(refundErr)) {
+                            booking.refundStatus = 'refunded';
+                            booking.refundedAt = new Date().toISOString();
+                            DB.saveBookings();
+                            refreshAll();
+                            if (window.Toast) window.Toast.info('Razorpay reports this payment was already fully refunded.');
+                        } else {
+                            if (window.Toast) window.Toast.error('Refund FAILED: ' + refundErr);
+                        }
                     }
                 } catch (e) {
                     if (window.Toast) window.Toast.error('Refund threw: ' + (e && e.message));
@@ -976,8 +985,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                   ' to the original payment method (Razorpay)';
                 } else if (isRzp) {
                     confirmMsg += '\n• No refund (0–7 day no-refund slab)';
-                } else {
-                    confirmMsg += '\n• No auto-refund (FREE / non-Razorpay payment)';
                 }
                 if (!confirm(confirmMsg)) return;
 
