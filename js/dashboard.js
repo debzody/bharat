@@ -663,17 +663,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         'Refunded ' + formatCurrency(b.refundAmount || 0) +
                         '</span>';
             } else if (isRzp && status === 'cancelled') {
-                // Cancelled rows may show a refund button ONLY when the
-                // customer-facing slab suggests a positive amount.
+                // Cancelled rows show a refund button so admin can perform
+                // goodwill or partial refunds at their discretion.
                 var suggested = (window.Refund && window.Refund.computeRefundAmount)
                     ? window.Refund.computeRefundAmount(b) : 0;
-                if (suggested > 0) {
-                    html += ' <button class="action-btn action-btn-refund" ' +
-                            'style="' + refundStyle + '" data-id="' + b.id +
-                            '" title="Refund ₹' + suggested.toLocaleString('en-IN') +
-                            ' to the original payment method via Razorpay (admin can override the amount).">Refund ' +
-                            formatCurrency(suggested) + '</button>';
-                }
+                html += ' <button class="action-btn action-btn-refund" ' +
+                        'style="' + refundStyle + '" data-id="' + b.id +
+                        '" title="Issue refund via Razorpay (admin can override the amount).">' +
+                        (suggested > 0 ? 'Refund ' + formatCurrency(suggested) : 'Refund...') + '</button>';
             }
 
             return html || '-';
