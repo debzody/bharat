@@ -983,6 +983,69 @@ document.addEventListener('DOMContentLoaded', function () {
                             DB.saveBookings();
                             refreshAll();
                             if (window.Toast) window.Toast.info('Razorpay reports this payment was already fully refunded.');
+                        } else if (/greater than.*payment amount|exceeds.*payment/i.test(refundErr)) {
+                            // The refund amount exceeds what Razorpay has on record for
+                            // this payment. This happens when:
+                            //   a) advance_paid in Firestore is stale/wrong
+                            //   b) a partial refund was already issued outside the dashboard
+                            //   c) the payment was a test ₹1 charge
+                            // Fetch the real Razorpay payment amount and re-open the dialog
+                            // so admin can enter the correct (lower) amount.
+                            let actualAmount = 0;
+                            try {
+                                const liveData = await fetchRazorpayPaymentStatus(booking.payment_id);
+                                if (liveData && liveData.amount) {
+                                    actualAmount = Number(liveData.amount);
+                                }
+                            } catch (_) {}
+                            btn.disabled = false;
+                            btn.innerHTML = origLabel;
+                            if (window.Toast) {
+                                window.Toast.error(
+                                    'Refund amount exceeds the actual Razorpay payment.' +
+                                    (actualAmount > 0
+                                        ? ' The payment on record is ' + formatCurrency(actualAmount) +
+                                          '. Please enter an amount ≤ ' + formatCurrency(actualAmount) + '.'
+                                        : ' Please enter a lower amount.'),
+                                    { duration: 10000 }
+                                );
+                            }
+                            // Re-open dialog with corrected cap
+                            const correctedAdvance = actualAmount > 0 ? actualAmount : advance;
+                            const correctedAmount = await openRefundDialog(booking, {
+                                suggested: Math.min(suggested, correctedAdvance),
+                                advance: correctedAdvance
+                            });
+                            if (correctedAmount == null) return;
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refunding…';
+                            try {
+                                const retry = await window.Refund.processRefund(booking, {
+                                    amount: correctedAmount,
+                                    reason: 'Manual refund from admin dashboard by ' + refundedBy + ' (corrected amount)'
+                                });
+                                if (retry && retry.ok && !retry.skipped) {
+                                    await window.Refund.saveRefundToBooking(booking, retry);
+                                    window.Refund.logRefund(booking, retry, refundedBy);
+                                    booking.refundId = retry.refundId;
+                                    booking.refundAmount = retry.amount;
+                                    booking.refundStatus = retry.status || 'pending';
+                                    booking.refundedAt = new Date().toISOString();
+                                    DB.saveBookings();
+                                    refreshAll();
+                                    if (window.Toast) {
+                                        window.Toast.success(
+                                            '₹' + Number(retry.amount).toLocaleString('en-IN') +
+                                            ' refund ' + (retry.status === 'processed' ? 'processed' : 'initiated') +
+                                            '. Razorpay ID: ' + retry.refundId
+                                        );
+                                    }
+                                } else {
+                                    if (window.Toast) window.Toast.error('Refund FAILED: ' + (retry && retry.error || 'unknown'));
+                                }
+                            } catch (e2) {
+                                if (window.Toast) window.Toast.error('Refund threw: ' + (e2 && e2.message));
+                            }
                         } else {
                             if (window.Toast) window.Toast.error('Refund FAILED: ' + refundErr);
                         }
