@@ -374,11 +374,14 @@ document.addEventListener('DOMContentLoaded', function () {
             //   • cancelled + refundable  → yellow
             //   • refunded                → red
             if (b && b.refundId) {
-                rowStyle = 'background:#fff5f5;';
+                // Slightly deeper soft red
+                rowStyle = 'background:#fbe4e4;';
             } else if (rowStatus === 'cancelled' && rowSuggested > 0) {
-                rowStyle = 'background:#fffaf0;';
+                // Slightly deeper soft yellow
+                rowStyle = 'background:#fff1d6;';
             } else if (rowStatus !== 'cancelled') {
-                rowStyle = 'background:#f4fbf6;';
+                // Slightly deeper soft green
+                rowStyle = 'background:#e5f5e9;';
             }
             return `
             <tr style="${rowStyle}">
