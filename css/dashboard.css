@@ -430,6 +430,41 @@
     color: #fff;
 }
 
+/* Refund button — orange-tinted to clearly distinguish from Cancel.
+   Same shape as the cancel button so they line up neatly side-by-side
+   in the bookings table action cell. The amount is rendered inside the
+   button so the admin sees what they're sending before clicking. */
+.action-btn-refund {
+    background: #fff5e6;
+    color: #a04000;
+    border: 1px solid #f1c27d;
+}
+.action-btn-refund:hover {
+    background: #e67e22;
+    color: #fff;
+    border-color: #e67e22;
+}
+.action-btn-refund:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+
+/* "Refunded ₹X" pill that replaces the Refund button after a successful
+   refund. Greyed out so it's obviously a passive status, not an action. */
+.badge-refunded {
+    display: inline-block;
+    background: #ecf0f1;
+    color: #5a6877;
+    border: 1px solid #cfd9df;
+    padding: .25rem .55rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .2px;
+    margin-left: .25rem;
+    cursor: help;
+}
+
 /* Package Performance Cards */
 .packages-grid {
     display: grid;
