@@ -106,29 +106,51 @@ document.addEventListener('DOMContentLoaded', function () {
         settings: 'Site Settings'
     };
 
+    // Persist the last-open dashboard tab so refreshes/reloads don't
+    // kick the admin back to Overview every time.
+    function activateSection(section, opts) {
+        opts = opts || {};
+        if (!section) section = 'overview';
+
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        const activeLink = document.querySelector('.sidebar-link[data-section="' + section + '"]');
+        if (activeLink) activeLink.classList.add('active');
+
+        sections.forEach(s => s.classList.remove('active'));
+        const target = document.getElementById('section-' + section);
+        if (target) target.classList.add('active');
+
+        if (pageTitle) pageTitle.textContent = sectionTitles[section] || 'Dashboard';
+
+        try { localStorage.setItem('dashboardActiveSection', section); } catch (_) {}
+
+        // Refresh data on tab switch
+        if (section === 'customers') {
+            if (typeof refreshCustomers === 'function') refreshCustomers();
+        }
+
+        // Close mobile nav drawer (if open) when a section is selected
+        if (!opts.keepNavOpen) document.body.classList.remove('nav-open');
+    }
+
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function (e) {
             e.preventDefault();
-            const section = this.dataset.section;
-
-            sidebarLinks.forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
-
-            sections.forEach(s => s.classList.remove('active'));
-            const target = document.getElementById('section-' + section);
-            if (target) target.classList.add('active');
-
-            if (pageTitle) pageTitle.textContent = sectionTitles[section] || 'Dashboard';
-
-            // Refresh data on tab switch
-            if (section === 'customers') {
-                if (typeof refreshCustomers === 'function') refreshCustomers();
-            }
-
-            // Close mobile nav drawer (if open) when a section is selected
-            document.body.classList.remove('nav-open');
+            activateSection(this.dataset.section || 'overview');
         });
     });
+
+    // Restore last-open tab on hard refresh.
+    try {
+        var savedSection = localStorage.getItem('dashboardActiveSection') || 'overview';
+        // Staff users cannot open hidden/admin-only sections. Fall back to
+        // packages (their default) if the saved section isn't visible.
+        if (window.__dashRole === 'staff') {
+            var staffAllowed = { packages: true, gallery: true };
+            if (!staffAllowed[savedSection]) savedSection = 'packages';
+        }
+        activateSection(savedSection, { keepNavOpen: true });
+    } catch (_) {}
 
     // Mobile hamburger: toggle topnav drawer (matches main site behaviour)
     const hamburgerBtn = document.getElementById('hamburgerBtn');
