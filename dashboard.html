@@ -370,27 +370,36 @@
                     </button>
                 </div>
             </div>
-            <div class="table-card">
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="bookingSelectAll" aria-label="Select all visible bookings"></th>
-                                <th>ID</th>
-                                <th>Package</th>
-                                <th>Customer</th>
-                                <th>Duration</th>
-                                <th>Guests</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="allBookingsBody">
-                            <tr><td colspan="10" class="table-empty">No bookings yet</td></tr>
-                        </tbody>
-                    </table>
+            <div class="inbox-split" id="bookingsSplit" style="grid-template-columns:minmax(520px, 1.65fr) 6px minmax(280px, 1fr);height:auto;min-height:520px;">
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="bookingSelectAll" aria-label="Select all visible bookings"></th>
+                                    <th>ID</th>
+                                    <th>Package</th>
+                                    <th>Customer</th>
+                                    <th>Duration</th>
+                                    <th>Guests</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allBookingsBody">
+                                <tr><td colspan="10" class="table-empty">No bookings yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="inbox-divider" aria-hidden="true"></div>
+                <div class="inbox-preview-wrap" id="bookingPreview">
+                    <div class="inbox-preview-empty">
+                        <i class="fas fa-receipt"></i>
+                        <p>Select a booking row to view customer and package details.</p>
+                    </div>
                 </div>
             </div>
         </section>
