@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
     const selectedBookingIds = new Set();
+    let activeBookingPreviewId = null;
 
     // ── Firestore booking loader (admin-only) ───────────────────
     // Pulls every doc from the `bookings/*` collection. Tagged with
@@ -457,6 +458,61 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── All Bookings ────────────────────────────────────────────
+    function renderBookingPreview(booking) {
+        const preview = document.getElementById('bookingPreview');
+        if (!preview) return;
+        if (!booking) {
+            preview.innerHTML = '<div class="inbox-preview-empty">' +
+                '<i class="fas fa-receipt"></i>' +
+                '<p>Select a booking row to view customer and package details.</p>' +
+            '</div>';
+            return;
+        }
+
+        const pkg = PACKAGES[booking.package_name] || {};
+        const traveler = booking.traveler || {};
+        const customerName = traveler.name || booking.customerName || booking.fullName || getUserName(booking.userId);
+        const customerEmail = traveler.email || booking.customerEmail || booking.email || '-';
+        const customerPhone = traveler.phone || booking.customerPhone || booking.phone || '-';
+        const bookingRef = booking.booking_ref || booking.id || '-';
+        const amountPaid = booking.advance_paid || booking.amountPaid || 0;
+        const balanceDue = booking.balance_due || booking.balanceDue || 0;
+        const packagePrice = booking.price || pkg.price || 0;
+        const packageName = getPackageName(booking.package_name);
+        const tripDate = booking.travel_date || booking.date || '';
+        const status = String(booking.status || 'confirmed').toUpperCase();
+
+        preview.innerHTML = ''
+            + '<div class="ipv-head">'
+            +   '<h3 class="ipv-subject">' + escHtml(packageName) + '</h3>'
+            +   '<div class="ipv-meta">'
+            +     '<div class="ipv-row"><strong>Booking:</strong> ' + escHtml(String(bookingRef)) + '</div>'
+            +     '<div class="ipv-row"><strong>Status:</strong> ' + escHtml(status) + '</div>'
+            +     '<div class="ipv-row"><strong>Created:</strong> ' + escHtml(formatDate(booking.createdAt)) + '</div>'
+            +   '</div>'
+            + '</div>'
+            + '<div class="ipv-body">'
+            +   '<div class="rd-summary" style="margin-bottom:1rem;">'
+            +     '<div class="rd-row"><span class="rd-k">Customer</span><span class="rd-v">' + escHtml(String(customerName || '-')) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Email</span><span class="rd-v">' + escHtml(String(customerEmail || '-')) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Phone</span><span class="rd-v">' + escHtml(String(customerPhone || '-')) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Guests</span><span class="rd-v">' + escHtml(String(booking.guests || booking.adults || '-')) + '</span></div>'
+            +   '</div>'
+            +   '<div class="rd-summary" style="margin-bottom:1rem;">'
+            +     '<div class="rd-row"><span class="rd-k">Package</span><span class="rd-v">' + escHtml(String(packageName)) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Duration</span><span class="rd-v">' + escHtml(String(booking.duration || '-')) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Travel date</span><span class="rd-v">' + escHtml(tripDate ? formatDate(tripDate) : '-') + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Payment ID</span><span class="rd-v">' + escHtml(String(booking.payment_id || '-')) + '</span></div>'
+            +   '</div>'
+            +   '<div class="rd-summary">'
+            +     '<div class="rd-row"><span class="rd-k">Package amount</span><span class="rd-v">' + escHtml(formatCurrency(packagePrice)) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Advance paid</span><span class="rd-v">' + escHtml(formatCurrency(amountPaid)) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Balance due</span><span class="rd-v">' + escHtml(formatCurrency(balanceDue)) + '</span></div>'
+            +     '<div class="rd-row"><span class="rd-k">Refund</span><span class="rd-v">' + escHtml(booking.refundAmount ? formatCurrency(booking.refundAmount) : '-') + '</span></div>'
+            +   '</div>'
+            + '</div>';
+    }
+
     function renderAllBookings(filter, search) {
         const tbody = document.getElementById('allBookingsBody');
         let bookings = [...DB.bookings].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -476,8 +532,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (bookings.length === 0) {
             selectedBookingIds.clear();
+            activeBookingPreviewId = null;
             tbody.innerHTML = '<tr><td colspan="10" class="table-empty">No bookings found</td></tr>';
             updateBookingsBulkUi();
+            renderBookingPreview(null);
             return;
         }
 
@@ -573,8 +631,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const bookingId = String(b.id);
             const isSelected = selectedBookingIds.has(bookingId);
+            const previewSelected = activeBookingPreviewId === bookingId;
             return `
-            <tr style="${rowStyle}">
+            <tr style="${rowStyle}" class="${previewSelected ? 'selected' : ''}" data-booking-row="1" data-id="${bookingId}">
                 <td><input type="checkbox" class="booking-row-select" data-id="${bookingId}" ${isSelected ? 'checked' : ''} aria-label="Select booking ${bookingId}"></td>
                 <td>#${String(b.id).slice(-6)}</td>
                 <td>${getPackageName(b.package_name)}</td>
@@ -592,12 +651,32 @@ document.addEventListener('DOMContentLoaded', function () {
         Array.prototype.forEach.call(
             tbody.querySelectorAll('.booking-row-select'),
             function (cb) {
+                cb.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
                 cb.addEventListener('change', function () {
                     const id = String(this.dataset.id || '');
                     if (!id) return;
                     if (this.checked) selectedBookingIds.add(id);
                     else selectedBookingIds.delete(id);
                     updateBookingsBulkUi();
+                });
+            }
+        );
+
+        Array.prototype.forEach.call(
+            tbody.querySelectorAll('tr[data-booking-row="1"]'),
+            function (tr) {
+                tr.addEventListener('click', function (e) {
+                    if (e.target.closest('button, a, input, label')) return;
+                    const id = String(this.dataset.id || '');
+                    const booking = bookings.find((row) => String(row.id) === id);
+                    activeBookingPreviewId = id || null;
+                    renderBookingPreview(booking || null);
+                    renderAllBookings(
+                        bookingFilter ? bookingFilter.value : 'all',
+                        bookingSearch ? bookingSearch.value : ''
+                    );
                 });
             }
         );
@@ -628,6 +707,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         updateBookingsBulkUi();
+        if (!activeBookingPreviewId && bookings.length) {
+            activeBookingPreviewId = String(bookings[0].id);
+        }
+        const previewBooking = bookings.find((row) => String(row.id) === String(activeBookingPreviewId)) || null;
+        renderBookingPreview(previewBooking);
 
         // Stand-alone Refund handler — issues a refund without touching
         // the booking's status. Useful for goodwill refunds, partial
