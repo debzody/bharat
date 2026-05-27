@@ -728,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 html += ' <button class="action-btn action-btn-refund" ' +
                         'style="' + refundStyle + '" data-id="' + b.id +
                         '" title="Issue refund via Razorpay (admin can override the amount).">' +
-                        (suggested > 0 ? 'Refund ' + formatCurrency(suggested) : 'Refund...') + '</button>';
+                        (suggested > 0 ? 'Refund ' + formatCurrency(suggested) : 'Issue Refund') + '</button>';
             }
 
             return html || '-';
