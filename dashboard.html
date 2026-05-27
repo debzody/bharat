@@ -1824,12 +1824,20 @@
             { email: 'cancellation@andamanvoyages.in', label: 'Cancellations' },
             { email: 'enquiries@andamanvoyages.in',    label: 'Enquiries'     }
         ];
+
+        // Razorpay refund Worker (workers/refund/). Admin-only — calls
+        // Razorpay's refunds API server-side so the Razorpay key secret
+        // never reaches the browser. Used by the Cancel button in the
+        // Bookings tab to auto-process refunds based on the
+        // sliding-scale policy. Set this AFTER deploying the Worker.
+        window.REFUND_WORKER_URL = 'https://refund.pittu-das2.workers.dev';
     </script>
     <script src="js/firebase-config.js?v=21"></script>
     <script src="js/dataStore.js?v=27"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
-    <script src="js/dashboard.js?v=28"></script>
+    <script src="js/refund.js?v=1"></script>
+    <script src="js/dashboard.js?v=29"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=8"></script>

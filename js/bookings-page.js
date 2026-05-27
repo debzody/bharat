@@ -323,9 +323,42 @@
             console.warn('[bookings-page] BookingEmails helper not loaded — cancellation email skipped.');
         }
 
-        // 5. Notify user
+        // 5. Auto-process refund (best-effort, runs in background).
+        //    Skips silently for FREE bookings, 0–7 day no-refund slabs,
+        //    or when REFUND_WORKER_URL isn't configured. Only logged-in
+        //    admins can actually trigger Razorpay refunds (the Worker
+        //    enforces this); for customer self-service the refund
+        //    request is parked for admin approval — they get the
+        //    cancellation email and follow up manually.
+        var refundMsg = '';
+        if (window.Refund && window.Refund.processRefund) {
+            try {
+                var refund = await window.Refund.processRefund(booking, {
+                    reason: 'Customer cancellation from /bookings'
+                });
+                if (refund && refund.ok && !refund.skipped) {
+                    await window.Refund.saveRefundToBooking(booking, refund);
+                    window.Refund.logRefund(booking, refund, 'customer-self-service');
+                    refundMsg = ' ₹' + Number(refund.amount).toLocaleString('en-IN') +
+                                ' refund ' + (refund.status === 'processed' ? 'processed' : 'initiated') +
+                                ' to your original payment method (3–5 working days).';
+                    render();   // re-render so the card shows refund status
+                } else if (refund && refund.skipped) {
+                    console.log('[bookings-page] Refund skipped:', refund.reason);
+                } else if (refund && !refund.ok) {
+                    // Most common: customer is not an admin → Worker
+                    // returns 403. That's fine; admin will refund manually
+                    // from /dashboard. Just log it.
+                    console.log('[bookings-page] Refund deferred to admin:', refund.error);
+                }
+            } catch (err) {
+                console.warn('[bookings-page] Refund call threw:', err);
+            }
+        }
+
+        // 6. Notify user
         if (fsOk) {
-            showToast('success', 'Booking cancelled. Our team will contact you shortly regarding refunds.');
+            showToast('success', 'Booking cancelled.' + (refundMsg || ' Our team will contact you shortly regarding refunds.'));
         } else {
             showToast('warning', 'Cancellation marked locally. If you do not hear from us in 1–2 days, please call +91 88801 95191.');
         }
