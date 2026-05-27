@@ -152,6 +152,32 @@ document.addEventListener('DOMContentLoaded', function () {
         activateSection(savedSection, { keepNavOpen: true });
     } catch (_) {}
 
+    // Make Overview stat tiles navigable:
+    //   Total Bookings      → Bookings tab
+    //   Total Revenue       → Revenue tab
+    //   Total Customers     → Customers tab
+    //   Confirmed           → Bookings tab
+    // This turns the overview cards into quick shortcuts.
+    (function wireOverviewTiles() {
+        var links = [
+            { id: 'totalBookings',     section: 'bookings'  },
+            { id: 'totalRevenue',      section: 'revenue'   },
+            { id: 'totalCustomers',    section: 'customers' },
+            { id: 'confirmedBookings', section: 'bookings'  }
+        ];
+        links.forEach(function (cfg) {
+            var valEl = document.getElementById(cfg.id);
+            if (!valEl) return;
+            var card = valEl.closest && valEl.closest('.stat-card');
+            if (!card) return;
+            card.style.cursor = 'pointer';
+            card.title = 'Open ' + (sectionTitles[cfg.section] || cfg.section);
+            card.addEventListener('click', function () {
+                activateSection(cfg.section);
+            });
+        });
+    })();
+
     // Mobile hamburger: toggle topnav drawer (matches main site behaviour)
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     if (hamburgerBtn) {
@@ -208,6 +234,25 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
         document.getElementById('totalCustomers').textContent = customerCount;
         document.getElementById('confirmedBookings').textContent = confirmed.length;
+
+        // Re-bind the Overview tiles on every render. Some browsers/theme
+        // states can replace or repaint enough of the stat cards that the
+        // one-time DOMContentLoaded listeners feel flaky. Setting the click
+        // handler directly on the card each render makes the behaviour
+        // deterministic.
+        [
+            ['totalBookings', 'bookings'],
+            ['totalRevenue', 'revenue'],
+            ['totalCustomers', 'customers'],
+            ['confirmedBookings', 'bookings']
+        ].forEach(function (pair) {
+            var valEl = document.getElementById(pair[0]);
+            if (!valEl || !valEl.closest) return;
+            var card = valEl.closest('.stat-card');
+            if (!card) return;
+            card.style.cursor = 'pointer';
+            card.onclick = function () { activateSection(pair[1]); };
+        });
 
         // Donut chart
         const total = bookings.length;
