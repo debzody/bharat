@@ -227,6 +227,45 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Build the action-cell HTML for each booking. Two independent
+        // buttons so the admin can refund WITHOUT cancelling (e.g. partial
+        // goodwill refund, or a customer who paid twice) AND cancel
+        // separately. Both buttons hide / morph based on current state:
+        //   • Cancel  → only when status !== 'cancelled'
+        //   • Refund  → only on Razorpay-paid bookings that haven't been
+        //               refunded yet. After a refund the cell shows a
+        //               muted "Refunded ₹X" badge instead of the button.
+        function actionCellHtml(b) {
+            var html = '';
+            var status = b.status || 'confirmed';
+            var canCancel = status !== 'cancelled';
+            var isRzp = window.Refund && window.Refund.isRazorpayPayment &&
+                        window.Refund.isRazorpayPayment(b);
+            var alreadyRefunded = !!(b && b.refundId);
+
+            if (canCancel) {
+                html += '<button class="action-btn action-btn-cancel" data-id="' + b.id + '">Cancel</button>';
+            }
+            if (alreadyRefunded) {
+                html += ' <span class="badge badge-refunded" title="Refund ID ' + (b.refundId || '') + '">' +
+                        'Refunded ' + formatCurrency(b.refundAmount || 0) +
+                        '</span>';
+            } else if (isRzp) {
+                // Pre-compute the suggested refund so the button label
+                // shows the amount the admin will be sending — saves a
+                // click and matches the cancel-flow UX.
+                var suggested = (window.Refund && window.Refund.computeRefundAmount)
+                    ? window.Refund.computeRefundAmount(b) : 0;
+                if (suggested > 0) {
+                    html += ' <button class="action-btn action-btn-refund" data-id="' + b.id +
+                            '" title="Refund ₹' + suggested.toLocaleString('en-IN') +
+                            ' to the original payment method via Razorpay">Refund ' +
+                            formatCurrency(suggested) + '</button>';
+                }
+            }
+            return html || '-';
+        }
+
         tbody.innerHTML = bookings.map(b => `
             <tr>
                 <td>#${String(b.id).slice(-6)}</td>
@@ -237,13 +276,103 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${formatCurrency(b.price || 0)}</td>
                 <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
                 <td>${formatDate(b.createdAt)}</td>
-                <td>
-                    ${(b.status || 'confirmed') !== 'cancelled'
-                        ? `<button class="action-btn action-btn-cancel" data-id="${b.id}">Cancel</button>`
-                        : '-'}
-                </td>
+                <td>${actionCellHtml(b)}</td>
             </tr>
         `).join('');
+
+        // Stand-alone Refund handler — issues a refund without touching
+        // the booking's status. Useful for goodwill refunds, partial
+        // refunds, or fixing duplicate charges. Cancellation has its
+        // own button below; the two flows are intentionally separate.
+        tbody.querySelectorAll('.action-btn-refund').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const rawId = this.dataset.id;
+                const booking = DB.bookings.find(b =>
+                    String(b.id) === String(rawId)
+                );
+                if (!booking) return;
+
+                if (!window.Refund || !window.Refund.processRefund) {
+                    if (window.Toast) window.Toast.error('Refund helper not loaded.');
+                    return;
+                }
+                if (booking.refundId) {
+                    if (window.Toast) window.Toast.info('Already refunded (' + booking.refundId + ').');
+                    return;
+                }
+
+                // Show the suggested amount in the confirm so the admin
+                // can sanity-check the slab maths before sending.
+                const suggested = window.Refund.computeRefundAmount
+                    ? window.Refund.computeRefundAmount(booking) : 0;
+                if (suggested <= 0) {
+                    if (window.Toast) window.Toast.warning('Nothing to refund (0–7 day no-refund slab or zero advance).');
+                    return;
+                }
+
+                const me = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                const refundedBy = (me && (me.email || me.username)) || 'admin';
+
+                // Optional override — let the admin type a custom amount
+                // (e.g. partial refund). Empty / cancel → use suggested.
+                const customStr = window.prompt(
+                    'Refund this booking?\n\n' +
+                    'Booking ref: ' + (booking.booking_ref || booking.id) + '\n' +
+                    'Customer: ' + ((booking.traveler && booking.traveler.name) || '-') + '\n' +
+                    'Suggested refund (per cancellation slab): ₹' + suggested.toLocaleString('en-IN') + '\n\n' +
+                    'Enter a custom amount in ₹ to override, or leave blank to use the suggested.\n' +
+                    'The refund goes to the original Razorpay payment method.',
+                    String(suggested)
+                );
+                // null = user pressed Cancel → abort.
+                if (customStr === null) return;
+                let amount = suggested;
+                if (customStr.trim() !== '') {
+                    const n = Number(customStr.replace(/[^0-9.]/g, ''));
+                    if (!isFinite(n) || n <= 0) {
+                        if (window.Toast) window.Toast.error('Invalid refund amount.');
+                        return;
+                    }
+                    amount = Math.min(n, Number(booking.advance_paid) || n);
+                }
+
+                const origLabel = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refunding…';
+                try {
+                    const refund = await window.Refund.processRefund(booking, {
+                        amount: amount,
+                        reason: 'Manual refund from admin dashboard by ' + refundedBy
+                    });
+                    if (refund && refund.ok && !refund.skipped) {
+                        await window.Refund.saveRefundToBooking(booking, refund);
+                        window.Refund.logRefund(booking, refund, refundedBy);
+                        booking.refundId = refund.refundId;
+                        booking.refundAmount = refund.amount;
+                        booking.refundStatus = refund.status || 'pending';
+                        booking.refundedAt = new Date().toISOString();
+                        DB.saveBookings();
+                        refreshAll();
+                        if (window.Toast) {
+                            window.Toast.success(
+                                '₹' + Number(refund.amount).toLocaleString('en-IN') +
+                                ' refund ' + (refund.status === 'processed' ? 'processed' : 'initiated') +
+                                '. Razorpay ID: ' + refund.refundId
+                            );
+                        }
+                    } else if (refund && refund.skipped) {
+                        if (window.Toast) window.Toast.info('Refund skipped: ' + refund.reason);
+                    } else {
+                        if (window.Toast) window.Toast.error('Refund FAILED: ' + (refund && refund.error || 'unknown'));
+                    }
+                } catch (e) {
+                    if (window.Toast) window.Toast.error('Refund threw: ' + (e && e.message));
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = origLabel;
+                }
+            });
+        });
 
         // Attach cancel handlers — match by string OR numeric id so that
         // legacy numeric booking ids and the new string "TEST-..." ids
