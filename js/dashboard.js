@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const isRazorpay = window.Refund && window.Refund.isRazorpayPayment && window.Refund.isRazorpayPayment(booking);
-        const isAlreadyRefunded = !!booking.refundId;
+        const isAlreadyRefunded = !!booking.refundId || !!(liveStatus && String(liveStatus.status || '').toLowerCase() === 'refunded');
         const isCancelled = String(booking.status || '').toLowerCase() === 'cancelled';
         let actionsHtml = '';
         if (!isCancelled) {
