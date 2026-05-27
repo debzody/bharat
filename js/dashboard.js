@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (bookings.length === 0) {
             selectedBookingIds.clear();
             activeBookingPreviewId = null;
-            tbody.innerHTML = '<tr><td colspan="10" class="table-empty">No bookings found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="table-empty">No bookings found</td></tr>';
             updateBookingsBulkUi();
             renderBookingPreview(null);
             return;
@@ -654,6 +654,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const bookingId = String(b.id);
             const isSelected = selectedBookingIds.has(bookingId);
             const previewSelected = activeBookingPreviewId === bookingId;
+            const paymentState = String(
+                b.payment_status ||
+                b.paymentStatus ||
+                b.razorpay_status ||
+                b.status_text ||
+                (b.refundId ? 'refunded' : '')
+            ).trim() || '-';
             return `
             <tr style="${rowStyle}" class="${previewSelected ? 'selected' : ''}" data-booking-row="1" data-id="${bookingId}">
                 <td><input type="checkbox" class="booking-row-select" data-id="${bookingId}" ${isSelected ? 'checked' : ''} aria-label="Select booking ${bookingId}"></td>
@@ -664,6 +671,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${b.guests || '-'}</td>
                 <td>${formatCurrency(b.price || 0)}</td>
                 <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
+                <td>${escHtml(paymentState)}</td>
                 <td>${formatDate(b.createdAt)}</td>
                 <td>${actionCellHtml(b)}</td>
             </tr>
