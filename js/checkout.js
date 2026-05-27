@@ -12,7 +12,7 @@
     // Firestore). When that flag is true AND `razorpayTestKeyId` is
     // populated, we use the test key here. Everything else (refund
     // Worker secrets, booking flow, emails) is unchanged.
-    var RAZORPAY_KEY_LIVE = 'rzp_live_SLfG8nnKN3tXPC';
+    var RAZORPAY_KEY_LIVE = 'rzp_live_SuU1aVUD8Ce71w';
     var RAZORPAY_KEY = RAZORPAY_KEY_LIVE;            // overridden async by resolveRazorpayKey()
     var GST_RATE = 0.05;
 
