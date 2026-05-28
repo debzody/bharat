@@ -6,7 +6,7 @@
     padding: 0;
     background: #f0f2f5;
     min-height: 100vh;
-    font-size: 13px;   /* compact dashboard — matches design spec */
+    font-size: 11.5px;   /* compact dashboard — matches design spec */
 }
 
 /* Override .topbar-logo on dashboard so the brand reads "Admin Dashboard" in teal */
