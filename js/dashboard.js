@@ -3660,6 +3660,156 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Push-Notification Ads kill switch (Settings) ───────────
+    // Mirrors the consoleLock / paymentsEnabled patterns: a Firestore-
+    // backed boolean (settings.pushAdsEnabled) plus a per-device kill
+    // shortcut. js/push-ads-init.js reads the same flag via SettingsStore
+    // on every public page-load and either registers OR unregisters
+    // /sw.js based on the value, so flipping this off here propagates
+    // to all visitors within ~1 minute (no redeploy).
+    const pushAdsToggle      = document.getElementById('pushAdsEnabledToggle');
+    const pushAdsBadge       = document.getElementById('pushAdsBadge');
+    const pushAdsInfo        = document.getElementById('pushAdsInfo');
+    const savePushAdsBtn     = document.getElementById('savePushAdsBtn');
+    const killPushAdsLocalBtn = document.getElementById('killPushAdsThisDeviceBtn');
+
+    function paintPushAdsBadge(on) {
+        if (!pushAdsBadge) return;
+        if (on) {
+            pushAdsBadge.textContent = 'LIVE';
+            pushAdsBadge.style.background = '#c0392b';
+            pushAdsBadge.title = 'Push-notification ads are LIVE for non-admin visitors. Booking pages stay ad-free.';
+        } else {
+            pushAdsBadge.textContent = 'OFF';
+            pushAdsBadge.style.background = '#7a8b96';
+            pushAdsBadge.title = 'Push-notification ads are disabled site-wide. Existing subscribers will be unregistered on their next visit.';
+        }
+    }
+
+    function paintPushAdsInfo(on) {
+        if (!pushAdsInfo) return;
+        if (on) {
+            pushAdsInfo.innerHTML =
+                '🔔 <strong>Active</strong> &mdash; <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">/sw.js</code> ' +
+                'is registered on every public page for non-admin visitors.';
+            pushAdsInfo.style.color = '#a04000';
+        } else {
+            pushAdsInfo.innerHTML =
+                '🚫 <strong>Disabled site-wide</strong> &mdash; visitors that previously opted in will be ' +
+                'auto-unregistered on their next page-load.';
+            pushAdsInfo.style.color = '#0a5a68';
+        }
+    }
+
+    async function loadPushAdsSetting() {
+        if (!window.SettingsStore) return;
+        try {
+            const s = await window.SettingsStore.load();
+            // Default-on: matches the user's "full integration; accept the risks" decision.
+            const on = s.pushAdsEnabled !== false;
+            if (pushAdsToggle) pushAdsToggle.checked = on;
+            paintPushAdsBadge(on);
+            paintPushAdsInfo(on);
+        } catch (e) {
+            console.warn('Could not load push-ads setting:', e);
+            paintPushAdsBadge(true);
+            paintPushAdsInfo(true);
+        }
+    }
+    loadPushAdsSetting();
+
+    // Live preview as the admin toggles, before they hit Save.
+    if (pushAdsToggle) {
+        pushAdsToggle.addEventListener('change', () => {
+            const on = !!pushAdsToggle.checked;
+            paintPushAdsBadge(on);
+            paintPushAdsInfo(on);
+        });
+    }
+
+    if (savePushAdsBtn) {
+        savePushAdsBtn.addEventListener('click', async () => {
+            if (!window.SettingsStore) {
+                if (window.Toast) window.Toast.error('Settings store not loaded. Refresh the page.');
+                return;
+            }
+            const on = !!(pushAdsToggle && pushAdsToggle.checked);
+            // Friendly confirm when turning OFF — there's no take-back for
+            // already-subscribed users (Ezoic/AdSense will re-scan within
+            // their compliance windows). Just make sure the admin meant it.
+            if (!on) {
+                const cached = (window.SettingsStore.cached && window.SettingsStore.cached()) || {};
+                const wasOn = cached.pushAdsEnabled !== false;
+                if (wasOn && typeof window.confirm === 'function' &&
+                    !window.confirm(
+                        '🚫 Disable push-notification ads site-wide?\n\n' +
+                        '• New visitors will not see the prompt.\n' +
+                        '• Existing subscribers will be auto-unregistered on their next page-load.\n' +
+                        '• You can flip this back on anytime.\n\n' +
+                        'Continue?'
+                    )) {
+                    pushAdsToggle.checked = wasOn;
+                    paintPushAdsBadge(wasOn);
+                    paintPushAdsInfo(wasOn);
+                    return;
+                }
+            }
+            savePushAdsBtn.disabled = true;
+            savePushAdsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+            try {
+                await window.SettingsStore.save({ pushAdsEnabled: on });
+                paintPushAdsBadge(on);
+                paintPushAdsInfo(on);
+                if (window.Toast) {
+                    window.Toast.success(on
+                        ? 'Push-notification ads enabled site-wide. Worker re-registers on visitors\' next page-load.'
+                        : 'Push-notification ads disabled site-wide. Existing subscribers will be unregistered on their next visit.');
+                }
+            } catch (err) {
+                if (window.Toast) window.Toast.error(err.message || 'Failed to save push-ads setting.');
+                else alert('❌ ' + (err.message || 'Failed to save.'));
+            } finally {
+                setTimeout(() => {
+                    savePushAdsBtn.disabled = false;
+                    savePushAdsBtn.innerHTML = '<i class="fas fa-save"></i> Save Push-Ads Setting';
+                }, 1500);
+            }
+        });
+    }
+
+    // "Kill on this device" — uses the public PushAds API exposed by
+    // js/push-ads-init.js to set the local kill switch + tear down the
+    // worker on the admin's current browser, without flipping the
+    // global Firestore setting. Useful for QA / "I want to feel what
+    // a real visitor sees but without the prompt".
+    if (killPushAdsLocalBtn) {
+        killPushAdsLocalBtn.addEventListener('click', async () => {
+            // js/push-ads-init.js is only loaded on PUBLIC pages, so
+            // window.PushAds is unavailable on the dashboard. Fall back
+            // to setting the localStorage flag directly.
+            try {
+                if (window.PushAds && typeof window.PushAds.disable === 'function') {
+                    await window.PushAds.disable();
+                } else {
+                    try { localStorage.setItem('disable_push_ads', '1'); } catch (_) {}
+                    // We can't unregister /sw.js from the dashboard origin
+                    // because it was installed under '/'. The next time the
+                    // admin visits a public page, push-ads-init.js will see
+                    // the kill flag and call unregisterSw() automatically.
+                }
+                if (window.Toast) {
+                    window.Toast.success(
+                        'Push-ads killed on this device. The next public page-load will unregister /sw.js. ' +
+                        'Re-enable with PushAds.enable() in DevTools console.',
+                        { duration: 8000 }
+                    );
+                }
+            } catch (err) {
+                if (window.Toast) window.Toast.error('Failed to kill local push ads: ' + (err && err.message));
+            }
+        });
+    }
+
     // ── Razorpay LIVE / TEST mode toggle (Settings) ───────────
     // Reads & writes razorpayTestMode + razorpayTestKeyId on
     // /settings/site. js/checkout.js then auto-picks up the
