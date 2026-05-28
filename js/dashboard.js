@@ -527,9 +527,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const packageName = getPackageName(booking.package_name);
         const tripDate = booking.travel_date || booking.date || '';
         const status = String(booking.status || 'confirmed').toUpperCase();
-        const paymentState = getBookingPaymentState(booking);
 
         // Fetch live status if it's a Razorpay payment and sync it back to Firestore
+        // BEFORE computing paymentState so the badge reflects the live value.
         let liveStatus = null;
         if (booking.payment_id && !/^FREE-/i.test(booking.payment_id)) {
             liveStatus = await fetchRazorpayPaymentStatus(booking.payment_id);
@@ -554,16 +554,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         booking.refundStatus = 'refunded';
                     }
                     DB.saveBookings();
-                    // Re-render both the table AND the preview pane so the
-                    // updated payment_status badge is visible immediately.
-                    // refreshAll() merges Firestore data then calls
-                    // renderAllBookings which re-renders the active preview
-                    // via setActiveBookingPreview — so the new status shows
-                    // without requiring the admin to re-click the row.
-                    refreshAll();
+                    // Update just the table row payment badge without
+                    // triggering another full preview re-render (which
+                    // would cause an infinite loop since this function
+                    // itself is async and still running).
+                    renderAllBookings(
+                        bookingFilter ? bookingFilter.value : 'all',
+                        bookingSearch ? bookingSearch.value : ''
+                    );
                 }
             }
         }
+
+        // Compute paymentState AFTER the live fetch so it reflects the
+        // updated booking.payment_status value written above.
+        const paymentState = getBookingPaymentState(booking);
 
         const isRazorpay = window.Refund && window.Refund.isRazorpayPayment && window.Refund.isRazorpayPayment(booking);
         const isAlreadyRefunded = !!booking.refundId || !!(liveStatus && String(liveStatus.status || '').toLowerCase() === 'refunded');
