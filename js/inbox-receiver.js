@@ -525,6 +525,15 @@
                 state.selectedId = id;
                 const row = state.rows.find(function (r) { return r.id === id; });
                 if (row) markRead(row);
+                // Re-show the preview pane + divider if hidden by × close button
+                const previewWrap = $('inboxPreview');
+                const split = $('inboxSplit');
+                const divider = $('inboxDivider');
+                if (previewWrap && previewWrap.style.display === 'none') {
+                    previewWrap.style.display = '';
+                    if (divider) divider.style.display = '';
+                    if (split) split.style.removeProperty('--inbox-list-w');
+                }
                 renderRows();
                 setPreview(row || null);
             });

@@ -751,6 +751,15 @@ document.addEventListener('DOMContentLoaded', function () {
         activeBookingPreviewId = bookingId || null;
         const rows = Array.isArray(bookings) ? bookings : [];
         const booking = rows.find((row) => String(row.id) === bookingId) || null;
+        // Re-show the preview pane + divider if they were hidden by the × close button
+        const preview = document.getElementById('bookingPreview');
+        const split = document.getElementById('bookingsSplit');
+        if (preview && preview.style.display === 'none') {
+            preview.style.display = '';
+            const divider = split && split.querySelector('.inbox-divider');
+            if (divider) divider.style.display = '';
+            if (split) split.style.gridTemplateColumns = '';
+        }
         renderBookingPreview(booking);
         if (!skipRerender) {
             renderAllBookings(
