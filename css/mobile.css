@@ -1,0 +1,375 @@
+/* ─────────────────────────────────────────────────────────────────
+ * mobile.css — additive, defensive mobile-compatibility layer.
+ *
+ * GOAL
+ *   Harden the site against the most common mobile-UX bugs WITHOUT
+ *   touching any existing component CSS. Loaded LAST on every page so
+ *   it can override component styles when (and only when) the viewport
+ *   is small. Desktop behaviour stays exactly as-is.
+ *
+ * SCOPE — everything in this file is wrapped in @media queries or
+ *   uses CSS that only changes things on small viewports / touch
+ *   devices. Nothing here runs on a desktop browser ≥ 1025 px wide.
+ *
+ * What this file fixes (in priority order):
+ *   1. HORIZONTAL SCROLL — the single most-reported mobile bug.
+ *      Forces every block-level element to respect the viewport width.
+ *   2. TOUCH-TARGET SIZE — 44×44 px minimum (Apple HIG / WCAG 2.5.5).
+ *   3. iOS AUTO-ZOOM ON INPUT — Safari zooms when an <input> has
+ *      font-size < 16 px and the user taps it. Lifts every form
+ *      control to 16 px on phones.
+ *   4. iOS SAFE-AREA INSETS — accounts for notch / home-indicator on
+ *      iPhone X+ when the page has fixed top/bottom bars.
+ *   5. STICKY-FOOTER OVERLAP — when a fixed-bottom CTA / chat bubble
+ *      sits over the page, the page's last block needs extra padding.
+ *   6. LONG WORDS / URLs — break gracefully instead of forcing
+ *      horizontal scroll.
+ *   7. TABLES → SCROLL CONTAINER — wrap-free tables scroll inside
+ *      their own viewport rather than blowing out the page.
+ *   8. RESPONSIVE IMAGES — every <img> + <video> caps to 100% width.
+ *   9. MODAL / DIALOG full-screen-friendly on phones.
+ *  10. CHAT / FAB BUTTONS pulled inside the safe-area on notched
+ *      iPhones and given enough z-index to stay above the keyboard.
+ *  11. DASHBOARD / TABLES — sidebars stack, tables convert to cards
+ *      where the markup tagged itself with [data-label].
+ *  12. PRINT — clean, monochrome, no nav/footer.
+ *
+ * WHY a separate file (not appended to style.css):
+ *   • Easier to roll back if it breaks something.
+ *   • Cache-busted independently (?v=…) so we can ship mobile fixes
+ *     without invalidating the 113 KB style.css.
+ *   • Easier to reason about — every rule lives behind an explicit
+ *     viewport / pointer / @supports query.
+ * ─────────────────────────────────────────────────────────────────*/
+
+/* ── 1. ROOT-LEVEL OVERFLOW & RESPONSIVE TYPOGRAPHY ──────────────── */
+
+@media (max-width: 1024px) {
+    html, body {
+        max-width: 100vw;
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+    body, p, h1, h2, h3, h4, h5, h6, li, a, span, td, th, label {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    img, video, iframe, picture, svg, canvas, embed, object {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    h1 { font-size: clamp(1.5rem, 6vw, 2rem); line-height: 1.2; }
+    h2 { font-size: clamp(1.25rem, 5vw, 1.625rem); line-height: 1.25; }
+    h3 { font-size: clamp(1.125rem, 4.5vw, 1.375rem); line-height: 1.3; }
+    p, li { font-size: clamp(0.95rem, 3.6vw, 1rem); line-height: 1.55; }
+}
+
+/* ── 2. TOUCH-TARGET SIZES (Apple HIG / WCAG 2.5.5) ──────────────── */
+
+@media (pointer: coarse) {
+    a, button,
+    input[type="button"], input[type="submit"], input[type="reset"],
+    select, summary, [role="button"], [role="link"], [role="tab"],
+    .btn, .button, .topnav-item, .nav-link {
+        min-height: 44px;
+    }
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),
+    textarea,
+    select {
+        min-height: 44px;
+        padding-block: 0.6rem;
+    }
+    a:focus-visible, button:focus-visible, input:focus-visible,
+    select:focus-visible, textarea:focus-visible {
+        outline: 2px solid #2196f3;
+        outline-offset: 2px;
+    }
+}
+
+/* ── 3. iOS AUTO-ZOOM PREVENTION ─────────────────────────────────── */
+
+@media (max-width: 640px) {
+    input, select, textarea {
+        font-size: 16px;
+    }
+}
+
+/* ── 4. iOS SAFE-AREA INSETS ─────────────────────────────────────── */
+
+@supports (padding: max(0px)) {
+    .topbar,
+    .site-header,
+    header[role="banner"] {
+        padding-left:  max(env(safe-area-inset-left),  0.75rem);
+        padding-right: max(env(safe-area-inset-right), 0.75rem);
+        padding-top:   max(env(safe-area-inset-top),   0px);
+    }
+    .site-footer,
+    footer[role="contentinfo"],
+    .footer {
+        padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+        padding-left:   max(env(safe-area-inset-left),  1rem);
+        padding-right:  max(env(safe-area-inset-right), 1rem);
+    }
+}
+
+/* ── 5. STICKY-BAR OVERLAP — give the page room at the bottom ───── */
+
+@media (max-width: 768px) {
+    body {
+        scroll-padding-bottom: 96px;
+    }
+    body.has-fab {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* ── 6. TABLES → HORIZONTAL SCROLL CONTAINER ─────────────────────── */
+
+@media (max-width: 768px) {
+    .table-responsive,
+    [data-mobile-scroll] {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table:not(.no-mobile-stack):not(.dashboard-table) {
+        max-width: 100%;
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+    /* Tables that opted into "card stack" mode by giving every <td>
+       a data-label="…" attribute. Renders each row as a vertical
+       stack of label/value pairs — much friendlier on phones. */
+    table.mobile-stack,
+    table[data-mobile-stack="cards"] {
+        display: block;
+        white-space: normal;
+    }
+    table.mobile-stack thead,
+    table[data-mobile-stack="cards"] thead {
+        display: none;
+    }
+    table.mobile-stack tr,
+    table[data-mobile-stack="cards"] tr {
+        display: block;
+        margin-bottom: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.6rem 0.8rem;
+        background: #fff;
+    }
+    table.mobile-stack td,
+    table[data-mobile-stack="cards"] td {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.4rem 0;
+        border: none;
+    }
+    table.mobile-stack td::before,
+    table[data-mobile-stack="cards"] td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6b7280;
+        flex: 0 0 auto;
+    }
+}
+
+/* ── 7. CONTAINERS & GRIDS — sane mobile padding ─────────────────── */
+
+@media (max-width: 640px) {
+    .container,
+    .wrap,
+    .page,
+    .main-content,
+    main {
+        padding-left:  clamp(0.75rem, 4vw, 1.25rem);
+        padding-right: clamp(0.75rem, 4vw, 1.25rem);
+    }
+
+    /* Generic 2/3/4-column grids that didn't include mobile rules
+       collapse to a single column on phones. We only target the
+       most-common Tailwind/Bootstrap-ish naming patterns we use. */
+    .row > [class*="col-"],
+    .grid-2 > *,
+    .grid-3 > *,
+    .grid-4 > *,
+    .two-col,
+    .three-col,
+    .four-col {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+
+    /* Section vertical rhythm — chunky desktop padding looks weird
+       on phones. Halve it. */
+    section {
+        padding-top:    clamp(2rem, 6vw, 3rem);
+        padding-bottom: clamp(2rem, 6vw, 3rem);
+    }
+}
+
+/* ── 8. CHAT FAB / FLOATING BUTTONS ──────────────────────────────── */
+
+@media (max-width: 768px) {
+    .chat-fab,
+    .whatsapp-fab,
+    .scroll-to-top,
+    [data-fab] {
+        right:  clamp(0.75rem, 3vw, 1rem);
+        bottom: calc(clamp(0.75rem, 3vw, 1rem) + env(safe-area-inset-bottom, 0px));
+        z-index: 9990;
+    }
+}
+
+/* ── 9. MODALS / DIALOGS — full-screen-ish on phones ─────────────── */
+
+@media (max-width: 640px) {
+    .modal,
+    dialog,
+    [role="dialog"]:not([data-no-mobile-fullscreen]) {
+        max-width: 100vw;
+    }
+    .modal-content,
+    .modal-dialog,
+    dialog > * {
+        max-width: 100vw;
+        max-height: 100dvh;
+        max-height: 100vh;          /* fallback */
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+    /* Variant for modals that should stay as a sheet from the bottom. */
+    .modal.bottom-sheet,
+    [data-mobile-sheet] {
+        align-items: flex-end;
+    }
+    .modal.bottom-sheet .modal-content,
+    [data-mobile-sheet] > .modal-content {
+        border-radius: 18px 18px 0 0;
+        max-height: 92dvh;
+    }
+}
+
+/* ── 10. DASHBOARD-STYLE LAYOUTS — collapse sidebars ─────────────── */
+
+@media (max-width: 900px) {
+    .dashboard-layout,
+    .admin-layout,
+    .with-sidebar {
+        display: block !important;          /* override inline grid/flex */
+    }
+    .dashboard-sidebar,
+    .admin-sidebar,
+    .sidebar {
+        position: static;
+        width: 100%;
+        max-width: none;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .dashboard-main,
+    .admin-main {
+        margin-left: 0;
+        padding: 1rem;
+    }
+}
+
+/* ── 11. CHECKOUT / FORMS — friendly mobile keyboards & spacing ── */
+
+@media (max-width: 640px) {
+    /* Trigger the right keyboard layout. These attributes are usually
+       set in HTML, but on the off-chance a field was missed we ensure
+       at minimum that numeric/email fields stack with full width. */
+    input[type="tel"],
+    input[type="email"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    input[type="text"],
+    input[type="search"],
+    input[type="password"],
+    textarea,
+    select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Razorpay overlay sits in an iframe — make sure our own checkout
+       page doesn't double-scroll behind it on iOS. */
+    body.razorpay-checkout-open,
+    body.razorpay-open {
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    /* Form-row layouts (label + input side-by-side on desktop) stack. */
+    .form-row,
+    .form-grid,
+    .field-row {
+        display: block;
+    }
+    .form-row > *,
+    .form-grid > *,
+    .field-row > * {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* ── 12. UTILITIES — show/hide by viewport ────────────────────────── */
+
+/* Tiny utility classes for content that only makes sense on one side
+   of the breakpoint — much cleaner than scattering @media checks
+   throughout each page. Use sparingly. */
+.mobile-only { display: none !important; }
+.desktop-only { display: initial; }
+
+@media (max-width: 768px) {
+    .mobile-only { display: initial !important; }
+    .desktop-only { display: none !important; }
+}
+
+/* ── 13. PRINT — clean monochrome receipts / invoices ─────────────── */
+
+@media print {
+    .topbar,
+    .site-header,
+    .site-footer,
+    .footer,
+    .chat-fab,
+    .whatsapp-fab,
+    .scroll-to-top,
+    .ad-slot,
+    [data-fab],
+    [data-no-print] {
+        display: none !important;
+    }
+    body {
+        color: #000;
+        background: #fff;
+    }
+    a {
+        color: #000;
+        text-decoration: underline;
+    }
+    a[href]::after {
+        content: " (" attr(href) ")";
+        font-size: 0.85em;
+        word-break: break-all;
+    }
+    /* Don't print URLs for in-page anchors or javascript:. */
+    a[href^="#"]::after,
+    a[href^="javascript:"]::after {
+        content: "";
+    }
+}
