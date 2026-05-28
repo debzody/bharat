@@ -673,8 +673,8 @@ document.addEventListener('DOMContentLoaded', function () {
             +     '<div class="rd-row"><span class="rd-k">Duration</span><span class="rd-v">' + escHtml(String(booking.duration || '-')) + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Travel date</span><span class="rd-v">' + escHtml(tripDate ? formatDate(tripDate) : '-') + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment ID</span><span class="rd-v">' + escHtml(String(booking.payment_id || '-')) + '</span></div>'
-            +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v"><span class="badge ' + paymentState.class + '">' + escHtml(paymentState.label) + '</span></span></div>'
-            +     (liveStatus ? '<div class="rd-row"><span class="rd-k">Razorpay (Live)</span><span class="rd-v"><span class="badge badge-authorized">' + escHtml(liveStatus.status.toUpperCase()) + '</span></span></div>' : '')
+            +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v">' + escHtml(paymentState.label) + '</span></div>'
+            +     (liveStatus ? '<div class="rd-row"><span class="rd-k">Razorpay (Live)</span><span class="rd-v">' + escHtml(liveStatus.status.toUpperCase()) + '</span></div>' : '')
             +   '</div>'
             +   '<div class="rd-summary">'
             +     '<div class="rd-row"><span class="rd-k">Package amount</span><span class="rd-v">' + escHtml(formatCurrency(packagePrice)) + '</span></div>'
