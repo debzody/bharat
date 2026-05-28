@@ -392,8 +392,15 @@
                     <span class="bk-status-count" id="bkCountRefunded">0</span>
                 </button>
             </div>
-            <div class="inbox-split" id="bookingsSplit" style="grid-template-columns:minmax(520px, 7fr) 6px minmax(260px, 3fr);height:auto;min-height:520px;">
-                <div class="table-card">
+            <!-- bookings two-pane: same .inbox-split machinery as the inbox.
+                 List width is driven by the --inbox-list-w CSS variable
+                 (defaulted to 70 % via the inline style below) and is
+                 made resizable + persisted by initBookingsResizableSplit()
+                 in js/dashboard.js. The <980px breakpoint in the embedded
+                 .inbox-split CSS auto-collapses both panes to a single
+                 column on tablets/phones. -->
+            <div class="inbox-split" id="bookingsSplit" style="--inbox-list-w:70%;height:auto;min-height:520px;">
+                <div class="inbox-list-wrap table-card">
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
@@ -417,7 +424,7 @@
                         </table>
                     </div>
                 </div>
-                <div class="inbox-divider" aria-hidden="true"></div>
+                <div class="inbox-divider" id="bookingsDivider" role="separator" aria-orientation="vertical" aria-label="Drag to resize bookings panel" tabindex="0"></div>
                 <div class="inbox-preview-wrap" id="bookingPreview">
                     <div class="inbox-preview-empty">
                         <i class="fas fa-receipt"></i>
@@ -1967,7 +1974,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
     <script src="js/refund.js?v=2"></script>
-    <script src="js/dashboard.js?v=41"></script>
+    <script src="js/dashboard.js?v=42"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=8"></script>

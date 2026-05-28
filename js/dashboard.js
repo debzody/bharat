@@ -553,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const split = document.getElementById('bookingsSplit');
             const divider = split && split.querySelector('.inbox-divider');
             if (divider) divider.style.display = '';
-            if (split) split.style.gridTemplateColumns = '';
+            if (split) restoreBookingsSplitWidth(split);
         }
 
         const pkg = PACKAGES[booking.package_name] || {};
@@ -749,10 +749,14 @@ document.addEventListener('DOMContentLoaded', function () {
             previewCloseBtn.addEventListener('click', function () {
                 activeBookingPreviewId = null;
                 bookingPreviewClosed   = true;   // FIX: prevent auto-reopen on re-render
-                // Hide the preview pane and divider, expand the table
+                // Hide the preview pane and divider, expand the table.
+                // Same trick as the inbox: bump --inbox-list-w to 100% so the
+                // grid collapses to a single column without us touching the
+                // grid-template-columns directly. Saved width is preserved
+                // in localStorage and gets re-applied on next row click.
                 const split = document.getElementById('bookingsSplit');
                 const divider = split && split.querySelector('.inbox-divider');
-                if (split) split.style.gridTemplateColumns = '1fr';
+                if (split) split.style.setProperty('--inbox-list-w', '100%');
                 if (divider) divider.style.display = 'none';
                 preview.style.display = 'none';
                 // Deselect highlighted row
@@ -760,6 +764,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     .forEach(r => r.classList.remove('selected'));
             });
         }
+    }
+
+    // Restore the bookings list-pane width to whatever the admin last set
+    // (or the 70% default). Mirrors the inbox split's storage convention so
+    // the close-and-reopen workflow remembers the previous size.
+    function restoreBookingsSplitWidth(split) {
+        if (!split) return;
+        const STORAGE_KEY = 'bookingsSplitRatio';
+        let saved = parseFloat(localStorage.getItem(STORAGE_KEY) || '');
+        if (!isFinite(saved) || saved < 18 || saved > 92) saved = 70;
+        split.style.setProperty('--inbox-list-w', saved.toFixed(2) + '%');
     }
 
     function setActiveBookingPreview(id, bookings, skipRerender) {
@@ -774,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (preview) preview.style.display = '';
         const divider = split && split.querySelector('.inbox-divider');
         if (divider) divider.style.display = '';
-        if (split) split.style.gridTemplateColumns = '';
+        if (split) restoreBookingsSplitWidth(split);
         renderBookingPreview(booking);
         if (!skipRerender) {
             renderAllBookings(
@@ -3338,6 +3353,86 @@ document.addEventListener('DOMContentLoaded', function () {
         // Insert before the "Seed Test Bookings" button so it reads:
         // [Refresh from Firestore]  [Seed Test Bookings]  [Clear Bookings]
         seedBtn.parentNode.insertBefore(btn, seedBtn);
+    })();
+
+    // ── Bookings split: draggable + responsive (mirrors inbox) ─
+    // Same machinery as initResizableSplit() in js/inbox-receiver.js,
+    // but for #bookingsSplit / #bookingsDivider. The list-pane width is
+    // driven by the --inbox-list-w CSS variable on the split element
+    // (default 70 % set inline in dashboard.html). Drag the divider
+    // to resize, double-click to reset, ←/→ keys to nudge, all
+    // persisted in localStorage under 'bookingsSplitRatio'.
+    // Below 980 px the inbox-split rule auto-collapses to a single
+    // column; we don't need to do anything extra for mobile.
+    (function initBookingsResizableSplit() {
+        const split   = document.getElementById('bookingsSplit');
+        const divider = document.getElementById('bookingsDivider');
+        if (!split || !divider) return;
+
+        const STORAGE_KEY = 'bookingsSplitRatio';
+        const MIN_PCT = 25;   // never shrink the list below 25% — it has 11 columns
+        const MAX_PCT = 92;   // and never blow the reader away entirely
+        const DEFAULT_PCT = 70;
+
+        function applyPct(pct) {
+            const clamped = Math.max(MIN_PCT, Math.min(MAX_PCT, pct));
+            split.style.setProperty('--inbox-list-w', clamped.toFixed(2) + '%');
+            return clamped;
+        }
+
+        // Restore saved ratio on init (or 70% default).
+        let saved = parseFloat(localStorage.getItem(STORAGE_KEY) || '');
+        if (!isFinite(saved) || saved < MIN_PCT || saved > MAX_PCT) saved = DEFAULT_PCT;
+        applyPct(saved);
+
+        let dragging = false;
+        function onDown(ev) {
+            ev.preventDefault();
+            dragging = true;
+            divider.classList.add('active');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        }
+        function onMove(ev) {
+            if (!dragging) return;
+            const rect = split.getBoundingClientRect();
+            if (!rect.width) return;
+            const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+            applyPct((x / rect.width) * 100);
+        }
+        function onUp() {
+            if (!dragging) return;
+            dragging = false;
+            divider.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            const num = parseFloat(split.style.getPropertyValue('--inbox-list-w'));
+            if (isFinite(num)) {
+                try { localStorage.setItem(STORAGE_KEY, String(num)); } catch (_) {}
+            }
+        }
+
+        divider.addEventListener('mousedown',  onDown);
+        divider.addEventListener('touchstart', onDown, { passive: false });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('mouseup',   onUp);
+        document.addEventListener('touchend',  onUp);
+
+        // Double-click to reset to default 70 %
+        divider.addEventListener('dblclick', function () {
+            applyPct(DEFAULT_PCT);
+            try { localStorage.setItem(STORAGE_KEY, String(DEFAULT_PCT)); } catch (_) {}
+        });
+        // Keyboard: ←/→ nudge by 2 % when divider is focused
+        divider.addEventListener('keydown', function (ev) {
+            if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+            ev.preventDefault();
+            const cur  = parseFloat(split.style.getPropertyValue('--inbox-list-w')) || DEFAULT_PCT;
+            const next = ev.key === 'ArrowLeft' ? cur - 2 : cur + 2;
+            const final = applyPct(next);
+            try { localStorage.setItem(STORAGE_KEY, String(final)); } catch (_) {}
+        });
     })();
 
     // ── Site Settings (Firestore-backed) ────────────────────────
