@@ -20,7 +20,7 @@
     <link rel="apple-touch-icon" href="images/logo-white.png">
 
     <link rel="stylesheet" href="css/style.css?v=54">
-    <link rel="stylesheet" href="css/dashboard.css?v=6">
+    <link rel="stylesheet" href="css/dashboard.css?v=7">
     <!-- Compact base font for the admin dashboard (overrides style.css 16px default) -->
     <style>
         html, body { font-size: 12px !important; }
@@ -351,16 +351,14 @@
                 <h2>All Bookings</h2>
                 <div class="section-actions">
                     <input type="text" class="search-input" id="bookingSearch" placeholder="Search bookings...">
-                    <select class="filter-select" id="bookingFilter">
+                    <!-- Hidden select kept for JS backward-compat; pills below drive it -->
+                    <select class="filter-select" id="bookingFilter" style="display:none;">
                         <option value="all">All Status</option>
                         <option value="confirmed">Confirmed</option>
                         <option value="cancelled">Cancelled</option>
+                        <option value="refunded">Refunded</option>
                     </select>
-                    <!-- Admin-only test helper: seeds two fake bookings into
-                         localStorage so admins can verify the Cancel button +
-                         status badges without needing a real Razorpay payment.
-                         Hidden for staff via the staff-role CSS gate near the
-                         top of the page. -->
+                    <!-- Admin-only test helper -->
                     <button class="btn-add-package" id="seedFakeBookingsBtn" style="background:#9b59b6;" title="Seed test bookings">
                         <i class="fas fa-flask"></i> Seed
                     </button>
@@ -374,6 +372,25 @@
                         <i class="fas fa-box-archive"></i> Arc. Closed
                     </button>
                 </div>
+            </div>
+            <!-- Status filter pills — mirrors the inbox mailbox-tabs style -->
+            <div class="booking-status-tabs" role="tablist" id="bookingStatusTabs">
+                <button type="button" class="bk-status-tab active" data-bk-status="all" role="tab" aria-selected="true">
+                    <i class="fas fa-layer-group"></i> All
+                    <span class="bk-status-count" id="bkCountAll">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-bk-status="confirmed" role="tab" aria-selected="false">
+                    <i class="fas fa-calendar-check"></i> Confirmed
+                    <span class="bk-status-count" id="bkCountConfirmed">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-bk-status="cancelled" role="tab" aria-selected="false">
+                    <i class="fas fa-ban"></i> Cancelled
+                    <span class="bk-status-count" id="bkCountCancelled">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-bk-status="refunded" role="tab" aria-selected="false">
+                    <i class="fas fa-undo-alt"></i> Refunded
+                    <span class="bk-status-count" id="bkCountRefunded">0</span>
+                </button>
             </div>
             <div class="inbox-split" id="bookingsSplit" style="grid-template-columns:minmax(520px, 1.65fr) 6px minmax(280px, 1fr);height:auto;min-height:520px;">
                 <div class="table-card">
