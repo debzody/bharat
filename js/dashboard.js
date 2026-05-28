@@ -595,10 +595,18 @@ document.addEventListener('DOMContentLoaded', function () {
             // Refunded — show badge, nothing else
             actionsHtml += '<span class="badge badge-failed" style="margin-left:.4rem;padding:.35rem .7rem;">Refunded ' + formatCurrency(booking.refundAmount || 0) + '</span>';
         } else if (isRazorpay && isAuthorized) {
-            // AUTHORIZED — can't capture/void from here
-            actionsHtml += '<span style="font-size:.82rem;color:#888;padding:.3rem 0;display:inline-block;" ' +
-                'title="Payment is AUTHORIZED but not yet captured. Capture or void via Razorpay Dashboard first.">' +
-                '⏳ Payment authorized — capture or void via Razorpay Dashboard before taking action here.</span>';
+            // AUTHORIZED — Refund is not possible (payment not captured), but
+            // the booking CAN be cancelled. The card hold will expire
+            // automatically in Razorpay; no refund step is needed.
+            if (!isCancelled) {
+                actionsHtml += '<button type="button" class="action-btn action-btn-cancel" data-preview-cancel="' +
+                    escHtml(String(booking.id)) + '" style="background:#fff3f3;color:#e74c3c;border:1px solid #f5c6cb;">' +
+                    '<i class="fas fa-ban"></i> Cancel Booking</button>';
+                actionsHtml += '<span style="font-size:.78rem;color:#888;display:block;margin-top:.3rem;">' +
+                    '⚠️ Payment is AUTHORIZED (not yet captured). Cancelling the booking will NOT auto-refund — ' +
+                    'the ₹12,000 card hold will expire automatically in Razorpay. ' +
+                    'Or capture it first then cancel for a proper refund.</span>';
+            }
         } else if (isRazorpay && isCancelled) {
             // CAPTURED + cancelled → Refund button
             // Use advance_paid if set, otherwise fall back to full price
