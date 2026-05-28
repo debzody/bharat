@@ -279,8 +279,40 @@
     <link rel="stylesheet" href="css/flights.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Razorpay Payment Gateway -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- ── Razorpay — lazy-loaded on demand ──────────────────────────────
+         Razorpay's checkout.js eagerly fetches ~70 chunk files (Google Pay,
+         FPX, ACH, illustrations, locales, etc.) the moment it's parsed —
+         that's where the 86-request / 400 KB DevTools waterfall came from.
+         Most of those are irrelevant for an Indian travel site, AND every
+         visitor to the homepage paid for them whether or not they ever
+         clicked "Pay".
+
+         We now expose a lazy loader instead. The first time something calls
+         window.RazorpayReady() the SDK is injected; subsequent calls reuse
+         the same Promise. checkout.js / script.js await it right before
+         calling `new Razorpay(options)` — see js/checkout.js + js/script.js.
+
+         The checkout.html page still loads checkout.js synchronously
+         because that page IS the checkout funnel — Razorpay needs to be
+         instantly available the moment the user lands there. -->
+    <script>
+    window.RazorpayReady = (function () {
+        var p = null;
+        return function () {
+            if (window.Razorpay) return Promise.resolve();
+            if (p) return p;
+            p = new Promise(function (resolve, reject) {
+                var s = document.createElement('script');
+                s.src   = 'https://checkout.razorpay.com/v1/checkout.js';
+                s.async = true;
+                s.onload  = function () { resolve(); };
+                s.onerror = function () { p = null; reject(new Error('Razorpay failed to load')); };
+                document.head.appendChild(s);
+            });
+            return p;
+        };
+    })();
+    </script>
     <!-- Travelpayouts site tracker (flight-affiliate revenue) -->
     <script src="js/travelpayouts-init.js?v=1"></script>
 </head>
