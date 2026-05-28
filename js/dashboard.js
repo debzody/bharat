@@ -554,6 +554,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         booking.refundStatus = 'refunded';
                     }
                     DB.saveBookings();
+                    // Re-render both the table AND the preview pane so the
+                    // updated payment_status badge is visible immediately.
+                    // refreshAll() merges Firestore data then calls
+                    // renderAllBookings which re-renders the active preview
+                    // via setActiveBookingPreview — so the new status shows
+                    // without requiring the admin to re-click the row.
+                    refreshAll();
                 }
             }
         }
