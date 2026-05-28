@@ -347,22 +347,39 @@ window.confirmBooking = async function() {
         }
     };
     
-    // Check if Razorpay is loaded
-    if (typeof Razorpay === 'undefined') {
-        alert('❌ Payment system not loaded. Please refresh the page and try again.');
-        console.error('Razorpay script not found');
-        return;
+    // Lazy-load Razorpay's checkout.js. The SDK self-loads dozens of
+    // payment-method chunks so we deferred the <script src=...> tag
+    // out of the public pages. window.RazorpayReady is defined inline
+    // in index.html / package.html (and a no-op fallback for any page
+    // that already has Razorpay loaded eagerly, eg checkout.html).
+    function ensureRazorpay() {
+        if (typeof Razorpay !== 'undefined') return Promise.resolve();
+        if (typeof window.RazorpayReady === 'function') return window.RazorpayReady();
+        // Last-ditch fallback — inject the script directly. Should never
+        // be hit in practice because every page that calls this has
+        // either the loader or the SDK already in <head>.
+        return new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            s.onload  = function () { resolve(); };
+            s.onerror = function () { reject(new Error('Razorpay failed to load')); };
+            document.head.appendChild(s);
+        });
     }
 
-    
-    const rzp1 = new Razorpay(options);
-    
-    rzp1.on('payment.failed', function (response) {
-        alert('❌ Payment failed!\n\nError: ' + response.error.description + '\n\nPlease try again or contact support.');
-        console.error('Payment error:', response);
+    ensureRazorpay().then(function () {
+        const rzp1 = new Razorpay(options);
+
+        rzp1.on('payment.failed', function (response) {
+            alert('❌ Payment failed!\n\nError: ' + response.error.description + '\n\nPlease try again or contact support.');
+            console.error('Payment error:', response);
+        });
+
+        rzp1.open();
+    }).catch(function (err) {
+        alert('❌ Payment system not loaded. Please check your internet connection and try again.');
+        console.error('Razorpay load error:', err);
     });
-    
-    rzp1.open();
 };
 
 // ── Site-settings cache + payments-disabled helper ──────────
