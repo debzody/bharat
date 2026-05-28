@@ -3,16 +3,10 @@
  * Subscribes via onSnapshot to Firestore /receivedEmails so new mail
  * arrives in real time.
  *
- * Features per row:
- *   • Click the row → open preview, auto-mark read.
- *   • Per-row checkbox + "Select all" header → bulk delete.
- * Preview-pane buttons:
- *   • Reply       → prefill Compose modal (To = sender, From = mailbox).
- *   • Reply All   → adds row.to + row.cc as Cc (minus our own mailboxes).
- *   • Forward     → blank To, body = "---------- Forwarded message".
- *   • Delete      → confirm + Firestore delete.
- *
- * Resizable list/preview split is preserved (default 40 / 60 %).
+ * FIX 2026-05: "reading panel does not come back"
+ *   Added state.previewClosed. The × close button sets it to true.
+ *   renderRows() skips auto-select while previewClosed is true.
+ *   Clicking a row resets previewClosed to false and re-shows the panel.
  * ──────────────────────────────────────────────────────────────── */
 
 (function () {
@@ -26,20 +20,6 @@
     ];
     const ALL = '__all__';
 
-    const state = {
-        mailbox: 'booking@andamanvoyages.in',
-        pane: 'received',
-        rows: [],
-        selectedId: '',
-        seenIds: new Set(),
-        unsub: null,
-        titleTimer: null,
-        baseTitle: document.title || 'Dashboard',
-        // doc-ids ticked via per-row checkbox (drives bulk-delete bar)
-        checked: new Set()
-    };
-
-    /* ── small helpers ──────────────────────────────────── */
     function $(id) { return document.getElementById(id); }
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -115,6 +95,40 @@
         }, 8000);
     }
 
+    const state = {
+        mailbox: 'booking@andamanvoyages.in',
+        pane: 'received',
+        rows: [],
+        selectedId: '',
+        // FIX: set true when user closes panel with ×
+        // renderRows() will not auto-reopen the panel while this is true.
+        // Clicking any row resets this to false.
+        previewClosed: false,
+        seenIds: new Set(),
+        unsub: null,
+        titleTimer: null,
+        baseTitle: document.title || 'Dashboard',
+        checked: new Set()
+    };
+
+    /* ── show / hide the preview panel consistently ─────── */
+    function showSplitPanel() {
+        const box     = $('inboxPreview');
+        const split   = $('inboxSplit');
+        const divider = $('inboxDivider');
+        if (box)     box.style.display     = '';
+        if (divider) divider.style.display = '';
+        if (split)   split.style.removeProperty('--inbox-list-w');
+    }
+    function hideSplitPanel() {
+        const box     = $('inboxPreview');
+        const split   = $('inboxSplit');
+        const divider = $('inboxDivider');
+        if (split)   split.style.setProperty('--inbox-list-w', '100%');
+        if (divider) divider.style.display = 'none';
+        if (box)     box.style.display     = 'none';
+    }
+
     /* ── unread counters ────────────────────────────────── */
     function unreadCount(rows, mailbox) {
         return rows.filter(function (r) {
@@ -174,7 +188,7 @@
         }
     }
 
-    /* ── confirm dialog (replaces window.confirm) ─────────── */
+    /* ── confirm dialog ─────────────────────────────────── */
     function ensureConfirmDialog() {
         let modal = $('inboxConfirmModal');
         if (modal) return modal;
@@ -184,19 +198,18 @@
             'position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;' +
             'background:rgba(15,32,39,.55);backdrop-filter:blur(2px);padding:1rem;';
         modal.innerHTML =
-            '<div class="inbox-confirm-card" style="background:#fff;border-radius:14px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.32);overflow:hidden;">' +
-                '<div class="inbox-confirm-head" style="padding:1rem 1.25rem;border-bottom:1px solid #e3e8ef;display:flex;align-items:center;gap:.65rem;">' +
+            '<div style="background:#fff;border-radius:14px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.32);overflow:hidden;">' +
+                '<div style="padding:1rem 1.25rem;border-bottom:1px solid #e3e8ef;display:flex;align-items:center;gap:.65rem;">' +
                     '<i class="fas fa-exclamation-triangle" style="color:#e74c3c;font-size:1.25rem;"></i>' +
                     '<h3 id="inboxConfirmTitle" style="margin:0;font-size:1.05rem;font-weight:700;color:#0d2c3a;">Confirm</h3>' +
                 '</div>' +
                 '<div id="inboxConfirmBody" style="padding:1.1rem 1.25rem;font-size:.95rem;color:#3a4a55;line-height:1.55;"></div>' +
-                '<div class="inbox-confirm-foot" style="padding:.85rem 1.25rem;border-top:1px solid #e3e8ef;display:flex;justify-content:flex-end;gap:.5rem;background:#f9fbfc;">' +
+                '<div style="padding:.85rem 1.25rem;border-top:1px solid #e3e8ef;display:flex;justify-content:flex-end;gap:.5rem;background:#f9fbfc;">' +
                     '<button type="button" id="inboxConfirmCancel" style="padding:.55rem 1.1rem;border-radius:8px;border:1px solid #cfd9df;background:#fff;color:#5a6877;font-weight:600;font-family:inherit;font-size:.9rem;cursor:pointer;">Cancel</button>' +
-                    '<button type="button" id="inboxConfirmOk"     style="padding:.55rem 1.1rem;border-radius:8px;border:0;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font-weight:600;font-family:inherit;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;"><i class="fas fa-trash"></i> <span>Delete</span></button>' +
+                    '<button type="button" id="inboxConfirmOk" style="padding:.55rem 1.1rem;border-radius:8px;border:0;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font-weight:600;font-family:inherit;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;"><i class="fas fa-trash"></i> <span>Delete</span></button>' +
                 '</div>' +
             '</div>';
         document.body.appendChild(modal);
-        // Click outside the card to dismiss
         modal.addEventListener('click', function (ev) {
             if (ev.target === modal) modal.style.display = 'none';
         });
@@ -212,9 +225,7 @@
             const okLabel = okBtn.querySelector('span');
             if (okLabel) okLabel.textContent = opts.okLabel || 'Delete';
             modal.style.display = 'flex';
-            // Focus the safer Cancel button by default
             setTimeout(function () { try { cancelBtn.focus(); } catch (_) {} }, 30);
-
             function cleanup(result) {
                 modal.style.display = 'none';
                 okBtn.onclick = null;
@@ -240,13 +251,9 @@
             const ok = await uiConfirm({
                 title: 'Delete email',
                 bodyHtml:
-                    '<div style="margin-bottom:.6rem;color:#0d2c3a;font-weight:600;">' +
-                        esc(row.subject || '(no subject)') +
-                    '</div>' +
+                    '<div style="margin-bottom:.6rem;color:#0d2c3a;font-weight:600;">' + esc(row.subject || '(no subject)') + '</div>' +
                     '<div style="color:#7a8b96;font-size:.88rem;">From: ' + esc(row.from || '') + '</div>' +
-                    '<div style="margin-top:.7rem;color:#c0392b;font-size:.88rem;">' +
-                        '<i class="fas fa-exclamation-triangle"></i> This cannot be undone.' +
-                    '</div>',
+                    '<div style="margin-top:.7rem;color:#c0392b;font-size:.88rem;"><i class="fas fa-exclamation-triangle"></i> This cannot be undone.</div>',
                 okLabel: 'Delete'
             });
             if (!ok) return;
@@ -256,7 +263,10 @@
             await fb.firestore.deleteDoc(fb.firestore.doc(fb.db, 'receivedEmails', row.id));
             state.rows = state.rows.filter(function (r) { return r.id !== row.id; });
             state.checked.delete(row.id);
-            if (state.selectedId === row.id) state.selectedId = '';
+            if (state.selectedId === row.id) {
+                state.selectedId = '';
+                state.previewClosed = true;
+            }
             setCounts();
             renderRows();
             if (!opts.silent && window.Toast) window.Toast.success('Deleted "' + (row.subject || 'email') + '"');
@@ -271,12 +281,8 @@
         const ok = await uiConfirm({
             title: 'Delete ' + ids.length + ' email' + (ids.length === 1 ? '' : 's'),
             bodyHtml:
-                '<div style="color:#0d2c3a;">' +
-                    'You are about to delete <strong>' + ids.length + '</strong> selected email' + (ids.length === 1 ? '' : 's') + '.' +
-                '</div>' +
-                '<div style="margin-top:.7rem;color:#c0392b;font-size:.88rem;">' +
-                    '<i class="fas fa-exclamation-triangle"></i> This cannot be undone.' +
-                '</div>',
+                '<div style="color:#0d2c3a;">You are about to delete <strong>' + ids.length + '</strong> selected email' + (ids.length === 1 ? '' : 's') + '.</div>' +
+                '<div style="margin-top:.7rem;color:#c0392b;font-size:.88rem;"><i class="fas fa-exclamation-triangle"></i> This cannot be undone.</div>',
             okLabel: 'Delete ' + ids.length
         });
         if (!ok) return;
@@ -295,6 +301,7 @@
         state.checked.clear();
         if (state.selectedId && !state.rows.find(function (r) { return r.id === state.selectedId; })) {
             state.selectedId = '';
+            state.previewClosed = true;
         }
         setCounts();
         renderRows();
@@ -319,7 +326,8 @@
             if (replyEl && opts.replyTo  != null) replyEl.value = opts.replyTo;
             if (bodyEl  && opts.body     != null) bodyEl.value  = opts.body;
             if (fromEl  && opts.from) {
-                const want = String(opts.from).toLowerCase();                Array.prototype.some.call(fromEl.options, function (o) {
+                const want = String(opts.from).toLowerCase();
+                Array.prototype.some.call(fromEl.options, function (o) {
                     if (String(o.value || '').toLowerCase() === want) {
                         fromEl.value = o.value; return true;
                     }
@@ -392,6 +400,8 @@
                 '</div>';
             return;
         }
+        // Ensure the panel is visible when showing a real row
+        showSplitPanel();
         const bodyHtml = row.textHtml
             ? row.textHtml
             : '<div style="white-space:pre-wrap;line-height:1.6;">' + esc(row.textPlain || '(no body)') + '</div>';
@@ -414,6 +424,7 @@
                 '<button type="button" id="ipvDeleteBtn" style="color:#c0392b;border-color:#f1c2bd;"><i class="fas fa-trash"></i> Delete</button>' +
             '</div>' +
             '<div class="ipv-body">' + bodyHtml + '</div>';
+
         const replyBtn    = $('ipvReplyBtn');
         const replyAllBtn = $('ipvReplyAllBtn');
         const forwardBtn  = $('ipvForwardBtn');
@@ -422,23 +433,20 @@
         if (replyAllBtn) replyAllBtn.addEventListener('click', function () { doReplyAll(row); });
         if (forwardBtn)  forwardBtn.addEventListener('click',  function () { doForward(row); });
         if (deleteBtn)   deleteBtn.addEventListener('click',   function () { deleteRow(row); });
+
+        // × close button — hides panel, sets previewClosed so renderRows()
+        // won't auto-reopen it on the next Firestore snapshot.
         const closeBtn = $('ipvCloseBtn');
         if (closeBtn) {
             closeBtn.addEventListener('click', function () {
-                state.selectedId = '';
-                setPreview(null);
-                // Deselect highlighted row in the list
+                state.selectedId   = '';
+                state.previewClosed = true;
+                // Deselect highlighted row
                 Array.prototype.forEach.call(
                     document.querySelectorAll('#inboxReceivedBody tr.selected'),
                     function (tr) { tr.classList.remove('selected'); }
                 );
-                // Hide the preview pane + divider, expand the email list
-                const split = $('inboxSplit');
-                const divider = $('inboxDivider');
-                if (split) split.style.setProperty('--inbox-list-w', '100%');
-                if (divider) divider.style.display = 'none';
-                const previewWrap = $('inboxPreview');
-                if (previewWrap) previewWrap.style.display = 'none';
+                hideSplitPanel();
             });
         }
     }
@@ -493,6 +501,7 @@
         const massBtn = bar.querySelector('#inboxMassDeleteBtn');
         if (massBtn) massBtn.disabled = !anyTicked;
     }
+
     function renderRows() {
         const body = $('inboxReceivedBody');
         const label = $('inboxMbxLabel');
@@ -511,33 +520,32 @@
         body.innerHTML = rows.map(function (r) {
             const checked = state.checked.has(r.id) ? 'checked' : '';
             return '<tr class="' + (r.unread ? 'unread ' : '') + (state.selectedId === r.id ? 'selected' : '') + '" data-mail-id="' + esc(r.id) + '">' +
-                '<td class="inbox-cb-cell" style="width:32px;text-align:center;"><input type="checkbox" class="inbox-row-cb" data-mail-id="' + esc(r.id) + '" ' + checked + '></td>' +
+                '<td class="inbox-cb-cell" style="width:32px;text-align:center;">' +
+                    '<input type="checkbox" class="inbox-row-cb" data-mail-id="' + esc(r.id) + '" ' + checked + '></td>' +
                 '<td>' + esc(fmtDate(r.receivedAt || r.date)) + '</td>' +
                 '<td>' + esc(r.from || '') + '</td>' +
                 '<td>' + esc(r.subject || '(no subject)') + '</td>' +
                 '<td>' + esc(mailboxLabel(r.mailbox)) + '</td>' +
             '</tr>';
         }).join('');
+
+        // Wire row clicks — clicking a row ALWAYS clears previewClosed and
+        // opens the panel, regardless of its current visibility state.
         Array.prototype.forEach.call(body.querySelectorAll('tr[data-mail-id]'), function (tr) {
             tr.addEventListener('click', function (ev) {
                 if (ev.target.closest('.inbox-cb-cell')) return;
                 const id = tr.getAttribute('data-mail-id');
-                state.selectedId = id;
+                state.selectedId    = id;
+                state.previewClosed = false;   // FIX: user explicitly clicked → show panel
                 const row = state.rows.find(function (r) { return r.id === id; });
                 if (row) markRead(row);
-                // Re-show the preview pane + divider if hidden by × close button
-                const previewWrap = $('inboxPreview');
-                const split = $('inboxSplit');
-                const divider = $('inboxDivider');
-                if (previewWrap && previewWrap.style.display === 'none') {
-                    previewWrap.style.display = '';
-                    if (divider) divider.style.display = '';
-                    if (split) split.style.removeProperty('--inbox-list-w');
-                }
+                showSplitPanel();
                 renderRows();
                 setPreview(row || null);
             });
         });
+
+        // Wire checkbox clicks
         Array.prototype.forEach.call(body.querySelectorAll('input.inbox-row-cb'), function (cb) {
             cb.addEventListener('click', function (ev) { ev.stopPropagation(); });
             cb.addEventListener('change', function () {
@@ -546,14 +554,28 @@
                 refreshToolbar();
             });
         });
-        const selected = state.rows.find(function (r) { return r.id === state.selectedId; }) || rows[0];
-        state.selectedId = selected.id;
+
+        // Apply selected highlight; if previewClosed do NOT auto-open any row.
         Array.prototype.forEach.call(body.querySelectorAll('tr[data-mail-id]'), function (tr) {
             tr.classList.toggle('selected', tr.getAttribute('data-mail-id') === state.selectedId);
         });
-        setPreview(selected);
+
+        // FIX: only show the preview if the panel is not in the user-closed state
+        if (!state.previewClosed) {
+            // Keep currently selected row, or auto-select first row on initial load
+            if (!state.selectedId && rows.length) {
+                state.selectedId = rows[0].id;
+                Array.prototype.forEach.call(body.querySelectorAll('tr[data-mail-id]'), function (tr) {
+                    tr.classList.toggle('selected', tr.getAttribute('data-mail-id') === state.selectedId);
+                });
+            }
+            const selected = state.rows.find(function (r) { return r.id === state.selectedId; }) || null;
+            if (selected) setPreview(selected);
+        }
+
         refreshToolbar();
     }
+
     function bindTabs() {
         Array.prototype.forEach.call(document.querySelectorAll('.inbox-mbx-tab'), function (btn) {
             btn.addEventListener('click', function () {
@@ -582,6 +604,7 @@
             });
         });
     }
+
     async function subscribe() {
         if (!window.__firebaseReady) return;
         const fb = await window.__firebaseReady;
@@ -618,6 +641,11 @@
             Array.from(state.checked).forEach(function (id) {
                 if (!liveIds.has(id)) state.checked.delete(id);
             });
+            // If the currently selected mail was deleted externally, clear it
+            if (state.selectedId && !liveIds.has(state.selectedId)) {
+                state.selectedId = '';
+                state.previewClosed = true;
+            }
             setCounts();
             renderRows();
             if (fresh.length && isAdminUser()) {
@@ -640,6 +668,7 @@
             if (body) body.innerHTML = '<tr><td colspan="5" class="table-empty" style="color:#c0392b;">Failed to load inbox: ' + esc(err.message || err) + '</td></tr>';
         });
     }
+
     function initRefresh() {
         const btn = $('inboxRefreshBtn');
         if (!btn) return;
@@ -648,6 +677,7 @@
             if (typeof window.loadInboxSent === 'function') window.loadInboxSent();
         });
     }
+
     function initResizableSplit() {
         const split = $('inboxSplit');
         const divider = $('inboxDivider');
@@ -703,12 +733,14 @@
             try { localStorage.setItem(STORAGE_KEY, String(Math.max(MIN_PCT, Math.min(MAX_PCT, next)))); } catch (_) {}
         });
     }
+
     function init() {
         bindTabs();
         initRefresh();
         initResizableSplit();
         subscribe().catch(function (err) { console.error('[inbox-receiver] init failed:', err); });
     }
+
     window.AdminInboxReceiver = { init: init, refresh: subscribe };
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });

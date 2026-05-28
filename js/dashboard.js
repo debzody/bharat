@@ -23,6 +23,10 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     const selectedBookingIds = new Set();
     let activeBookingPreviewId = null;
+    // FIX: set true when user closes the booking preview with ×.
+    // renderAllBookings() skips auto-opening the panel while this is true.
+    // Clicking a row or the ID button clears it.
+    let bookingPreviewClosed = false;
 
     // ── Firestore booking loader (admin-only) ───────────────────
     // Pulls every doc from the `bookings/*` collection. Tagged with
@@ -540,6 +544,17 @@ document.addEventListener('DOMContentLoaded', function () {
             '</div>';
             return;
         }
+        // If panel was hidden by × button, restore it before rendering content.
+        // Only restore when bookingPreviewClosed is false (i.e. user actively
+        // opened a row). When true, the close handler already hid it and we
+        // must not silently reopen it here.
+        if (preview.style.display === 'none' && !bookingPreviewClosed) {
+            preview.style.display = '';
+            const split = document.getElementById('bookingsSplit');
+            const divider = split && split.querySelector('.inbox-divider');
+            if (divider) divider.style.display = '';
+            if (split) split.style.gridTemplateColumns = '';
+        }
 
         const pkg = PACKAGES[booking.package_name] || {};
         const traveler = booking.traveler || {};
@@ -733,6 +748,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (previewCloseBtn) {
             previewCloseBtn.addEventListener('click', function () {
                 activeBookingPreviewId = null;
+                bookingPreviewClosed   = true;   // FIX: prevent auto-reopen on re-render
                 // Hide the preview pane and divider, expand the table
                 const split = document.getElementById('bookingsSplit');
                 const divider = split && split.querySelector('.inbox-divider');
@@ -749,17 +765,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function setActiveBookingPreview(id, bookings, skipRerender) {
         const bookingId = String(id || '');
         activeBookingPreviewId = bookingId || null;
+        bookingPreviewClosed   = false;   // FIX: user explicitly clicked a row → show panel
         const rows = Array.isArray(bookings) ? bookings : [];
         const booking = rows.find((row) => String(row.id) === bookingId) || null;
-        // Re-show the preview pane + divider if they were hidden by the × close button
+        // Re-show the preview pane + divider (always, since user explicitly clicked)
         const preview = document.getElementById('bookingPreview');
         const split = document.getElementById('bookingsSplit');
-        if (preview && preview.style.display === 'none') {
-            preview.style.display = '';
-            const divider = split && split.querySelector('.inbox-divider');
-            if (divider) divider.style.display = '';
-            if (split) split.style.gridTemplateColumns = '';
-        }
+        if (preview) preview.style.display = '';
+        const divider = split && split.querySelector('.inbox-divider');
+        if (divider) divider.style.display = '';
+        if (split) split.style.gridTemplateColumns = '';
         renderBookingPreview(booking);
         if (!skipRerender) {
             renderAllBookings(
@@ -773,8 +788,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const tbody = document.getElementById('allBookingsBody');
         let bookings = [...DB.bookings].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
+        // Update pill counts on every render so they stay in sync
+        updateBookingStatusCounts();
+
         if (filter && filter !== 'all') {
-            bookings = bookings.filter(b => (b.status || 'confirmed') === filter);
+            if (filter === 'refunded') {
+                // Refunded = has a refundId OR refundStatus === 'refunded'
+                bookings = bookings.filter(b =>
+                    !!b.refundId || String(b.refundStatus || '').toLowerCase() === 'refunded'
+                );
+            } else {
+                bookings = bookings.filter(b => (b.status || 'confirmed') === filter);
+            }
         }
 
         if (search) {
@@ -1019,11 +1044,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         updateBookingsBulkUi();
-        if (!activeBookingPreviewId && bookings.length) {
-            setActiveBookingPreview(String(bookings[0].id), bookings, true);
-        } else {
-            const previewBooking = bookings.find((row) => String(row.id) === String(activeBookingPreviewId)) || null;
-            renderBookingPreview(previewBooking || bookings[0] || null);
+        // FIX: if the user explicitly closed the panel, do NOT auto-reopen it.
+        // Only render/open the preview when the panel is in an open state.
+        if (!bookingPreviewClosed) {
+            if (!activeBookingPreviewId && bookings.length) {
+                setActiveBookingPreview(String(bookings[0].id), bookings, true);
+            } else {
+                const previewBooking = bookings.find((row) => String(row.id) === String(activeBookingPreviewId)) || null;
+                renderBookingPreview(previewBooking || null);
+            }
         }
 
         // Stand-alone Refund handler — issues a refund without touching
@@ -1324,18 +1353,55 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Booking status pill tabs ─────────────────────────────────
+    // These pill buttons replace the old <select> filter. Clicking a pill
+    // updates the hidden <select> (for backward-compat with any code that
+    // reads bookingFilter.value) and re-renders the table.
+    function updateBookingStatusCounts() {
+        const all       = DB.bookings;
+        const confirmed = all.filter(b => String(b.status || 'confirmed').toLowerCase() === 'confirmed');
+        const cancelled = all.filter(b => String(b.status || '').toLowerCase() === 'cancelled');
+        const refunded  = all.filter(b => !!b.refundId || String(b.refundStatus || '').toLowerCase() === 'refunded');
+
+        const setCount = (id, n) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(n);
+        };
+        setCount('bkCountAll',       all.length);
+        setCount('bkCountConfirmed', confirmed.length);
+        setCount('bkCountCancelled', cancelled.length);
+        setCount('bkCountRefunded',  refunded.length);
+    }
+
+    (function wireBookingStatusTabs() {
+        const tabs = document.querySelectorAll('.bk-status-tab[data-bk-status]');
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                const status = this.getAttribute('data-bk-status') || 'all';
+                // Update aria / active state on all tabs
+                tabs.forEach(function (t) {
+                    t.classList.toggle('active', t === tab);
+                    t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+                });
+                // Sync the hidden <select> so renderAllBookings reads correct value
+                if (bookingFilter) bookingFilter.value = status;
+                renderAllBookings(status, bookingSearch ? bookingSearch.value : '');
+            });
+        });
+    })();
+
     // Booking search and filter
     const bookingSearch = document.getElementById('bookingSearch');
     const bookingFilter = document.getElementById('bookingFilter');
 
     if (bookingSearch) {
         bookingSearch.addEventListener('input', () => {
-            renderAllBookings(bookingFilter.value, bookingSearch.value);
+            renderAllBookings(bookingFilter ? bookingFilter.value : 'all', bookingSearch.value);
         });
     }
     if (bookingFilter) {
         bookingFilter.addEventListener('change', () => {
-            renderAllBookings(bookingFilter.value, bookingSearch.value);
+            renderAllBookings(bookingFilter.value, bookingSearch ? bookingSearch.value : '');
         });
     }
 
