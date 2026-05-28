@@ -347,8 +347,12 @@
 
         <!-- Bookings Section -->
         <section class="dashboard-section" id="section-bookings">
-            <div class="section-header">
-                <h2>All Bookings</h2>
+            <!-- The section's <h2> title was removed because the
+                 .dashboard-page-title bar above the main content already
+                 shows "All Bookings" — having both produced an obvious
+                 duplicate. The toolbar still gets its own row via
+                 .section-header (now flex-end aligned). -->
+            <div class="section-header" style="justify-content:flex-end;">
                 <div class="section-actions">
                     <input type="text" class="search-input" id="bookingSearch" placeholder="Search bookings...">
                     <!-- Hidden select kept for JS backward-compat; pills below drive it -->
