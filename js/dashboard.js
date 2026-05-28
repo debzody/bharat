@@ -571,24 +571,50 @@ document.addEventListener('DOMContentLoaded', function () {
         const paymentState = getBookingPaymentState(booking);
 
         const isRazorpay = window.Refund && window.Refund.isRazorpayPayment && window.Refund.isRazorpayPayment(booking);
-        const isAlreadyRefunded = !!booking.refundId || !!(liveStatus && String(liveStatus.status || '').toLowerCase() === 'refunded');
+        const liveStatusStr = liveStatus ? String(liveStatus.status || '').toLowerCase() : '';
+        const isAuthorized  = liveStatusStr === 'authorized';
+        const isAlreadyRefunded = !!booking.refundId || !!booking.refundedAt ||
+            String(booking.refundStatus || '').toLowerCase() === 'refunded' ||
+            liveStatusStr === 'refunded';
         const isCancelled = String(booking.status || '').toLowerCase() === 'cancelled';
+
+        // ── Preview pane action buttons — same state-machine as actionCellHtml ──
+        // AUTHORIZED  → no buttons (payment not captured yet, Razorpay rejects refunds)
+        // CAPTURED + confirmed → Cancel only
+        // CAPTURED + cancelled → Refund button
+        // Already refunded     → "Refunded ₹X" badge, no buttons
+        // Non-Razorpay/FREE    → Cancel only (when not yet cancelled)
         let actionsHtml = '';
-        if (!isCancelled) {
-            actionsHtml += '<button type="button" class="action-btn action-btn-cancel" data-preview-cancel="' + escHtml(String(booking.id)) + '" style="background:#fff3f3;color:#e74c3c;border:1px solid #f5c6cb;"><i class="fas fa-ban"></i> Cancel Booking</button>';
-        }
-        if (isRazorpay && !isAlreadyRefunded) {
-            const previewSuggestedRefund = (window.Refund && window.Refund.computeRefundAmount)
+
+        if (isAlreadyRefunded) {
+            // Refunded — show badge, nothing else
+            actionsHtml += '<span class="badge badge-failed" style="margin-left:.4rem;padding:.35rem .7rem;">Refunded ' + formatCurrency(booking.refundAmount || 0) + '</span>';
+        } else if (isRazorpay && isAuthorized) {
+            // AUTHORIZED — can't capture/void from here
+            actionsHtml += '<span style="font-size:.82rem;color:#888;padding:.3rem 0;display:inline-block;" ' +
+                'title="Payment is AUTHORIZED but not yet captured. Capture or void via Razorpay Dashboard first.">' +
+                '⏳ Payment authorized — capture or void via Razorpay Dashboard before taking action here.</span>';
+        } else if (isRazorpay && isCancelled) {
+            // CAPTURED + cancelled → Refund button
+            // Use advance_paid if set, otherwise fall back to full price
+            // (admin may have not set advance_paid on older bookings)
+            const previewAdvance = Number(booking.advance_paid) || Number(booking.price) || 0;
+            const previewSuggested = (window.Refund && window.Refund.computeRefundAmount)
                 ? Number(window.Refund.computeRefundAmount(booking) || 0)
                 : 0;
-            const previewFallbackRefund = Number(booking.advance_paid) || 0;
-            const previewRefundLabel = previewSuggestedRefund > 0
-                ? 'Refund ' + formatCurrency(previewSuggestedRefund)
-                : 'Refund ' + formatCurrency(previewFallbackRefund);
-            actionsHtml += '<button type="button" class="action-btn action-btn-refund" data-preview-refund="' + escHtml(String(booking.id)) + '" style="background:#fff5e6;color:#a04000;border:1px solid #f1c27d;margin-left:.4rem;"><i class="fas fa-undo-alt"></i> ' + escHtml(previewRefundLabel) + '</button>';
-        }
-        if (isAlreadyRefunded) {
-            actionsHtml += '<span class="badge badge-failed" style="margin-left:.4rem;">Refunded ' + formatCurrency(booking.refundAmount || 0) + '</span>';
+            const previewRefundLabel = previewSuggested > 0
+                ? 'Refund ' + formatCurrency(previewSuggested)
+                : (previewAdvance > 0 ? 'Refund ' + formatCurrency(previewAdvance) : 'Refund…');
+            actionsHtml += '<button type="button" class="action-btn action-btn-refund" data-preview-refund="' +
+                escHtml(String(booking.id)) + '" style="background:#fff5e6;color:#a04000;border:1px solid #f1c27d;">' +
+                '<i class="fas fa-undo-alt"></i> ' + escHtml(previewRefundLabel) + '</button>';
+        } else {
+            // confirmed (or non-Razorpay) → Cancel button only
+            if (!isCancelled) {
+                actionsHtml += '<button type="button" class="action-btn action-btn-cancel" data-preview-cancel="' +
+                    escHtml(String(booking.id)) + '" style="background:#fff3f3;color:#e74c3c;border:1px solid #f5c6cb;">' +
+                    '<i class="fas fa-ban"></i> Cancel Booking</button>';
+            }
         }
 
         preview.innerHTML = ''
