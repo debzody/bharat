@@ -1159,6 +1159,57 @@
                 </div>
             </div>
 
+            <!-- ── Push-Notification Ads (kill switch) ─────────────
+                 Site-wide kill switch for the third-party push-notification
+                 ad-network registered via /sw.js. When OFF, js/push-ads-init.js
+                 ACTIVELY UNREGISTERS the worker on every visitor's next
+                 page-load, so flipping this off in Firestore propagates within
+                 minutes — no redeploy needed. Admins/staff are always exempt
+                 anyway (push-ads-init.js skips them by role/email match).
+                 ⚠️ See ezoic_ads_setup.md and sw.js for risk acknowledgement
+                 (AdSense conflict, Ezoic ToS, SEO impact). -->
+            <div class="settings-card" style="margin-top:1.5rem;background:#fdf2f2;border-left:3px solid #c0392b;">
+                <div class="settings-row">
+                    <div class="settings-label-block">
+                        <h3>
+                            <i class="fas fa-bell-slash" style="color:#c0392b;"></i>
+                            Push-Notification Ads &mdash; <span id="pushAdsBadge" style="display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.78rem;font-weight:700;background:#c0392b;color:#fff;vertical-align:middle;">CHECKING…</span>
+                        </h3>
+                        <p>
+                            Site-wide kill switch for the third-party <strong>push-notification ad network</strong>
+                            (zone <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">11068987</code> via <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">/sw.js</code>).
+                            Toggle <strong>OFF</strong> to immediately stop registering the service worker
+                            on new visits AND unregister it on returning visitors' next page-load.
+                            Useful when:
+                        </p>
+                        <ul style="margin:.5rem 0 .5rem 1.1rem;color:#3a4a55;font-size:.88rem;line-height:1.65;">
+                            <li>Your AdSense application is under review (push-ads will get it rejected).</li>
+                            <li>Ezoic flags a ToS violation about competing ad networks.</li>
+                            <li>You see a spike in bounce rate / push-permission complaints.</li>
+                        </ul>
+                        <p style="margin-top:.4rem;color:#7a8b96;font-size:.85rem;">
+                            Admins &amp; staff are <strong>always</strong> exempt &mdash; you never see push prompts
+                            even when this toggle is ON. Booking / checkout / dashboard pages are also
+                            ad-free by design (the script never loads there).
+                        </p>
+                    </div>
+                    <label class="toggle-switch" title="Enable / disable the push-notification ad network">
+                        <input type="checkbox" id="pushAdsEnabledToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-actions" style="margin-top:1.2rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+                    <button class="btn-save-packages" id="savePushAdsBtn">
+                        <i class="fas fa-save"></i> Save Push-Ads Setting
+                    </button>
+                    <button type="button" class="action-btn action-btn-cancel" id="killPushAdsThisDeviceBtn"
+                            title="Set the local kill switch and unregister /sw.js on THIS browser only — useful for QA without flipping the global setting.">
+                        <i class="fas fa-skull-crossbones"></i> Kill on this device
+                    </button>
+                    <span id="pushAdsInfo" style="color:#666;font-size:.9rem;"></span>
+                </div>
+            </div>
+
             <!-- ── Conversion Boosters ─────────────────────────── -->
             <div class="settings-card" style="margin-top:1.5rem;background:#fff8e1;border-left:3px solid #f39c12;">
                 <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:.5rem;">
@@ -1978,7 +2029,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
     <script src="js/refund.js?v=2"></script>
-    <script src="js/dashboard.js?v=42"></script>
+    <script src="js/dashboard.js?v=43"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
     <script src="js/inbox-receiver.js?v=9"></script>

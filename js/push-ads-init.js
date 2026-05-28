@@ -15,15 +15,33 @@
  *     load this script (intentional — keeps the booking funnel
  *     ad-free for converting customers).
  *
- * SAFETY GUARDS (we add these on top of the network's own behaviour):
- *   • Skip if the browser doesn't support service workers
- *     (old browsers, in-app webviews, Lighthouse audits).
- *   • Skip if the page is loaded over plain HTTP (service workers
- *     require HTTPS). On localhost we still register so dev works.
- *   • Skip if a different service worker is already registered at
- *     `/` — we don't want to clobber a future PWA worker.
- *   • Defer the registration until `load` so it never competes with
- *     critical render assets.
+ * SAFETY GUARDS — register() is skipped (and any previously-installed
+ *   /sw.js is actively UNREGISTERED) when ANY of these is true:
+ *
+ *   1. Browser doesn't support service workers (old browser, webview).
+ *   2. Page is on plain HTTP (service workers require HTTPS, except
+ *      on localhost where we keep dev workflow intact).
+ *   3. Page is inside an iframe (ad slots / Razorpay overlay don't
+ *      need their own copy of the SW).
+ *   4. The current visitor is an ADMIN or STAFF user (signed in via
+ *      js/firebase-config.js → window.ADMIN_EMAILS / STAFF_EMAILS,
+ *      OR `currentUser.role === 'admin'|'staff'`). Admins shouldn't
+ *      see ad-network notifications and shouldn't pollute the
+ *      network's analytics either.
+ *   5. The site-wide setting `pushAdsEnabled` is FALSE in the
+ *      Firestore /settings/site doc (admin can flip this from
+ *      Dashboard → Settings without redeploying — see
+ *      js/dashboard.js → "Push Ads" toggle).
+ *   6. The visitor turned it off on this device — either:
+ *        • localStorage.disable_push_ads === '1', or
+ *        • URL contains ?push_ads=off (sets the localStorage flag
+ *          and unregisters the worker, then strips the param).
+ *
+ * Public API (window.PushAds) for testing / admin tooling:
+ *   • PushAds.enable()       — clears the local kill switch.
+ *   • PushAds.disable()      — sets the local kill switch + unregisters.
+ *   • PushAds.unregister()   — forcibly tears down /sw.js (no flag set).
+ *   • PushAds.status()       — returns {supported, registered, killed}.
  *
  * ⚠️ Operational risks documented in ezoic_ads_setup.md and sw.js
  * — the user opted-in to "full integration; accept the risks".
@@ -31,45 +49,138 @@
 (function () {
     'use strict';
 
-    // 1. Browser-support gate
-    if (!('serviceWorker' in navigator)) return;
+    var KILL_KEY       = 'disable_push_ads';
+    var REGISTERED_KEY = '__pushAdsSwRegistered';
+    var SW_PATH        = '/sw.js';
 
-    // 2. HTTPS gate (service workers refuse to register on plain HTTP
-    //    except on localhost). Bail silently rather than throwing.
-    var proto = (location.protocol || '').toLowerCase();
-    var host  = (location.hostname || '').toLowerCase();
-    var isLocal = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
-    if (proto !== 'https:' && !isLocal) return;
+    function dlog() {
+        if (window.console && console.debug) {
+            try { console.debug.apply(console, ['[push-ads]'].concat([].slice.call(arguments))); }
+            catch (_) {}
+        }
+    }
 
-    // 3. Don't re-register the worker on every page-load — the browser
-    //    will short-circuit identical registrations, but bailing out
-    //    based on a flag makes the logs cleaner and avoids a redundant
-    //    Network → /sw.js fetch on every navigation.
-    function alreadyRegistered() {
-        try { return sessionStorage.getItem('__pushAdsSwRegistered') === '1'; }
+    /* ── 0. Honour ?push_ads=off / ?push_ads=on query params ─── */
+    // The flag is consumed (URL is cleaned via history.replaceState)
+    // so users don't accidentally share the kill switch with friends.
+    (function consumeQueryFlag() {
+        try {
+            var params = new URLSearchParams(location.search);
+            var v = (params.get('push_ads') || '').toLowerCase();
+            if (!v) return;
+            if (v === 'off' || v === '0' || v === 'false' || v === 'no') {
+                try { localStorage.setItem(KILL_KEY, '1'); } catch (_) {}
+                dlog('?push_ads=off → kill switch SET on this device');
+            } else if (v === 'on' || v === '1' || v === 'true' || v === 'yes') {
+                try { localStorage.removeItem(KILL_KEY); } catch (_) {}
+                dlog('?push_ads=on → kill switch CLEARED on this device');
+            }
+            params.delete('push_ads');
+            var qs = params.toString();
+            history.replaceState(null, '',
+                location.pathname + (qs ? ('?' + qs) : '') + location.hash);
+        } catch (_) {}
+    })();
+
+    /* ── helpers ───────────────────────────────────────────────── */
+
+    function localKillSwitchOn() {
+        try { return localStorage.getItem(KILL_KEY) === '1'; }
+        catch (_) { return false; }
+    }
+
+    function isAdminOrStaff() {
+        try {
+            var raw = localStorage.getItem('currentUser');
+            if (!raw) return false;
+            var u = JSON.parse(raw);
+            if (!u) return false;
+            // Role flag (set by Firebase Auth login flow).
+            var role = String(u.role || '').toLowerCase();
+            if (role === 'admin' || role === 'staff') return true;
+            // Email match against the global allow-lists (firebase-config.js).
+            var email = String(u.email || '').toLowerCase();
+            if (!email) return false;
+            var admins = (window.ADMIN_EMAILS || []).map(function (e) {
+                return String(e).toLowerCase();
+            });
+            var staff  = (window.STAFF_EMAILS || []).map(function (e) {
+                return String(e).toLowerCase();
+            });
+            if (admins.indexOf(email) >= 0) return true;
+            if (staff.indexOf(email) >= 0) return true;
+            return false;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    // Site-wide kill switch from Firestore /settings/site → pushAdsEnabled.
+    // Returns a Promise<boolean> — true means "ads ARE enabled site-wide".
+    // Falls through to true (ads on) if SettingsStore isn't available, so
+    // a Firestore outage doesn't accidentally turn ads off everywhere.
+    function siteWideEnabled() {
+        return new Promise(function (resolve) {
+            try {
+                if (!window.SettingsStore || typeof window.SettingsStore.load !== 'function') {
+                    return resolve(true);
+                }
+                window.SettingsStore.load().then(function (s) {
+                    // Default: enabled (matches the user's "full integration" decision).
+                    resolve(!s || s.pushAdsEnabled !== false);
+                }).catch(function () {
+                    resolve(true);
+                });
+            } catch (_) { resolve(true); }
+        });
+    }
+
+    function alreadyRegisteredFlag() {
+        try { return sessionStorage.getItem(REGISTERED_KEY) === '1'; }
         catch (_) { return false; }
     }
     function markRegistered() {
-        try { sessionStorage.setItem('__pushAdsSwRegistered', '1'); } catch (_) {}
+        try { sessionStorage.setItem(REGISTERED_KEY, '1'); } catch (_) {}
+    }
+    function clearRegisteredFlag() {
+        try { sessionStorage.removeItem(REGISTERED_KEY); } catch (_) {}
     }
 
-    // 4. Don't register inside an iframe (ad units, Razorpay checkout
-    //    overlay, etc.) — only the top frame should claim the SW scope.
-    if (window.top !== window.self) return;
+    function unregisterSw() {
+        clearRegisteredFlag();
+        if (!('serviceWorker' in navigator)) return Promise.resolve(false);
+        return navigator.serviceWorker.getRegistrations()
+            .then(function (regs) {
+                var killed = 0;
+                var work = regs.map(function (r) {
+                    var url = (r.active && r.active.scriptURL) ||
+                              (r.installing && r.installing.scriptURL) ||
+                              (r.waiting && r.waiting.scriptURL) || '';
+                    // Only kill OUR SW; never touch a future first-party PWA worker.
+                    if (url && url.indexOf(SW_PATH) >= 0) {
+                        killed++;
+                        return r.unregister().catch(function () {});
+                    }
+                    return null;
+                }).filter(Boolean);
+                return Promise.all(work).then(function () {
+                    if (killed > 0) dlog('unregistered', killed, 'push-ads service worker(s)');
+                    return killed > 0;
+                });
+            })
+            .catch(function () { return false; });
+    }
 
     function register() {
-        if (alreadyRegistered()) return;
+        if (alreadyRegisteredFlag()) return;
         try {
-            // scope: '/' so the worker can intercept / send notifications
-            // for the whole site. The ad network requires this — if we
-            // narrowed the scope, push delivery to the user would break
-            // the moment they navigated to a different page.
-            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            // scope: '/' so the worker can deliver notifications across
+            // the whole site. The ad network expects this — narrowing
+            // scope would break delivery the moment the user navigates.
+            navigator.serviceWorker.register(SW_PATH, { scope: '/' })
                 .then(function (reg) {
                     markRegistered();
-                    if (window.console && console.debug) {
-                        console.debug('[push-ads] service worker registered:', reg && reg.scope);
-                    }
+                    dlog('service worker registered:', reg && reg.scope);
                 })
                 .catch(function (err) {
                     if (window.console && console.warn) {
@@ -77,22 +188,112 @@
                     }
                 });
         } catch (err) {
-            // Older browsers + restrictive CSPs may throw synchronously.
             if (window.console && console.warn) {
                 console.warn('[push-ads] register() threw:', err && err.message);
             }
         }
     }
 
-    // 5. Defer until the page has finished its main load — keeps the
-    //    initial render (LCP, FID) untouched by the third-party SW
-    //    fetch + install.
+    /* ── pre-flight gates (fast, synchronous) ─────────────────── */
+    if (!('serviceWorker' in navigator)) {
+        dlog('skip: service workers not supported');
+        return;
+    }
+    var proto = (location.protocol || '').toLowerCase();
+    var host  = (location.hostname || '').toLowerCase();
+    var isLocal = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
+    if (proto !== 'https:' && !isLocal) {
+        dlog('skip: not HTTPS');
+        return;
+    }
+    if (window.top !== window.self) {
+        dlog('skip: inside iframe');
+        return;
+    }
+
+    /* ── public API for testing / admin / dashboard tooling ───── */
+    window.PushAds = {
+        // Set the local kill switch + tear down the worker on this device.
+        // The next page-load will see the kill switch and skip register().
+        disable: function () {
+            try { localStorage.setItem(KILL_KEY, '1'); } catch (_) {}
+            return unregisterSw();
+        },
+        // Clear the local kill switch. Worker will re-register on next load.
+        enable: function () {
+            try { localStorage.removeItem(KILL_KEY); } catch (_) {}
+            dlog('local kill switch CLEARED — worker will register on next load');
+            return Promise.resolve(true);
+        },
+        // Tear down the worker WITHOUT setting the kill switch — useful when
+        // diagnosing or hot-swapping the SW file.
+        unregister: function () {
+            return unregisterSw();
+        },
+        // Quick status snapshot for the console / dashboard.
+        status: function () {
+            return navigator.serviceWorker.getRegistrations()
+                .then(function (regs) {
+                    var ours = regs.filter(function (r) {
+                        var u = (r.active && r.active.scriptURL) || '';
+                        return u.indexOf(SW_PATH) >= 0;
+                    });
+                    return {
+                        supported:  true,
+                        registered: ours.length > 0,
+                        scope:      ours.length ? ours[0].scope : null,
+                        killed:     localKillSwitchOn(),
+                        adminOrStaff: isAdminOrStaff()
+                    };
+                })
+                .catch(function () {
+                    return { supported: true, registered: false, killed: localKillSwitchOn(),
+                             adminOrStaff: isAdminOrStaff(), error: true };
+                });
+        }
+    };
+
+    /* ── decision time ────────────────────────────────────────── */
+
+    // Decide whether to register the worker, OR to actively
+    // unregister any previously-installed copy. We always honour the
+    // kill conditions even on a returning visitor — that way an admin
+    // who flips the global toggle off in the dashboard sees their
+    // existing browsers stop receiving push ads on the next page-load.
+    function decide() {
+        // Local kill switch wins immediately — no async I/O needed.
+        if (localKillSwitchOn()) {
+            dlog('skip: local kill switch ON (localStorage.disable_push_ads=1)');
+            unregisterSw();
+            return;
+        }
+        // Admin / staff user → never register, and unregister any
+        // SW that was installed on the same device when the user was
+        // a regular visitor (e.g., before they logged in).
+        if (isAdminOrStaff()) {
+            dlog('skip: admin/staff user — unregistering any existing push-ads SW');
+            unregisterSw();
+            return;
+        }
+        // Site-wide toggle (Firestore /settings/site → pushAdsEnabled).
+        // Async — but the page is already loaded by now so the small
+        // delay doesn't matter for performance.
+        siteWideEnabled().then(function (on) {
+            if (!on) {
+                dlog('skip: site-wide pushAdsEnabled is FALSE — unregistering');
+                unregisterSw();
+                return;
+            }
+            register();
+        });
+    }
+
+    /* ── 1.5-sec defer so we run AFTER all critical render assets ─ */
     if (document.readyState === 'complete') {
-        // Small delay so we genuinely run AFTER everything else.
-        setTimeout(register, 1500);
+        setTimeout(decide, 1500);
     } else {
         window.addEventListener('load', function () {
-            setTimeout(register, 1500);
+            setTimeout(decide, 1500);
         }, { once: true });
     }
 })();
