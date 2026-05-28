@@ -529,10 +529,33 @@ document.addEventListener('DOMContentLoaded', function () {
         const status = String(booking.status || 'confirmed').toUpperCase();
         const paymentState = getBookingPaymentState(booking);
 
-        // Fetch live status if it's a Razorpay payment
+        // Fetch live status if it's a Razorpay payment and sync it back to Firestore
         let liveStatus = null;
         if (booking.payment_id && !/^FREE-/i.test(booking.payment_id)) {
             liveStatus = await fetchRazorpayPaymentStatus(booking.payment_id);
+            // Write the live status back to the booking so future loads reflect it
+            if (liveStatus && liveStatus.status) {
+                const liveStatusStr = String(liveStatus.status).toLowerCase();
+                if (liveStatusStr !== String(booking.payment_status || '').toLowerCase()) {
+                    booking.payment_status = liveStatusStr;
+                    // Persist to Firestore
+                    if (window.__firebaseReady) {
+                        try {
+                            const fb = await window.__firebaseReady;
+                            const docId = booking._fsId || booking.id;
+                            if (docId) {
+                                const ref = fb.firestore.doc(fb.db, 'bookings', String(docId));
+                                await fb.firestore.updateDoc(ref, { payment_status: liveStatusStr });
+                            }
+                        } catch (_) {}
+                    }
+                    // Also flag refunded status
+                    if (liveStatusStr === 'refunded' && !booking.refundStatus) {
+                        booking.refundStatus = 'refunded';
+                    }
+                    DB.saveBookings();
+                }
+            }
         }
 
         const isRazorpay = window.Refund && window.Refund.isRazorpayPayment && window.Refund.isRazorpayPayment(booking);
