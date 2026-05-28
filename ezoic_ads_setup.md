@@ -147,6 +147,50 @@ We're using **manual placeholders** — you control exactly where ads appear. If
 
 ---
 
+## 🌀 Dynamic content (modals, infinite scroll, SPA navigation)
+
+Per Ezoic's Dynamic Content guide, ads need to be told when content changes inside a single pageview. The placement helper exposes a small public API on `window.EzoicPlacements` that wraps every `ezstandalone` call you'd otherwise have to write inline.
+
+### `window.EzoicPlacements.refresh()`
+Re-scan the DOM. Any `<div id="ezoic-pub-ad-placeholder-NNN">` that we haven't shown yet gets passed to `ezstandalone.showAds(...)`. Safe to call as often as you like — already-shown IDs are skipped (no double impressions).
+
+**Use when:** A modal opens with new placeholder divs inside, a tab switch reveals a new section with placeholders, an "AJAX load more" appends new content to the page.
+
+```js
+// Example: after opening a modal that contains <div id="ezoic-pub-ad-placeholder-201">
+modal.classList.add('open');
+window.EzoicPlacements && window.EzoicPlacements.refresh();
+```
+
+### `window.EzoicPlacements.show(...ids)`
+Explicitly show specific IDs you just added. Same as Ezoic's example block — this version wraps it so you don't need an inline `<script>`.
+
+```js
+window.EzoicPlacements.show(104, 105);
+```
+
+### `window.EzoicPlacements.destroy(...ids)`
+Tear down placements before removing their `<div>`s from the DOM (e.g. closing a modal whose contents had ads).
+
+```js
+window.EzoicPlacements.destroy(201, 202);
+modalNode.remove();
+```
+
+### `window.EzoicPlacements.destroyAll()`
+Wraps `ezstandalone.destroyAll()`. Useful when ripping out a whole section and rebuilding from scratch.
+
+### `window.EzoicPlacements.refreshAllForNewPage()`
+For SPA-style URL changes (we don't currently use this — our routes are full HTML pages — but reserved for the future). Calls `ezstandalone.showAds()` with no arguments, which Ezoic interprets as "I'm on a new pageview, refresh every existing placeholder + anchor + video ad". Then re-scans the DOM so any newly-rendered placeholders specific to the new route also light up.
+
+### Doesn't this site already use SPA-style nav?
+
+Not really — `index.html`'s `#packages`, `#destinations`, `#how-it-works` etc. are **anchor scrolls within a single document**. Ezoic doesn't count those as new pageviews and the placements stay live the whole time. The actual page transitions (clicking through to `/package`, `/gallery`, `/flights`) are full HTML loads, which means each page gets its own clean Ezoic init from the header scripts — no dynamic API needed.
+
+The dynamic API is there for future features (lazy-rendered modal ads, blog "load more articles", etc.) without scattering inline `<script>` tags through the codebase.
+
+---
+
 ## 🚦 Verification checklist
 
 After Step 1 + Step 2:
