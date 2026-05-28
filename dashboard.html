@@ -1935,6 +1935,10 @@
         // Bookings tab to auto-process refunds based on the
         // sliding-scale policy. Set this AFTER deploying the Worker.
         window.REFUND_WORKER_URL = 'https://refund.pittu-das2.workers.dev';
+        // TEST worker — deployed with rzp_test_ keys for test-mode bookings
+        // Deploy: cd workers/refund-test && npm install && npx wrangler secret put RAZORPAY_KEY_ID && npx wrangler secret put RAZORPAY_KEY_SECRET && npx wrangler deploy
+        // Then replace the placeholder below with the deployed URL:
+        window.REFUND_TEST_WORKER_URL = ''; // e.g. 'https://refund-test.pittu-das2.workers.dev'
     </script>
     <!-- firebase-config.js is already loaded once near the top of <head>
          (line ~27). Loading it a second time here re-runs `const
