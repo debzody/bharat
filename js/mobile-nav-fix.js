@@ -1,41 +1,34 @@
 /* ─────────────────────────────────────────────────────────────────
  * mobile-nav-fix.js — guarantee the mobile hamburger menu works.
  *
- * Why this exists
- *   The pure-CSS attempts to make the hamburger reliably tappable on
- *   small phones did not solve the user's complaint ("hamburger
- *   doesn't work"). Rather than continue iterating on CSS in the
- *   dark, this file takes a defensive belt-and-braces JS approach:
+ * Multiple iterations of pure-CSS fixes did not solve "hamburger
+ * doesn't work". Root cause turned out to be a CSS specificity
+ * collision inside style.css:
+ *   • Line 182: @media (max-width:768px) { .topnav { position:fixed } }
+ *   • Line 919: @media (max-width:980px) { .topnav { display:none } }
+ * The later rule wins, so toggling body.nav-open did nothing visible.
  *
- *   1. Bind the toggle handler in the CAPTURE phase so it fires
- *      before any other listener (Razorpay overlays, ad-network
- *      iframes, third-party scripts, conversion-kit's WhatsApp FAB
- *      etc.) can call stopPropagation() or otherwise swallow the
- *      tap.
- *   2. Bind to BOTH `click` AND `touchend` — on iOS Safari there
- *      are still rare cases where a 300 ms tap delay or a
- *      passive-listener policy causes a `click` to be skipped after
- *      a touch sequence.
- *   3. Force the hamburger button to the top of any z-index stack
- *      and explicitly clear `pointer-events: none` if any third
- *      party set it (e.g. Ezoic's overlays).
- *   4. Clone the button to nuke any zombie listeners that an
- *      earlier broken script may have attached.
- *   5. Write a tiny on-screen log into a hidden #__navfix-log div
- *      that you can reveal by appending `?navfix=1` to the URL —
- *      lets us confirm on the actual phone whether taps are firing
- *      WITHOUT needing remote DevTools.
+ * Rather than continue fighting the cascade, this script now BUILDS
+ * ITS OWN dropdown menu element + backdrop at runtime, appends them
+ * to <body>, and shows/hides them via inline `!important` styles.
+ * No CSS rule in the project can interfere — every property is
+ * applied with style.setProperty(...,'important').
  *
- * No dependencies — vanilla JS, IIFE, runs after DOMContentLoaded.
- * Loaded last on every public + funnel page so it's the final word
- * on what handles a tap on #hamburgerBtn.
+ * The menu items are pulled live from the page's existing #topnav
+ * (so they stay in sync with whatever the desktop nav shows) and a
+ * hard-coded fallback list is used if the topnav is empty.
  *
- * Side-effects (intentional):
- *   • Toggles `body.nav-open` (matches what js/script.js does).
- *   • Closes the menu when the user taps any .topnav-item OR
- *     anywhere outside the menu/topbar (mirrors js/script.js).
- *   • Locks body scroll while the menu is open (prevents the
- *     background page from scrolling behind the slide-in menu).
+ * Side-effects:
+ *   • Creates #__mobile-nav-drop and #__mobile-nav-backdrop on first
+ *     open. Idempotent — re-opening reuses the same elements.
+ *   • Locks body scroll while the menu is open.
+ *   • Closes on outside tap, on any link tap, on Esc.
+ *   • Public API: window.NavFix.toggle() / .open() / .close() /
+ *     .status() — handy for console diagnosis.
+ *
+ * Debug: append `?navfix=1` to any URL to surface a green-on-black
+ * on-screen log so you can see tap events firing on the actual phone
+ * without remote DevTools.
  * ────────────────────────────────────────────────────────────────*/
 (function () {
     'use strict';
@@ -61,9 +54,6 @@
         try { console.log.apply(console, ['[navfix]'].concat([].slice.call(arguments))); } catch (e) {}
     }
 
-    /* Run as soon as the DOM is parseable. The hamburger lives in
-       the static <header> at the top of every page so it's available
-       very early. */
     function ready(fn) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', fn, { once: true });
@@ -72,19 +62,172 @@
         }
     }
 
+    /* ── DROPDOWN BUILDER ────────────────────────────────────── */
+
+    var DROP_ID     = '__mobile-nav-drop';
+    var BACKDROP_ID = '__mobile-nav-backdrop';
+
+    function buildDrop() {
+        var drop = document.getElementById(DROP_ID);
+        if (drop) return drop;
+
+        drop = document.createElement('div');
+        drop.id = DROP_ID;
+        drop.setAttribute('role', 'menu');
+        drop.setAttribute('aria-label', 'Site navigation');
+
+        var s = drop.style;
+        s.setProperty('position', 'fixed', 'important');
+        s.setProperty('top', '64px', 'important');
+        s.setProperty('left', '0.5rem', 'important');
+        s.setProperty('right', '0.5rem', 'important');
+        s.setProperty('background', '#ffffff', 'important');
+        s.setProperty('border', '1px solid rgba(10,31,68,.12)', 'important');
+        s.setProperty('border-radius', '14px', 'important');
+        s.setProperty('box-shadow', '0 16px 40px rgba(10,31,68,.28)', 'important');
+        s.setProperty('padding', '0.5rem', 'important');
+        s.setProperty('z-index', '2147483645', 'important');
+        s.setProperty('max-height', 'calc(100vh - 80px)', 'important');
+        s.setProperty('overflow-y', 'auto', 'important');
+        s.setProperty('display', 'none', 'important');
+        s.setProperty('flex-direction', 'column', 'important');
+        s.setProperty('gap', '0.15rem', 'important');
+        s.setProperty('font-family', 'Poppins, system-ui, sans-serif', 'important');
+
+        // Pull live items from the page's existing #topnav (so the
+        // menu always matches the desktop nav). Fall back to a hard-
+        // coded list if the topnav is missing or empty.
+        var srcItems = document.querySelectorAll('#topnav .topnav-item, .topnav .topnav-item');
+        var built = 0;
+        srcItems.forEach(function (src) {
+            var href  = src.getAttribute('href') || '#';
+            var label = (src.querySelector('span') || src).textContent.trim();
+            if (!label) return;
+            drop.appendChild(makeItem(href, label));
+            built++;
+        });
+
+        if (built === 0) {
+            [
+                { href: '/',          label: 'Home'      },
+                { href: '/#packages', label: 'Holidays'  },
+                { href: '/cabs',      label: 'Cabs'      },
+                { href: '/flights',   label: 'Flights'   },
+                { href: '/gallery',   label: 'Gallery'   },
+                { href: '/about',     label: 'About'     },
+                { href: '/customize', label: 'Customize' }
+            ].forEach(function (i) {
+                drop.appendChild(makeItem(i.href, i.label));
+            });
+            log('built menu from fallback list');
+        } else {
+            log('built menu from #topnav (' + built + ' items)');
+        }
+
+        document.body.appendChild(drop);
+        return drop;
+    }
+
+    function makeItem(href, label) {
+        var a = document.createElement('a');
+        a.href = href;
+        a.textContent = label;
+        a.setAttribute('role', 'menuitem');
+        var as = a.style;
+        as.setProperty('display', 'block', 'important');
+        as.setProperty('padding', '0.85rem 1rem', 'important');
+        as.setProperty('color', '#1a2330', 'important');
+        as.setProperty('text-decoration', 'none', 'important');
+        as.setProperty('font-size', '0.98rem', 'important');
+        as.setProperty('font-weight', '500', 'important');
+        as.setProperty('border-radius', '10px', 'important');
+        as.setProperty('min-height', '44px', 'important');
+        as.setProperty('line-height', '1.4', 'important');
+        as.setProperty('-webkit-tap-highlight-color', 'rgba(13,122,138,.18)', 'important');
+        // Highlight the current page so users see where they are.
+        try {
+            var u = new URL(a.href, location.href);
+            if (u.pathname === location.pathname) {
+                as.setProperty('background', 'rgba(13,122,138,.10)', 'important');
+                as.setProperty('color', '#0d7a8a', 'important');
+                as.setProperty('font-weight', '700', 'important');
+            }
+        } catch (_) {}
+        a.addEventListener('click', function () { close(); });
+        return a;
+    }
+
+    function buildBackdrop() {
+        var bd = document.getElementById(BACKDROP_ID);
+        if (bd) return bd;
+        bd = document.createElement('div');
+        bd.id = BACKDROP_ID;
+        var bs = bd.style;
+        bs.setProperty('position', 'fixed', 'important');
+        bs.setProperty('inset', '0', 'important');
+        bs.setProperty('background', 'rgba(8,18,30,.32)', 'important');
+        bs.setProperty('z-index', '2147483644', 'important');
+        bs.setProperty('display', 'none', 'important');
+        bd.addEventListener('click', close);
+        document.body.appendChild(bd);
+        return bd;
+    }
+
+    /* ── OPEN / CLOSE ────────────────────────────────────────── */
+
+    var menuOpen = false;
+    var prevOverflow = '';
+
+    function open() {
+        if (menuOpen) return;
+        var drop = buildDrop();
+        var bd   = buildBackdrop();
+        drop.style.setProperty('display', 'flex', 'important');
+        bd.style.setProperty('display', 'block', 'important');
+        document.body.classList.add('nav-open');
+        prevOverflow = document.body.style.overflow || '';
+        document.body.style.overflow = 'hidden';
+        menuOpen = true;
+        log('OPEN');
+    }
+
+    function close() {
+        if (!menuOpen) return;
+        var drop = document.getElementById(DROP_ID);
+        var bd   = document.getElementById(BACKDROP_ID);
+        if (drop) drop.style.setProperty('display', 'none', 'important');
+        if (bd)   bd.style.setProperty('display', 'none', 'important');
+        document.body.classList.remove('nav-open');
+        document.body.style.overflow = prevOverflow;
+        menuOpen = false;
+        log('CLOSED');
+    }
+
+    function toggle(ev) {
+        if (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (typeof ev.stopImmediatePropagation === 'function') {
+                ev.stopImmediatePropagation();
+            }
+        }
+        if (menuOpen) close(); else open();
+    }
+
+    /* ── HAMBURGER WIRING ────────────────────────────────────── */
+
+    var wired = false;
+
     function init() {
         var btn = document.getElementById('hamburgerBtn');
         if (!btn) {
             log('hamburgerBtn not found at init — will retry on load');
-            // Some pages inject the topbar late (admin pages render
-            // header-on-mount). Retry once after window.load.
             window.addEventListener('load', initOnce, { once: true });
             return;
         }
         wire(btn);
     }
 
-    var wired = false;
     function initOnce() {
         if (wired) return;
         var btn = document.getElementById('hamburgerBtn');
@@ -94,111 +237,50 @@
     function wire(btn) {
         if (wired) return;
 
-        /* 1. Clone the button to drop any prior listeners. The clone
-              keeps the same id / classes / DOM position. */
+        // Clone to drop ALL prior listeners (kills zombies from earlier
+        // broken iterations).
         var clone = btn.cloneNode(true);
         btn.parentNode.replaceChild(clone, btn);
         btn = clone;
 
-        /* 2. Force the button to be the topmost interactive element
-              on the topbar regardless of what ANY stylesheet says. */
+        // Force the button to be reliably tappable regardless of any
+        // stylesheet's pointer-events / display / z-index rules.
         try {
+            btn.style.setProperty('display', 'flex', 'important');
             btn.style.setProperty('pointer-events', 'auto', 'important');
             btn.style.setProperty('cursor', 'pointer', 'important');
             btn.style.setProperty('z-index', '2147483646', 'important');
             btn.style.setProperty('touch-action', 'manipulation', 'important');
-            // -webkit-tap-highlight-color is a no-op on most non-iOS
-            // devices but on iOS Safari it confirms the user actually
-            // tapped the right element (a brief grey flash).
             btn.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,140,255,.25)', 'important');
         } catch (e) {}
 
-        /* 3. The actual toggle. Pulled into its own function so we
-              can call it from multiple event types without code
-              duplication. */
-        function toggle(ev) {
-            try {
-                if (ev) {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    if (typeof ev.stopImmediatePropagation === 'function') {
-                        ev.stopImmediatePropagation();
-                    }
-                }
-                document.body.classList.toggle('nav-open');
-                var open = document.body.classList.contains('nav-open');
-                // Lock the page behind the menu so it doesn't scroll
-                // away from the user while they're choosing an item.
-                if (open) {
-                    document.body.dataset.__prevOverflow = document.body.style.overflow || '';
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = document.body.dataset.__prevOverflow || '';
-                    delete document.body.dataset.__prevOverflow;
-                }
-                log('toggle →', open ? 'OPEN' : 'closed', '(via ' + (ev ? ev.type : 'manual') + ')');
-            } catch (e) {
-                log('toggle threw:', e && e.message);
-            }
-        }
-
-        /* 4. Bind in CAPTURE phase. capture:true makes us run BEFORE
-              any other listener that's been attached in bubble phase
-              (the default), so nothing can steal our tap. */
+        // Capture-phase listeners on three event types so nothing in
+        // the bubble phase (or a different event family) can swallow
+        // the tap.
         ['click', 'touchend', 'pointerup'].forEach(function (type) {
             btn.addEventListener(type, toggle, true);
         });
 
-        /* 5. Close-on-outside-tap and close-on-menu-item-tap, also
-              in capture phase so they're guaranteed to fire. */
-        document.addEventListener('click', function (e) {
-            if (!document.body.classList.contains('nav-open')) return;
-            // Tap inside a menu item → close the menu and let the
-            // anchor's normal navigation proceed (we don't preventDefault).
-            var item = e.target && e.target.closest && e.target.closest('.topnav-item');
-            if (item) {
-                document.body.classList.remove('nav-open');
-                document.body.style.overflow = document.body.dataset.__prevOverflow || '';
-                delete document.body.dataset.__prevOverflow;
-                log('closed via menu-item tap');
-                return;
-            }
-            // Tap outside hamburger AND outside topnav → close.
-            if (!e.target.closest) return;
-            if (e.target.closest('#hamburgerBtn')) return;
-            if (e.target.closest('.topnav')) return;
-            document.body.classList.remove('nav-open');
-            document.body.style.overflow = document.body.dataset.__prevOverflow || '';
-            delete document.body.dataset.__prevOverflow;
-            log('closed via outside tap');
-        }, true);
-
-        /* 6. Esc key for keyboard users. */
+        // Esc closes.
         document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            if (!document.body.classList.contains('nav-open')) return;
-            document.body.classList.remove('nav-open');
-            document.body.style.overflow = document.body.dataset.__prevOverflow || '';
-            delete document.body.dataset.__prevOverflow;
-            log('closed via Esc');
+            if (e.key === 'Escape' && menuOpen) close();
         });
 
         wired = true;
-        log('hamburger wired (id=' + btn.id + ', tag=' + btn.tagName + ')');
+        log('hamburger wired (id=' + btn.id + ')');
     }
 
-    /* Public escape hatch: window.NavFix.toggle() forces a toggle
-       from the JS console for testing. */
+    /* ── Public escape hatch ─────────────────────────────────── */
     window.NavFix = {
-        toggle: function () {
-            var btn = document.getElementById('hamburgerBtn');
-            if (btn) btn.click();
-        },
+        toggle: function () { toggle(); },
+        open:   open,
+        close:  close,
         status: function () {
             return {
                 btnExists: !!document.getElementById('hamburgerBtn'),
-                wired: wired,
-                navOpen: document.body.classList.contains('nav-open')
+                wired:     wired,
+                menuOpen:  menuOpen,
+                dropExists: !!document.getElementById(DROP_ID)
             };
         }
     };
