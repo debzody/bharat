@@ -277,7 +277,6 @@
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
     <link rel="stylesheet" href="css/mmt.css?v=28">
     <link rel="stylesheet" href="css/flights.css?v=3">
-    <link rel="stylesheet" href="css/mobile.css?v=6">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Razorpay Payment Gateway -->
@@ -324,133 +323,6 @@
             <span></span><span></span><span></span>
         </button>
     </header>
-
-    <!-- ─────────────────────────────────────────────────────────────
-         INLINE MOBILE NAV TOGGLE (do not remove)
-         Self-contained, no external dependencies, no caching.
-         The deferred js/mobile-nav-fix.js does the same thing but
-         this inline copy guarantees the menu works even if the
-         external file fails to load (offline cache miss, CDN block,
-         service-worker stale-while-revalidate hiccup, etc.).
-         Tag: INLINE-NAV-2026-05-28
-         ───────────────────────────────────────────────────────── */ -->
-    <script>
-    (function () {
-        if (window.__inlineNavBuilt) return;          /* idempotent */
-        window.__inlineNavBuilt = true;
-
-        var DROP_ID = '__inline-nav-drop';
-        var BD_ID   = '__inline-nav-backdrop';
-        var open = false;
-
-        function el(tag, css) {
-            var n = document.createElement(tag);
-            if (css) n.style.cssText = css;
-            return n;
-        }
-
-        function build() {
-            if (document.getElementById(DROP_ID)) return;
-
-            /* Backdrop */
-            var bd = el('div',
-                'position:fixed!important;inset:0!important;' +
-                'background:rgba(8,18,30,.45)!important;' +
-                'z-index:2147483644!important;display:none!important;');
-            bd.id = BD_ID;
-            bd.onclick = closeMenu;
-            document.body.appendChild(bd);
-
-            /* Dropdown */
-            var d = el('div',
-                'position:fixed!important;top:64px!important;' +
-                'left:0.5rem!important;right:0.5rem!important;' +
-                'background:#fff!important;border-radius:14px!important;' +
-                'box-shadow:0 16px 40px rgba(10,31,68,.28)!important;' +
-                'padding:0.5rem!important;z-index:2147483645!important;' +
-                'max-height:calc(100vh - 80px)!important;overflow-y:auto!important;' +
-                'display:none!important;flex-direction:column!important;' +
-                'gap:0.15rem!important;font-family:Poppins,system-ui,sans-serif!important;');
-            d.id = DROP_ID;
-
-            var items = [
-                { href: '/',          label: 'Home'      },
-                { href: '/#packages', label: 'Packages'  },
-                { href: '/cabs',      label: 'Cabs'      },
-                { href: '/flights',   label: 'Flights'   },
-                { href: '/gallery',   label: 'Gallery'   },
-                { href: '/about',     label: 'About'     },
-                { href: '/customize', label: 'Customize' },
-                { href: '/dashboard', label: 'Dashboard' }
-            ];
-            items.forEach(function (i) {
-                var a = el('a',
-                    'display:block!important;padding:.85rem 1rem!important;' +
-                    'color:#1a2330!important;text-decoration:none!important;' +
-                    'font-size:.98rem!important;font-weight:500!important;' +
-                    'border-radius:10px!important;min-height:44px!important;' +
-                    'line-height:1.4!important;-webkit-tap-highlight-color:rgba(13,122,138,.18)!important;');
-                a.href = i.href;
-                a.textContent = i.label;
-                try {
-                    var u = new URL(a.href, location.href);
-                    if (u.pathname === location.pathname) {
-                        a.style.cssText += 'background:rgba(13,122,138,.10)!important;color:#0d7a8a!important;font-weight:700!important;';
-                    }
-                } catch (_) {}
-                a.addEventListener('click', closeMenu);
-                d.appendChild(a);
-            });
-            document.body.appendChild(d);
-        }
-
-        function openMenu() {
-            build();
-            document.getElementById(DROP_ID).style.setProperty('display','flex','important');
-            document.getElementById(BD_ID).style.setProperty('display','block','important');
-            document.body.style.overflow = 'hidden';
-            open = true;
-        }
-        function closeMenu() {
-            var d = document.getElementById(DROP_ID), b = document.getElementById(BD_ID);
-            if (d) d.style.setProperty('display','none','important');
-            if (b) b.style.setProperty('display','none','important');
-            document.body.style.overflow = '';
-            open = false;
-        }
-        function toggle(ev) {
-            if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-            open ? closeMenu() : openMenu();
-        }
-
-        function wire() {
-            var btn = document.getElementById('hamburgerBtn');
-            if (!btn) { setTimeout(wire, 200); return; }
-            /* Cap any other listener — clone drops them all. */
-            var c = btn.cloneNode(true);
-            btn.parentNode.replaceChild(c, btn);
-            btn = c;
-            btn.style.cssText +=
-                ';display:flex!important;pointer-events:auto!important;' +
-                'cursor:pointer!important;z-index:2147483646!important;' +
-                'touch-action:manipulation!important;' +
-                '-webkit-tap-highlight-color:rgba(0,140,255,.25)!important;';
-            ['click','touchend','pointerup'].forEach(function (t) {
-                btn.addEventListener(t, toggle, true);
-            });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && open) closeMenu();
-            });
-            window.InlineNav = { open: openMenu, close: closeMenu, toggle: toggle };
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', wire, { once: true });
-        } else {
-            wire();
-        }
-    })();
-    </script>
 
     <!-- ── Main Content ─────────────────────────────────────── -->
     <main class="main-content">
@@ -1237,7 +1109,6 @@
     <script src="js/auth.js?v=16"></script>
     <script src="js/cities.js?v=18"></script>
     <script src="js/script.js?v=30"></script>
-    <script src="js/mobile-nav-fix.js?v=2" defer></script>
     <script src="js/chat.js?v=14"></script>
     <script src="js/security.js?v=2"></script>
     <script src="js/user-menu.js?v=11"></script>
