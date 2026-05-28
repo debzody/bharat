@@ -7,6 +7,7 @@
     background: #f0f2f5;
     min-height: 100vh;
     font-size: 11.5px;   /* compact dashboard — matches design spec */
+    line-height: 1.4;
 }
 
 /* Override .topbar-logo on dashboard so the brand reads "Admin Dashboard" in teal */
@@ -39,12 +40,12 @@
 }
 .dashboard-page-title {
     background: #fff;
-    padding: 1rem 2rem;
+    padding: 0.5rem 1.25rem;
     border-bottom: 1px solid #e6e9f0;
 }
 .dashboard-page-title .topbar-title {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #333;
 }
@@ -65,7 +66,7 @@
 /* Dashboard Sections */
 .dashboard-section {
     display: none;
-    padding: 2rem;
+    padding: 1rem 1.25rem;
 }
 
 .dashboard-section.active {
@@ -76,30 +77,30 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 .section-header h2 {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     color: #333;
     font-weight: 700;
 }
 
 .section-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.4rem;
     flex-wrap: wrap;
 }
 
 .search-input {
-    padding: 0.6rem 1rem;
+    padding: 0.35rem 0.7rem;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 6px;
     font-family: inherit;
-    font-size: 0.9rem;
-    min-width: 200px;
+    font-size: 0.85rem;
+    min-width: 160px;
     outline: none;
     transition: border-color 0.2s;
 }
@@ -109,11 +110,11 @@
 }
 
 .filter-select {
-    padding: 0.6rem 1rem;
+    padding: 0.35rem 0.7rem;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 6px;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     outline: none;
     background: #fff;
     cursor: pointer;
@@ -122,35 +123,35 @@
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .stat-card {
     background: #fff;
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    gap: 0.65rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
 }
 
@@ -160,14 +161,14 @@
 }
 
 .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #333;
     line-height: 1.2;
 }
 
 .stat-label {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     color: #888;
     font-weight: 500;
 }
@@ -176,25 +177,25 @@
 .charts-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .chart-card {
     background: #fff;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .chart-title {
-    font-size: 1rem;
+    font-size: 0.88rem;
     font-weight: 600;
     color: #333;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .chart-title i {
@@ -204,8 +205,8 @@
 .chart-empty {
     color: #aaa;
     text-align: center;
-    padding: 2rem;
-    font-size: 0.95rem;
+    padding: 1rem;
+    font-size: 0.85rem;
 }
 
 /* Donut Chart */
@@ -358,20 +359,20 @@
 
 .data-table th {
     background: #f8f9fa;
-    padding: 0.85rem 1rem;
+    padding: 0.45rem 0.7rem;
     text-align: left;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #666;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
     border-bottom: 2px solid #eee;
     white-space: nowrap;
 }
 
 .data-table td {
-    padding: 0.85rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.85rem;
     color: #444;
     border-bottom: 1px solid #f0f0f0;
 }
