@@ -339,85 +339,56 @@
     .desktop-only { display: none !important; }
 }
 
-/* ── 13. TOPBAR — KEEP THE HAMBURGER VISIBLE & TAPPABLE ──────────── */
+/* ── 13. TOPBAR — KEEP THE HAMBURGER VISIBLE ─────────────────────── */
 
-/* Two distinct issues on phones (≤ 768 px):
+/* On phones ≤ 480 px the brand text "Bharat Transport & Tourism" +
+ * "Andaman Specialists" runs past the viewport on a 390 px iPhone
+ * (the existing style.css uses flex-direction:row at that breakpoint
+ * so the two lines lay out side-by-side and overflow). Result: the
+ * hamburger button gets pushed past the right edge and is invisible
+ * → users cannot open the menu.
  *
- *  (a) BRAND TEXT OVERFLOW — the existing style.css lays the brand
- *      text out as flex-row on small screens. On a 390 px iPhone
- *      "Bharat Transport & Tourism" + "Andaman Specialists" together
- *      consume more than the topbar's available width, pushing the
- *      hamburger button out past the viewport edge. Result: no
- *      hamburger visible → users can't open the menu.
- *
- *  (b) HAMBURGER HIT-AREA OVERLAP — because the brand text is wrapped
- *      in <a class="topbar-logo" href="/"> AND has pointer-events:auto
- *      explicitly set, the link's tap area can extend over where the
- *      hamburger sits. A tap intended for the hamburger then gets
- *      caught by the logo link instead, navigating to "/" (which
- *      looks like "menu does nothing — just reloads the page").
- *
- * Fix is two-pronged:
- *   1. Pin the hamburger to the right edge with position:absolute,
- *      lift its z-index above the brand text, and force pointer-events
- *      so it ALWAYS receives taps in its area regardless of what the
- *      brand text does.
- *   2. Reserve the right-edge space (44 px gutter via padding-right)
- *      so the brand text can never visually cover the hamburger.
- *
- * No `overflow:hidden` on .topbar (that was the previous regression).
- * No body:has() (also previous regression). The .topnav slide-down
- * remains a separate position:fixed element and is untouched. */
+ * Fix: cap the brand-text flex item so it can shrink AND truncate
+ * the primary brand line. Critically, we do NOT touch .topbar's
+ * overflow / containing-block properties — only the brand text +
+ * its container. The existing .topnav slide-down (which is its own
+ * position:fixed element with z-index:88) is unaffected. */
 
 @media (max-width: 768px) {
-    /* (1) Pin the hamburger to the right edge of the topbar, raised
-           above .brand-text (which has z-index:91 in style.css). */
-    .topbar .hamburger {
-        position: absolute;
-        right: 0.6rem;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 100;                  /* above .brand-text z-index:91 */
-        pointer-events: auto;
-        flex: 0 0 auto;
-        min-width: 44px;
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* (2) Reserve the hamburger's right-edge slot so the brand text
-           can never visually cover it. */
-    .topbar {
-        padding-right: 56px;           /* 44 px button + 12 px breathing */
-    }
-
-    /* (3) Allow the brand-text container to shrink so its content
-           doesn't push other items past the viewport. */
+    /* Allow the brand text container to shrink instead of pushing
+       the hamburger off-screen. */
     .topbar-logo {
         min-width: 0;
         flex: 0 1 auto;
-        max-width: calc(100% - 8px);
     }
     .brand-text {
         min-width: 0;
         flex: 0 1 auto;
         overflow: hidden;
     }
+    /* Truncate the primary brand line if it would overflow the
+       remaining space. */
     .brand-line1 {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 100%;
     }
+    /* Make sure the hamburger stays visible and gets a guaranteed
+       slot at the right edge. (style.css already sets display:flex
+       + margin-left:auto here — we just enforce non-zero size and
+       prevent it from shrinking.) */
+    .topbar .hamburger {
+        flex: 0 0 auto;
+        min-width: 36px;
+    }
 }
 
-/* Tiny phones (≤ 480 px): the existing style.css switches the brand
-   block to flex-direction:row, so both lines fight for the same row
-   width. Drop the secondary subtitle — the primary brand line is
-   enough identification, and we need the few pixels for the
-   hamburger button to stay clear. */
+/* On phones ≤ 480 px the existing style.css switches the brand block
+   to flex-direction:row, which makes the two lines fight for the
+   same row width. Drop the secondary subtitle on tiny phones — the
+   primary brand line is enough ID and we need the space for the
+   hamburger. */
 @media (max-width: 480px) {
     .brand-line2 { display: none; }
 }
