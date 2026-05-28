@@ -653,6 +653,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         preview.innerHTML = ''
             + '<div class="ipv-head">'
+            +   '<button type="button" class="ipv-close" title="Close" style="position:absolute;top:.6rem;right:.6rem;background:none;border:none;font-size:1.1rem;color:#888;cursor:pointer;padding:.2rem .4rem;line-height:1;z-index:2;" aria-label="Close preview">&times;</button>'
             +   '<h3 class="ipv-subject">' + escHtml(packageName) + '</h3>'
             +   '<div class="ipv-meta">'
             +     '<div class="ipv-row"><strong>Booking:</strong> ' + escHtml(String(bookingRef)) + '</div>'
@@ -724,6 +725,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 const tableBtn = document.querySelector('#allBookingsBody .action-btn-cancel[data-id="' + booking.id + '"]');
                 if (tableBtn) tableBtn.click();
                 else if (window.Toast) window.Toast.info('Use the Cancel button in the row to cancel.');
+            });
+        }
+
+        // Wire the × close button — resets preview to empty state
+        const previewCloseBtn = preview.querySelector('.ipv-close');
+        if (previewCloseBtn) {
+            previewCloseBtn.addEventListener('click', function () {
+                activeBookingPreviewId = null;
+                renderBookingPreview(null);
+                // Deselect highlighted row
+                document.querySelectorAll('#allBookingsBody tr.selected')
+                    .forEach(r => r.classList.remove('selected'));
             });
         }
     }

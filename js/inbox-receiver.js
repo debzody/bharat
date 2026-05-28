@@ -397,6 +397,7 @@
             : '<div style="white-space:pre-wrap;line-height:1.6;">' + esc(row.textPlain || '(no body)') + '</div>';
         box.innerHTML =
             '<div class="ipv-head">' +
+                '<button type="button" id="ipvCloseBtn" title="Close" style="position:absolute;top:.6rem;right:.6rem;background:none;border:none;font-size:1.1rem;color:#888;cursor:pointer;padding:.2rem .4rem;line-height:1;z-index:2;" aria-label="Close preview">&times;</button>' +
                 '<h3 class="ipv-subject">' + esc(row.subject || '(no subject)') + '</h3>' +
                 '<div class="ipv-meta">' +
                     '<div class="ipv-row"><strong>From:</strong> ' + esc(row.from || '') + '</div>' +
@@ -421,6 +422,18 @@
         if (replyAllBtn) replyAllBtn.addEventListener('click', function () { doReplyAll(row); });
         if (forwardBtn)  forwardBtn.addEventListener('click',  function () { doForward(row); });
         if (deleteBtn)   deleteBtn.addEventListener('click',   function () { deleteRow(row); });
+        const closeBtn = $('ipvCloseBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                state.selectedId = '';
+                setPreview(null);
+                // Deselect highlighted row in the list
+                Array.prototype.forEach.call(
+                    document.querySelectorAll('#inboxReceivedBody tr.selected'),
+                    function (tr) { tr.classList.remove('selected'); }
+                );
+            });
+        }
     }
 
     /* ── list rendering with checkboxes + bulk toolbar ──── */
