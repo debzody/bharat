@@ -53,6 +53,14 @@
     var REGISTERED_KEY = '__pushAdsSwRegistered';
     var SW_PATH        = '/sw.js';
 
+    // Companion tag-script: in-page push / banner format from the same
+    // ad network as /sw.js. Loading it adds a second monetisation surface
+    // alongside the push-notification opt-in. Same kill switches apply
+    // (admin/staff auto-skip + Firestore pushAdsEnabled + per-device flag).
+    var TAG_SCRIPT_SRC = 'https://quge5.com/88/tag.min.js';
+    var TAG_SCRIPT_ZONE = '243859';
+    var TAG_SCRIPT_ID = '__pushAdsTagScript';   // dedupe sentinel
+
     function dlog() {
         if (window.console && console.debug) {
             try { console.debug.apply(console, ['[push-ads]'].concat([].slice.call(arguments))); }
@@ -148,6 +156,9 @@
 
     function unregisterSw() {
         clearRegisteredFlag();
+        // Pair the SW unregister with the tag-script removal — both come
+        // from the same network and should be torn down together.
+        removeTagScript();
         if (!('serviceWorker' in navigator)) return Promise.resolve(false);
         return navigator.serviceWorker.getRegistrations()
             .then(function (regs) {
@@ -191,6 +202,52 @@
             if (window.console && console.warn) {
                 console.warn('[push-ads] register() threw:', err && err.message);
             }
+        }
+
+        // Also inject the in-page tag script (zone 243859) — second
+        // monetisation surface from the same network. We append it
+        // dynamically (instead of putting it in the HTML) so the kill
+        // switches above are guaranteed to apply BEFORE it loads.
+        injectTagScript();
+    }
+
+    // Inject the third-party tag.min.js exactly once per page. Idempotent —
+    // re-calling does nothing if the script is already on the page (or if
+    // we previously removed it via removeTagScript()).
+    function injectTagScript() {
+        if (document.getElementById(TAG_SCRIPT_ID)) {
+            dlog('tag script already injected');
+            return;
+        }
+        try {
+            var s = document.createElement('script');
+            s.id = TAG_SCRIPT_ID;
+            s.src = TAG_SCRIPT_SRC;
+            s.async = true;
+            s.setAttribute('data-zone', TAG_SCRIPT_ZONE);
+            // data-cfasync="false" stops Cloudflare's Rocket Loader
+            // from rewriting + delaying the script. Documented by
+            // Cloudflare; matches the snippet the ad network ships.
+            s.setAttribute('data-cfasync', 'false');
+            (document.head || document.documentElement).appendChild(s);
+            dlog('tag script injected (zone ' + TAG_SCRIPT_ZONE + ')');
+        } catch (err) {
+            if (window.console && console.warn) {
+                console.warn('[push-ads] tag script injection failed:', err && err.message);
+            }
+        }
+    }
+
+    // Tear down the in-page tag script (best-effort — once the third-party
+    // code has executed it may have stamped its own iframes / event
+    // listeners that we can't clean up without a page reload). We can,
+    // however, prevent it from re-loading on subsequent SPA-style
+    // navigations by removing the <script> tag.
+    function removeTagScript() {
+        var el = document.getElementById(TAG_SCRIPT_ID);
+        if (el && el.parentNode) {
+            el.parentNode.removeChild(el);
+            dlog('tag script element removed (already-loaded ad iframes may persist until reload)');
         }
     }
 
