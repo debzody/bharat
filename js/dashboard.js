@@ -494,10 +494,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function fetchRazorpayPaymentStatus(paymentId) {
         if (!window.REFUND_WORKER_URL) return null;
+        // Only fetch for real Razorpay payment IDs (always start with pay_).
+        // TEST-* / FREE-* / numeric legacy IDs are not in Razorpay at all.
+        if (!/^pay_[A-Za-z0-9]+$/i.test(String(paymentId || ''))) return null;
         try {
             const res = await fetch(`${window.REFUND_WORKER_URL}/payment-status/${paymentId}`);
-            if (!res.ok) return null;
-            return await res.json();
+            const data = await res.json().catch(() => null);
+            // Worker returns 200 even on Razorpay errors — check for error key
+            if (!data || data.error || !data.status) return null;
+            return data;
         } catch (e) {
             console.warn('Failed to fetch payment status:', e);
             return null;
