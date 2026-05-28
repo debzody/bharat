@@ -892,6 +892,14 @@
         </div>
     </section>
 
+    <!-- ── Ezoic ad placement #101 (between testimonials and FAQ) ──
+         Bare div per Ezoic's docs — no inline style, no min-height.
+         js/ezoic-placements.js auto-discovers all such placeholders
+         and fires a single ezstandalone.showAds(...) call. Create the
+         matching placement in the Ezoic dashboard with ID 101 (or
+         change this number to whatever the dashboard generates). -->
+    <div id="ezoic-pub-ad-placeholder-101"></div>
+
     <!-- ── FAQ Section (visible content matches the FAQPage schema in <head>) ── -->
     <section id="faq" class="faq-section">
         <div class="container" style="max-width:880px;margin:0 auto;padding:3rem 1.25rem;">
@@ -1000,6 +1008,9 @@
         </style>
     </section>
 
+    <!-- ── Ezoic ad placement #102 (after FAQ, before contact CTA) ── -->
+    <div id="ezoic-pub-ad-placeholder-102"></div>
+
     <section id="contact" class="payment-section">
         <div class="container">
             <h2>Ready to Book?</h2>
@@ -1103,5 +1114,10 @@
     <script src="js/user-menu.js?v=11"></script>
     <script src="js/conversion-kit.js?v=1"></script>
     <script src="js/brevo.js?v=1" async></script>
+    <!-- Ezoic ad-placement helper — auto-discovers every
+         #ezoic-pub-ad-placeholder-NNN div on the page and fires a
+         single ezstandalone.showAds(...) call. Loaded last so all
+         placeholders above are already in the DOM. -->
+    <script src="js/ezoic-placements.js?v=1" defer></script>
 </body>
 </html>
