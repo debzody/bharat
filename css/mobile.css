@@ -339,58 +339,6 @@
     .desktop-only { display: none !important; }
 }
 
-/* ── 13.A.  CRITICAL FIX — show the topnav when hamburger is clicked
-   ──────────────────────────────────────────────────────────────────
-   The hero-page mockup CSS at the bottom of style.css contains:
-       @media (max-width:980px){ .topnav { display:none } }
-   This rule is meant to hide the desktop horizontal nav on phones —
-   BUT it has higher source-order specificity than the earlier
-   slide-down rule at line 182:
-       @media (max-width:768px){ .topnav { position:fixed; ... } }
-   So when the user toggles body.nav-open, the topnav transforms in
-   correctly… into a `display:none` element, and nothing visible
-   happens. To the user this looks like "hamburger doesn't work".
-   Fix: re-show the topnav inside body.nav-open, applied with enough
-   specificity (body chain + !important) to beat the mockup rule. */
-
-@media (max-width: 980px) {
-    body.nav-open .topnav {
-        display: flex !important;
-        position: fixed !important;
-        top: var(--tb-h, 58px);
-        left: 0.4rem;
-        right: 0.4rem;
-        background: #fff;
-        border: 1px solid rgba(10,31,68,.12);
-        border-radius: 14px;
-        box-shadow: 0 12px 32px rgba(10,31,68,.22);
-        padding: 0.5rem;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        z-index: 95;
-        max-height: calc(100dvh - var(--tb-h, 58px) - 1rem);
-        max-height: calc(100vh - var(--tb-h, 58px) - 1rem);
-        overflow-y: auto;
-        transform: translateY(0);
-    }
-    /* Each menu item gets its own row on phones so they're easy to tap. */
-    body.nav-open .topnav-item {
-        flex: 1 1 100%;
-        min-height: 44px;
-        padding: 0.7rem 1rem;
-        color: #1a2330 !important;
-        font-size: 0.95rem;
-        text-align: left;
-        justify-content: flex-start;
-        border-radius: 10px;
-    }
-    body.nav-open .topnav-item:hover,
-    body.nav-open .topnav-item.active {
-        background: rgba(13,122,138,.08);
-        color: #0d7a8a !important;
-    }
-}
-
 /* ── 13. TOPBAR — KEEP THE HAMBURGER VISIBLE & TAPPABLE ──────────── */
 
 /* Two distinct issues on phones (≤ 768 px):
