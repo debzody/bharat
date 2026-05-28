@@ -915,8 +915,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${b.guests || '-'}</td>
                 <td>${formatCurrency(b.price || 0)}</td>
                 <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
-                <td style="white-space:nowrap;overflow:visible;max-width:none;">
-                    <span class="badge ${paymentState.class}">${escHtml(paymentState.label)}</span>
+                <td style="white-space:nowrap;overflow:visible;max-width:none;font-size:.82rem;color:#5a6877;">
+                    ${escHtml(paymentState.label)}
                     ${b.payment_id && /^pay_/i.test(String(b.payment_id))
                         ? `<a href="https://dashboard.razorpay.com/app/payments/${encodeURIComponent(b.payment_id)}" target="_blank" rel="noopener" title="View ${b.payment_id} in Razorpay" style="display:inline-block;margin-left:5px;color:#0d7a8a;font-size:11px;vertical-align:middle;text-decoration:none;" onclick="event.stopPropagation()"><i class="fas fa-external-link-alt"></i></a>`
                         : ''}
