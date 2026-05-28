@@ -339,17 +339,59 @@
     .desktop-only { display: none !important; }
 }
 
-/* ── 13. TOPBAR — INTENTIONALLY MINIMAL ──────────────────────────── */
+/* ── 13. TOPBAR — KEEP THE HAMBURGER VISIBLE ─────────────────────── */
 
-/* The existing style.css already has a comprehensive mobile topbar
- * implementation (slide-down topnav, hamburger toggle, hidden contact
- * pills). We DELIBERATELY do not override .topbar / .topbar-logo /
- * .brand-line1 / .topnav-item geometry here — earlier overrides
- * (overflow:hidden on .topbar, flex shrink on logo, ellipsis on the
- * brand line) interacted badly with the slide-down menu and caused
- * menu taps to feel unresponsive. The original style.css mobile rules
- * already handle the brand text wrapping correctly via flex layout
- * + media queries at 768/480 px. */
+/* On phones ≤ 480 px the brand text "Bharat Transport & Tourism" +
+ * "Andaman Specialists" runs past the viewport on a 390 px iPhone
+ * (the existing style.css uses flex-direction:row at that breakpoint
+ * so the two lines lay out side-by-side and overflow). Result: the
+ * hamburger button gets pushed past the right edge and is invisible
+ * → users cannot open the menu.
+ *
+ * Fix: cap the brand-text flex item so it can shrink AND truncate
+ * the primary brand line. Critically, we do NOT touch .topbar's
+ * overflow / containing-block properties — only the brand text +
+ * its container. The existing .topnav slide-down (which is its own
+ * position:fixed element with z-index:88) is unaffected. */
+
+@media (max-width: 768px) {
+    /* Allow the brand text container to shrink instead of pushing
+       the hamburger off-screen. */
+    .topbar-logo {
+        min-width: 0;
+        flex: 0 1 auto;
+    }
+    .brand-text {
+        min-width: 0;
+        flex: 0 1 auto;
+        overflow: hidden;
+    }
+    /* Truncate the primary brand line if it would overflow the
+       remaining space. */
+    .brand-line1 {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    /* Make sure the hamburger stays visible and gets a guaranteed
+       slot at the right edge. (style.css already sets display:flex
+       + margin-left:auto here — we just enforce non-zero size and
+       prevent it from shrinking.) */
+    .topbar .hamburger {
+        flex: 0 0 auto;
+        min-width: 36px;
+    }
+}
+
+/* On phones ≤ 480 px the existing style.css switches the brand block
+   to flex-direction:row, which makes the two lines fight for the
+   same row width. Drop the secondary subtitle on tiny phones — the
+   primary brand line is enough ID and we need the space for the
+   hamburger. */
+@media (max-width: 480px) {
+    .brand-line2 { display: none; }
+}
 
 
 /* ── 14. AUTO bottom-padding when FABs are present ───────────────── */
