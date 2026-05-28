@@ -1,0 +1,109 @@
+# ──────────────────────────────────────────────────────────────────
+# Auto-refresh ads.txt from Ezoic's adstxtmanager every day.
+#
+# Why a workflow and not a server redirect?
+#   The site is hosted on GitHub Pages (static), so the .htaccess /
+#   nginx / PHP redirect approaches Ezoic suggest are not available.
+#   The cleanest fully-automated alternative is to fetch the manifest
+#   on a schedule and commit any changes — this keeps /ads.txt always
+#   live and always fresh, with zero infra and zero cost.
+#
+# How to configure (one-time):
+#   1. Open the Ezoic dashboard → Monetization → Ads.txt Manager.
+#   2. Copy your "Adstxt Manager URL" — it'll look like:
+#        https://srv.adstxtmanager.com/<NUMERIC_ID>/andamanvoyages.in
+#      where <NUMERIC_ID> is YOUR publisher ID (NOT 19390 from the docs;
+#      that was Ezoic's own example).
+#   3. In GitHub repo settings, go to:
+#        Settings → Secrets and variables → Actions → Variables tab.
+#   4. Add a NEW REPOSITORY VARIABLE:
+#        Name:  EZOIC_ADSTXT_URL
+#        Value: https://srv.adstxtmanager.com/<NUMERIC_ID>/andamanvoyages.in
+#      (Use Variables not Secrets — it's a public URL.)
+#   5. Push this workflow once (already done by setup) and trigger a
+#      first run via "Actions → Refresh ads.txt → Run workflow".
+#   6. Subsequent runs happen automatically every day at 03:30 UTC.
+#
+# Manual run: Actions → Refresh ads.txt → "Run workflow"
+# ──────────────────────────────────────────────────────────────────
+
+name: Refresh ads.txt
+
+on:
+  schedule:
+    # 03:30 UTC daily ≈ 09:00 IST (low-traffic window for India audience)
+    - cron: '30 3 * * *'
+  workflow_dispatch:        # allow manual run from the Actions tab
+
+permissions:
+  # The default GITHUB_TOKEN needs write access to push the updated file.
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Skip when EZOIC_ADSTXT_URL is not configured
+        if: vars.EZOIC_ADSTXT_URL == ''
+        run: |
+          echo "::warning::EZOIC_ADSTXT_URL repo variable is empty — skipping refresh."
+          echo "Add it under Settings → Secrets and variables → Actions → Variables."
+          exit 0
+
+      - name: Fetch latest ads.txt from Ezoic
+        if: vars.EZOIC_ADSTXT_URL != ''
+        env:
+          URL: ${{ vars.EZOIC_ADSTXT_URL }}
+        run: |
+          set -e
+          echo "Fetching $URL"
+
+          # 1. Pull the Ezoic manifest. -L follows redirects, --fail makes
+          #    curl exit non-zero on HTTP errors so the workflow fails loudly
+          #    instead of silently writing an empty file.
+          curl --silent --show-error --fail --location \
+               --max-time 30 \
+               --user-agent "Mozilla/5.0 (compatible; AdsTxtRefresh/1.0; +https://andamanvoyages.in)" \
+               "$URL" > .ezoic-manifest.tmp
+
+          if [ ! -s .ezoic-manifest.tmp ]; then
+              echo "::error::Empty manifest fetched. Check the EZOIC_ADSTXT_URL value."
+              exit 1
+          fi
+
+          # 2. Always include our own first-party AdSense line at the very
+          #    top — Ezoic's manifest may or may not include it depending
+          #    on AdSense approval status, so we hard-code it as a guarantee.
+          {
+              echo "# ─── Andaman Voyages — ads.txt ───────────────────────────────"
+              echo "# Auto-refreshed daily by .github/workflows/refresh-ads-txt.yml"
+              echo "# Last refresh: $(date -u +'%Y-%m-%d %H:%M UTC')"
+              echo "# Source: $URL"
+              echo "# ──────────────────────────────────────────────────────────────"
+              echo ""
+              echo "# Direct AdSense (Andaman Voyages — pub-8154901590978667)"
+              echo "google.com, pub-8154901590978667, DIRECT, f08c47fec0942fa0"
+              echo ""
+              echo "# Ezoic-managed sellers (auto-refreshed):"
+              cat .ezoic-manifest.tmp
+          } > ads.txt.new
+
+          rm -f .ezoic-manifest.tmp
+          mv ads.txt.new ads.txt
+          echo "ads.txt updated. Wrote $(wc -l < ads.txt) lines."
+
+      - name: Commit changes (only if file changed)
+        if: vars.EZOIC_ADSTXT_URL != ''
+        run: |
+          if git diff --quiet ads.txt; then
+              echo "ads.txt is unchanged — nothing to commit."
+              exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ads.txt
+          git commit -m "chore(ads): refresh ads.txt from Ezoic ($(date -u +'%Y-%m-%d'))"
+          git push
