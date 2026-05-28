@@ -432,6 +432,13 @@
                     document.querySelectorAll('#inboxReceivedBody tr.selected'),
                     function (tr) { tr.classList.remove('selected'); }
                 );
+                // Hide the preview pane + divider, expand the email list
+                const split = $('inboxSplit');
+                const divider = $('inboxDivider');
+                if (split) split.style.setProperty('--inbox-list-w', '100%');
+                if (divider) divider.style.display = 'none';
+                const previewWrap = $('inboxPreview');
+                if (previewWrap) previewWrap.style.display = 'none';
             });
         }
     }
