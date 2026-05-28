@@ -820,7 +820,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${b.guests || '-'}</td>
                 <td>${formatCurrency(b.price || 0)}</td>
                 <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
-                <td><span class="badge ${paymentState.class}">${escHtml(paymentState.label)}</span></td>
+                <td>
+                    <span class="badge ${paymentState.class}">${escHtml(paymentState.label)}</span>
+                    ${b.payment_id && /^pay_/i.test(String(b.payment_id))
+                        ? `<a href="https://dashboard.razorpay.com/app/payments/${encodeURIComponent(b.payment_id)}" target="_blank" rel="noopener" title="Open in Razorpay Dashboard" style="display:inline-block;margin-left:4px;color:#0d7a8a;font-size:0.75rem;vertical-align:middle;opacity:0.8;" onclick="event.stopPropagation()"><i class="fas fa-external-link-alt"></i></a>`
+                        : ''}
+                </td>
                 <td>${formatDate(b.createdAt)}</td>
                 <td>${actionCellHtml(b)}</td>
             </tr>
