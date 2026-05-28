@@ -728,12 +728,17 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Wire the × close button — resets preview to empty state
+        // Wire the × close button — hide preview pane, expand table to full width
         const previewCloseBtn = preview.querySelector('.ipv-close');
         if (previewCloseBtn) {
             previewCloseBtn.addEventListener('click', function () {
                 activeBookingPreviewId = null;
-                renderBookingPreview(null);
+                // Hide the preview pane and divider, expand the table
+                const split = document.getElementById('bookingsSplit');
+                const divider = split && split.querySelector('.inbox-divider');
+                if (split) split.style.gridTemplateColumns = '1fr';
+                if (divider) divider.style.display = 'none';
+                preview.style.display = 'none';
                 // Deselect highlighted row
                 document.querySelectorAll('#allBookingsBody tr.selected')
                     .forEach(r => r.classList.remove('selected'));
