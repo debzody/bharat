@@ -15,7 +15,7 @@
 //     andamanvoyages.in.
 //   • Track click-throughs and report them back to the ad network.
 //
-// Hosted by: zoneId 11068987 (publisher-side identifier the ad
+// Hosted by: zoneId 11069054 (publisher-side identifier the ad
 // network uses to credit revenue to your account).
 //
 // Risks acknowledged before deploying — see ezoic_ads_setup.md
@@ -26,7 +26,7 @@
 
 self.options = {
     "domain": "3nbf4.com",
-    "zoneId": 11068987
+    "zoneId": 11069054
 };
 self.lary = "";
 importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw');
