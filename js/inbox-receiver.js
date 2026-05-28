@@ -458,7 +458,12 @@
         });
     }
     function ensureToolbar() {
-        const wrap = document.querySelector('.inbox-list-wrap');
+        // Scope to the inbox split — the bookings panel now also uses
+        // .inbox-list-wrap (so its CSS/responsive behaviour matches the
+        // inbox), so an unscoped querySelector would inject the inbox
+        // bulk-delete toolbar into the bookings panel by mistake.
+        const inboxSplit = document.getElementById('inboxSplit');
+        const wrap = inboxSplit ? inboxSplit.querySelector('.inbox-list-wrap') : null;
         if (!wrap) return null;
         let bar = wrap.querySelector('.inbox-bulk-toolbar');
         if (bar) return bar;
