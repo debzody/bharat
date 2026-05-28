@@ -88,33 +88,62 @@ The workflow gracefully no-ops with a warning — it won't fail or break anythin
 
 ---
 
-## ⏭ Step 3 — Ad placements (next, after Step 2 is verified)
+## ✅ Step 3 — Ad placements (DONE — committed)
 
-Two paths:
+Manual placeholders are already wired into the markup, plus a tiny helper that fires `ezstandalone.showAds(...)` once per page with all placement IDs at once (Ezoic's recommended pattern for performance).
 
-### A) Auto-Ads (recommended — start here)
+### What's deployed
 
-In the Ezoic dashboard → **EzoicAds → Ad Settings → Auto-Insert Ads**, toggle ON. Ezoic uses ML to decide ad placement based on layout analysis of each page.
+| Page | Placement ID(s) | Position |
+|------|-----------------|----------|
+| `index.html` | **101**, **102** | Between testimonials & FAQ; between FAQ & contact |
+| `package.html` | **105** | End of page content |
+| `gallery.html` | **107** | End of grid |
+| `flights.html` | **108** | Below results |
+| `cabs.html` | **109** | End of content |
+| `about.html` | **110** | End of content |
+| `terms.html` | **111** | End of content |
+| `privacy.html` | **112** | End of content |
 
-- Pros: zero code on our side, Ezoic optimizes RPM automatically.
-- Cons: less granular control; sometimes places ads where they hurt UX.
+### How it works
 
-### B) Manual placeholders (more control)
+Each page contains one or more bare placeholder divs:
+```html
+<div id="ezoic-pub-ad-placeholder-101"></div>
+```
 
-Drop `<div id="ezoic-pub-ad-placeholder-101"></div>` (or whatever IDs Ezoic gives you in their dashboard) where you want ads to appear. Examples for our site:
+A small helper at the bottom of `<body>`:
+```html
+<script src="js/ezoic-placements.js?v=1" defer></script>
+```
+auto-discovers every `#ezoic-pub-ad-placeholder-NNN` div on the page and makes a single `ezstandalone.showAds(101, 102, ...)` call — exactly what Ezoic's docs recommend for minimum server requests.
 
-- **Between hero and packages grid** on `index.html`
-- **Between FAQ entries** on `index.html`
-- **Above the inclusions list** on `package.html`
-- **Between gallery rows** on `gallery.html`
+This means:
+- Reordering placements = drag-drop the `<div>` in the HTML; no JS edits.
+- Adding a new placement = paste another `<div id="ezoic-pub-ad-placeholder-NNN"></div>` (where `NNN` is a fresh ID from your Ezoic dashboard); the helper picks it up automatically.
+- Removing a placement = delete the `<div>`.
 
-Ezoic's dashboard generates the exact div IDs — paste them where you want ads.
+### Configure these IDs in your Ezoic dashboard
 
-**Don't place ads inside:**
-- Modals (login, register, profile, payment)
-- Booking flow / checkout
-- Chat widget
-- Above-the-fold hero (kills LCP / Core Web Vitals)
+In **Ezoic dashboard → EzoicAds → Placeholder IDs** (or the equivalent menu — UI varies), create matching placements with the same numeric IDs (`101, 102, 105, 107, 108, 109, 110, 111, 112`). Or, if Ezoic generates different numbers for your account:
+
+1. Note down the IDs Ezoic gives you.
+2. Open the relevant HTML file and rename the placeholder div, e.g. change `ezoic-pub-ad-placeholder-101` → `ezoic-pub-ad-placeholder-237` if Ezoic gave you 237.
+3. Push. The helper script picks up the new ID without any other change.
+
+The IDs we used (101-112) follow Ezoic's documentation example numbering, so most setups will work out of the box.
+
+### Pages intentionally WITHOUT ads
+
+These pages have header scripts loaded (so Ezoic can collect analytics) but **no placement divs** because ads here would hurt UX or violate AdSense policies:
+
+- All admin pages (`dashboard.html`, `bookings.html`, `checkout.html`, `profile.html`, `settings.html`, `customize.html`, `migrate.html`) — these don't even include the header scripts.
+- Modals (login, register, profile, payment) — no placeholders inside.
+- Above-the-fold hero on `index.html` — kills LCP / Core Web Vitals.
+
+### Auto-Ads vs Manual placeholders
+
+We're using **manual placeholders** — you control exactly where ads appear. If you'd rather hand the layout decision off to Ezoic's ML, you can ALSO turn on **Auto-Insert Ads** in **Ezoic dashboard → EzoicAds → Ad Settings**; the manual placements still get filled, and Auto-Ads fills any extra spots Ezoic's ML thinks are profitable. (Recommend trying both for a week, A/B comparing RPM in Big Data Analytics.)
 
 ---
 
@@ -164,7 +193,8 @@ Tip: Ezoic itself usually pays **2-3× what AdSense alone would** because it aut
 
 | File | Purpose |
 |------|---------|
-| `index.html` + 7 other public pages | Header scripts injected at top of `<head>` |
+| `index.html` + 7 other public pages | Header scripts at top of `<head>` + placeholder divs |
+| `js/ezoic-placements.js` | Auto-discovers all `#ezoic-pub-ad-placeholder-NNN` divs and fires one `ezstandalone.showAds(...)` |
 | `ads.txt` | Auto-refreshed daily by the workflow |
 | `.github/workflows/refresh-ads-txt.yml` | The daily fetch + commit workflow |
 | `ezoic_ads_setup.md` | This file — keeps the setup story in one place |
