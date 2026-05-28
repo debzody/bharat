@@ -914,7 +914,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${b.duration || '-'}</td>
                 <td>${b.guests || '-'}</td>
                 <td>${formatCurrency(b.price || 0)}</td>
-                <td><span class="badge badge-${b.status || 'confirmed'}">${(b.status || 'confirmed').toUpperCase()}</span></td>
+                <td style="font-size:.82rem;color:#5a6877;">${escHtml((b.status || 'confirmed').toUpperCase())}</td>
                 <td style="white-space:nowrap;overflow:visible;max-width:none;font-size:.82rem;color:#5a6877;">
                     ${escHtml(paymentState.label)}
                     ${b.payment_id && /^pay_/i.test(String(b.payment_id))
