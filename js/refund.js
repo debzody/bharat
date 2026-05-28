@@ -111,12 +111,47 @@
         return '';
     }
 
+    // Detect "id does not exist" / "not found" Razorpay errors. These
+    // indicate the worker's RAZORPAY_KEY_ID is from the wrong environment
+    // (LIVE secrets can't refund TEST payments and vice-versa). When we
+    // see this on one worker, the caller will retry against the other.
+    function isUnknownIdError(json, status) {
+        if (status === 404) return true;
+        var s = JSON.stringify(json || {}).toLowerCase();
+        return /\bdoes not exist\b|\bid not found\b|\bno such payment\b|\bunauthorized\b|\bauthentication\b/.test(s);
+    }
+
+    async function callRefundWorker(workerUrl, body, idToken) {
+        var endpoint = String(workerUrl).replace(/\/+$/, '') + '/refund';
+        var res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type':  'application/json',
+                'Authorization': 'Bearer ' + idToken
+            },
+            body: JSON.stringify(body)
+        });
+        var json = null;
+        try { json = await res.json(); } catch (_) {}
+        return { res: res, json: json, status: res.status, ok: res.ok };
+    }
+
     async function processRefund(booking, opts) {
         opts = opts || {};
 
-        var url = (window.REFUND_WORKER_URL || '').trim();
-        if (!url) {
-            return { ok: false, error: 'REFUND_WORKER_URL not set' };
+        // Auto-select / fall back across LIVE and TEST refund workers.
+        // The customer's payment was created in either Razorpay's LIVE
+        // or TEST environment. Each refund worker is authenticated with
+        // ONLY one key pair (LIVE secrets can't refund TEST payments and
+        // vice-versa — Razorpay returns "The id provided does not exist").
+        // We can't tell which environment a `pay_…` ID belongs to from
+        // the ID itself, so we try the most likely worker first and
+        // automatically retry on the other one if Razorpay says the ID
+        // is unknown / unauthorized.
+        var liveUrl = (window.REFUND_WORKER_URL || '').trim();
+        var testUrl = (window.REFUND_TEST_WORKER_URL || '').trim();
+        if (!liveUrl && !testUrl) {
+            return { ok: false, error: 'REFUND_WORKER_URL (and REFUND_TEST_WORKER_URL) not set' };
         }
 
         if (alreadyRefunded(booking)) {
@@ -136,33 +171,51 @@
             return { ok: false, error: 'Not signed in (no Firebase ID token)' };
         }
 
-        try {
-            var endpoint = url.replace(/\/+$/, '') + '/refund';
-            var res = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type':  'application/json',
-                    'Authorization': 'Bearer ' + idToken
-                },
-                body: JSON.stringify({
-                    paymentId:  booking.payment_id,
-                    amount:     amount,
-                    bookingRef: booking.booking_ref || booking.id || '',
-                    reason:     opts.reason || 'Customer cancellation',
-                    speed:      opts.speed || 'normal'        // 'normal' | 'optimum'
-                })
-            });
-            var json = null;
-            try { json = await res.json(); } catch (_) {}
+        var body = {
+            paymentId:  booking.payment_id,
+            amount:     amount,
+            bookingRef: booking.booking_ref || booking.id || '',
+            reason:     opts.reason || 'Customer cancellation',
+            speed:      opts.speed || 'normal'        // 'normal' | 'optimum'
+        };
 
-            if (!res.ok) {
+        // Decide order: prefer the env hinted by booking metadata, else LIVE first.
+        var paymentMode = String(
+            (booking && (booking.payment_mode || booking.razorpayMode || '')) || ''
+        ).toLowerCase();
+        var preferTest = paymentMode === 'test';
+        var primary   = preferTest ? testUrl : liveUrl;
+        var secondary = preferTest ? liveUrl : testUrl;
+        if (!primary)   primary   = secondary;        // only one configured
+        if (primary === secondary) secondary = '';   // avoid double-call
+
+        try {
+            var first = await callRefundWorker(primary, body, idToken);
+            if (first.ok) {
+                return Object.assign({ ok: true, _via: primary }, first.json || {});
+            }
+            // Retry on the other worker only when Razorpay says the ID is
+            // unknown / unauthorized (cross-environment mismatch). For real
+            // failures (insufficient balance, business validation) don't
+            // retry — the second worker would just fail the same way.
+            if (secondary && isUnknownIdError(first.json, first.status)) {
+                var second = await callRefundWorker(secondary, body, idToken);
+                if (second.ok) {
+                    return Object.assign({ ok: true, _via: secondary, _crossEnv: true }, second.json || {});
+                }
                 return {
                     ok: false,
-                    error: (json && json.error) || ('HTTP ' + res.status),
-                    razorpay: json && json.razorpay
+                    error: (second.json && second.json.error) || ('HTTP ' + second.status),
+                    razorpay: second.json && second.json.razorpay,
+                    _firstError:  (first.json && first.json.error) || ('HTTP ' + first.status),
+                    _triedBoth:   true
                 };
             }
-            return Object.assign({ ok: true }, json || {});
+            return {
+                ok: false,
+                error: (first.json && first.json.error) || ('HTTP ' + first.status),
+                razorpay: first.json && first.json.razorpay
+            };
         } catch (err) {
             return { ok: false, error: 'Network error: ' + (err && err.message) };
         }
