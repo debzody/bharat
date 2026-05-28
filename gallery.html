@@ -3,6 +3,22 @@
 <head>
     <!-- Hide .html and /index from the URL bar without re-loading the page -->
     <script>(function(){try{var p=location.pathname;if(/\/index(\.html)?$/i.test(p)){history.replaceState(null,"",p.replace(/\/index(\.html)?$/i,"/")+location.search+location.hash);}else if(/\.html$/i.test(p)){history.replaceState(null,"",p.replace(/\.html$/i,"")+location.search+location.hash);}}catch(e){}})();</script>
+
+    <!-- ── EzoicAds: privacy + header (must load BEFORE any other ad/analytics) ──
+         Ezoic auto-rotates AdSense / Media.net / 9 other networks per visitor and
+         is our display-ad layer while AdSense approval is in progress. The privacy
+         scripts (Gatekeeper Consent) MUST come before the Ezoic header script so
+         GDPR/CCPA consent state is established first. data-cfasync="false" stops
+         Cloudflare's Rocket Loader from re-ordering them. -->
+    <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js"></script>
+    <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js"></script>
+    <script async src="//www.ezojs.com/ezoic/sa.min.js"></script>
+    <script>
+        window.ezstandalone = window.ezstandalone || {};
+        ezstandalone.cmd = ezstandalone.cmd || [];
+    </script>
+    <script src="//ezoicanalytics.com/analytics.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Gallery — Andaman Tours | Bharat Transport &amp; Tourism</title>
