@@ -34,6 +34,18 @@ export default {
         if (request.method === 'POST' && url.pathname === '/send') {
             return handleSend(request, env);
         }
+        // Internal-server-to-server send. Used by the email-router
+        // Worker for templated auto-replies — bypasses the Firebase
+        // ID-token check and instead authenticates with the shared
+        // secret env.INTERNAL_SEND_TOKEN. Both Workers must have the
+        // SAME value for this secret. Set it once on each:
+        //
+        //   echo -n '<32-char hex>' | npx wrangler secret put INTERNAL_SEND_TOKEN
+        //
+        // (Generate a random hex token with `openssl rand -hex 32`.)
+        if (request.method === 'POST' && url.pathname === '/internal/send') {
+            return handleInternalSend(request, env);
+        }
         return jsonResponse(env, request, { error: 'Not found' }, 404);
     }
 };
@@ -167,6 +179,112 @@ async function handleSend(request, env) {
 
 function isValidEmail(s) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
+}
+
+/* ── /internal/send — server-to-server send for trusted Workers ──
+ * Authenticates with the shared `INTERNAL_SEND_TOKEN` secret instead
+ * of a Firebase ID token. Used by the email-router Worker to post
+ * templated auto-replies via Brevo without a logged-in admin tab.
+ *
+ * Request body — same shape as /send minus the auth bits:
+ *   { to, subject, text, html, replyTo?, cc?, from? }
+ *
+ * Loop-prevention: caller must pass `senderHeaders` if they want any
+ * extra MIME headers like Auto-Submitted to land on the outgoing mail. */
+async function handleInternalSend(request, env) {
+    const auth = request.headers.get('Authorization') || '';
+    const m = /^Bearer\s+(.+)$/i.exec(auth);
+    if (!m) return jsonResponse(env, request, { error: 'Missing Authorization header' }, 401);
+    const presented = m[1].trim();
+    const want      = String(env.INTERNAL_SEND_TOKEN || '').trim();
+    if (!want) {
+        return jsonResponse(env, request, { error: 'INTERNAL_SEND_TOKEN secret not configured on inbox-mail' }, 503);
+    }
+    if (presented !== want) {
+        return jsonResponse(env, request, { error: 'Invalid internal token' }, 401);
+    }
+
+    let body;
+    try { body = await request.json(); }
+    catch (_) { return jsonResponse(env, request, { error: 'Invalid JSON body' }, 400); }
+
+    const to       = (body.to       || '').toString().trim();
+    const subject  = (body.subject  || '').toString().trim();
+    const html     = (body.html     || '').toString();
+    const text     = (body.text     || '').toString();
+    const replyTo  = (body.replyTo  || '').toString().trim();
+    const cc       = Array.isArray(body.cc) ? body.cc : [];
+    const fromReq  = (body.from     || '').toString().trim().toLowerCase();
+    const extraHdr = (body.headers && typeof body.headers === 'object') ? body.headers : {};
+
+    if (!isValidEmail(to))                return jsonResponse(env, request, { error: 'Invalid `to` address' }, 400);
+    if (!subject || subject.length > 300) return jsonResponse(env, request, { error: 'Subject required (≤300 chars)' }, 400);
+    if (!html && !text)                   return jsonResponse(env, request, { error: 'Body required (html or text)' }, 400);
+    if (!env.BREVO_API_KEY)               return jsonResponse(env, request, { error: 'BREVO_API_KEY secret not configured' }, 500);
+
+    const allowedSenders = (env.ALLOWED_SENDERS || env.FROM_EMAIL || 'booking@andamanvoyages.in')
+        .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const defaultFromEmail = (env.FROM_EMAIL || allowedSenders[0] || 'booking@andamanvoyages.in').toLowerCase();
+    let fromEmail;
+    if (fromReq) {
+        if (!isValidEmail(fromReq))            return jsonResponse(env, request, { error: 'Invalid `from` address' }, 400);
+        if (!allowedSenders.includes(fromReq)) return jsonResponse(env, request, { error: 'From address not allowed: ' + fromReq }, 403);
+        fromEmail = fromReq;
+    } else {
+        fromEmail = defaultFromEmail;
+    }
+    const fromName = env.FROM_NAME || 'Bharat Tours & Travels';
+
+    // Auto-reply hygiene — set the standard headers RFC 3834 wants
+    // for templated/automated mail unless the caller already did.
+    const headers = Object.assign({
+        'Auto-Submitted':           'auto-replied',
+        'X-Auto-Response-Suppress': 'All',
+        'X-Sent-By':                'inbox-mail/internal-send'
+    }, extraHdr);
+
+    const payload = {
+        sender: { name: fromName, email: fromEmail },
+        to:     [{ email: to }],
+        subject,
+        ...(html ? { htmlContent: html } : {}),
+        ...(text ? { textContent: text } : {}),
+        ...(replyTo && isValidEmail(replyTo) ? { replyTo: { email: replyTo } } : {}),
+        ...(cc.length ? { cc: cc.filter(isValidEmail).map(e => ({ email: e })) } : {}),
+        tags: ['auto-reply'],
+        headers
+    };
+
+    let brevoRes, brevoBody;
+    try {
+        brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'api-key':      env.BREVO_API_KEY,
+                'Content-Type': 'application/json',
+                'Accept':       'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        brevoBody = await brevoRes.text();
+    } catch (err) {
+        return jsonResponse(env, request, { error: 'Brevo request failed: ' + (err.message || 'network') }, 502);
+    }
+
+    if (!brevoRes.ok) {
+        return jsonResponse(env, request, { error: 'Brevo rejected: ' + brevoRes.status + ' ' + brevoBody }, 502);
+    }
+
+    let parsed = {};
+    try { parsed = JSON.parse(brevoBody); } catch (_) {}
+    return jsonResponse(env, request, {
+        ok: true,
+        messageId: parsed.messageId || null,
+        sentBy: 'internal',
+        to,
+        subject,
+        sentAt: new Date().toISOString()
+    });
 }
 
 // ── Firebase ID-token verification ──────────────────────────────
