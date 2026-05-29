@@ -79,6 +79,65 @@
         try { return localStorage.getItem(BG_STORAGE_KEY) || ''; } catch (_) { return ''; }
     }
 
+    /* Convert a #hex string to {r,g,b}. Accepts 3- or 6-char shorthand. */
+    function hexToRgb(hex) {
+        var h = String(hex || '').replace('#', '');
+        if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+        var n = parseInt(h, 16);
+        return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    }
+    function rgbToHex(r, g, b) {
+        function p(v) {
+            v = Math.max(0, Math.min(255, Math.round(v)));
+            var s = v.toString(16);
+            return s.length === 1 ? '0' + s : s;
+        }
+        return '#' + p(r) + p(g) + p(b);
+    }
+    /* Mix a colour with white (positive amt) or black (negative amt). */
+    function mix(hex, amt) {
+        var c = hexToRgb(hex);
+        var t = amt < 0 ? 0 : 255;
+        var p = Math.abs(amt);
+        return rgbToHex(
+            c.r + (t - c.r) * p,
+            c.g + (t - c.g) * p,
+            c.b + (t - c.b) * p
+        );
+    }
+    /* Relative luminance — returns 0..1 (0 = black, 1 = white). */
+    function lum(hex) {
+        var c = hexToRgb(hex);
+        // sRGB linearised
+        function ch(v) {
+            v /= 255;
+            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        }
+        return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+    }
+
+    /* Compute card / input / border / text tints derived from the
+       admin-chosen page background. Dark page → lighten cards,
+       light page → darken cards. Keeps card vs page contrast visible
+       regardless of which colour the admin picks. */
+    function computeTints(bg) {
+        var L = lum(bg);
+        var isDark = L < 0.5;
+        var surface, input, border, text;
+        if (isDark) {
+            surface = mix(bg, +0.10); // lift cards 10% toward white
+            input   = mix(bg, +0.16);
+            border  = mix(bg, +0.22);
+            text    = '#e6eef8';
+        } else {
+            surface = mix(bg, -0.06); // darken cards 6% toward black
+            input   = mix(bg, -0.02);
+            border  = mix(bg, -0.18);
+            text    = '#1c2b48';
+        }
+        return { surface: surface, input: input, border: border, text: text };
+    }
+
     /* Inject (or update) a high-specificity style block that paints
        the admin-chosen colour onto every "page" surface — html, body,
        .dashboard-body and .dashboard-main — using !important so the
@@ -110,8 +169,13 @@
             body.style.setProperty('--at-bg', colour);
             body.setAttribute('data-admin-bg', colour);
         }
+        // Compute lightened/darkened tints for cards & inputs so they
+        // stand out against the chosen page bg without breaking contrast.
+        var tints = computeTints(colour);
+
         // And inject a global override that wins against every theme rule.
         var css =
+            // Page background
             'html[data-admin-bg], html[data-admin-bg] body,' +
             'body[data-admin-bg], body[data-admin-bg].dashboard-body,' +
             'body[data-admin-bg] .dashboard-main, body[data-admin-bg] .dashboard-body,' +
@@ -122,12 +186,59 @@
             '  background-color: ' + colour + ' !important;' +
             '  background-image: none !important;' +
             '}' +
-            // Kill the decorative ::before / ::after gradient layers some
-            // dashboard themes paint over the body; otherwise the chosen
-            // colour can be hidden behind them.
+            // Kill decorative ::before / ::after gradient layers.
             'body[data-admin-bg]::before, body[data-admin-bg]::after {' +
             '  background: transparent !important;' +
             '  background-image: none !important;' +
+            '}' +
+            // Cards / panels / surfaces — slightly lifted shade
+            'body[data-admin-bg] .dashboard-section,' +
+            'body[data-admin-bg] .stat-card,' +
+            'body[data-admin-bg] .table-card,' +
+            'body[data-admin-bg] .chart-card,' +
+            'body[data-admin-bg] .settings-card,' +
+            'body[data-admin-bg] .card,' +
+            'body[data-admin-bg] .panel,' +
+            'body[data-admin-bg] .modal-content,' +
+            'body[data-admin-bg] .inbox-list-wrap,' +
+            'body[data-admin-bg] .inbox-preview-wrap,' +
+            'body[data-admin-bg] .package-editor-card,' +
+            'body[data-admin-bg] .pkg-edit-card,' +
+            'body[data-admin-bg] .admin-gallery-card,' +
+            'body[data-admin-bg] .admin-gallery-uploader,' +
+            'body[data-admin-bg] .gd-list,' +
+            'body[data-admin-bg] .booking-card {' +
+            '  background-color: ' + tints.surface + ' !important;' +
+            '  background-image: none !important;' +
+            '  border-color: ' + tints.border + ' !important;' +
+            '  color: ' + tints.text + ' !important;' +
+            '}' +
+            // Inputs / textareas / selects — even lighter shade
+            'body[data-admin-bg] input[type="text"],' +
+            'body[data-admin-bg] input[type="email"],' +
+            'body[data-admin-bg] input[type="tel"],' +
+            'body[data-admin-bg] input[type="url"],' +
+            'body[data-admin-bg] input[type="number"],' +
+            'body[data-admin-bg] input[type="search"],' +
+            'body[data-admin-bg] input[type="password"],' +
+            'body[data-admin-bg] input[type="date"],' +
+            'body[data-admin-bg] input[type="time"],' +
+            'body[data-admin-bg] textarea,' +
+            'body[data-admin-bg] select {' +
+            '  background-color: ' + tints.input + ' !important;' +
+            '  border-color: ' + tints.border + ' !important;' +
+            '  color: ' + tints.text + ' !important;' +
+            '}' +
+            // Table rows
+            'body[data-admin-bg] .data-table th,' +
+            'body[data-admin-bg] table th {' +
+            '  background-color: ' + tints.input + ' !important;' +
+            '  color: ' + tints.text + ' !important;' +
+            '}' +
+            'body[data-admin-bg] .data-table td,' +
+            'body[data-admin-bg] table td {' +
+            '  color: ' + tints.text + ' !important;' +
+            '  border-color: ' + tints.border + ' !important;' +
             '}';
 
         if (existing) {
