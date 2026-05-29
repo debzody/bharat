@@ -31,12 +31,27 @@ export async function callGemini(env, prompt, opts) {
         ]
     };
 
-    const res = await fetch(url, {
+    // Try once; if Google returns 429 (rate limited), wait the
+    // RetryDelay it suggests and retry exactly once. After that we
+    // surface the error so the caller can decide what to do (e.g. the
+    // frontend just shows a non-blocking toast and lets the admin try
+    // again — we never want to retry forever and burn the daily quota).
+    let res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    const json = await res.json().catch(() => ({}));
+    let json = await res.json().catch(() => ({}));
+    if (res.status === 429) {
+        const waitMs = parseRetryDelayMs(json) || 2000;
+        await new Promise(r => setTimeout(r, Math.min(waitMs, 15000)));
+        res  = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        json = await res.json().catch(() => ({}));
+    }
     if (!res.ok) {
         throw new Error('Gemini API ' + res.status + ': ' +
             (json && json.error && json.error.message ? json.error.message : JSON.stringify(json)));
@@ -46,6 +61,24 @@ export async function callGemini(env, prompt, opts) {
         json.candidates[0].content.parts[0] &&
         json.candidates[0].content.parts[0].text) || '';
     return { text, raw: json };
+}
+
+/* Pull the suggested retry delay from a Gemini 429 response.
+   The error JSON shape is roughly:
+     { error: { details: [{ "@type": ".../RetryInfo", "retryDelay": "13.7s" }, ...] } }
+   We tolerate missing or malformed fields and fall back to null. */
+function parseRetryDelayMs(json) {
+    try {
+        const details = json && json.error && json.error.details;
+        if (!Array.isArray(details)) return null;
+        for (const d of details) {
+            if (d && (d['@type'] || '').includes('RetryInfo') && d.retryDelay) {
+                const m = /^(\d+(?:\.\d+)?)s$/.exec(String(d.retryDelay));
+                if (m) return Math.ceil(parseFloat(m[1]) * 1000);
+            }
+        }
+    } catch (_) {}
+    return null;
 }
 
 /* Try to extract JSON from a Gemini response. Gemini sometimes wraps
