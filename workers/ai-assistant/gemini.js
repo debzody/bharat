@@ -1,92 +1,89 @@
-/* ── gemini.js — Google Gemini 1.5 Flash REST helper ───────────
- * Free tier docs:  https://ai.google.dev/gemini-api/docs/api-key
- * 1,500 req/day, 15 RPM, no credit card required.
- * Get a key at https://aistudio.google.com/apikey
- * ─────────────────────────────────────────────────────────────── */
+/* ── gemini.js — AI inference helper ─────────────────────────
+ *
+ * Despite the legacy filename, this module now talks to **Cloudflare
+ * Workers AI** (env.AI.run), not Google Gemini. We kept the filename
+ * + exported function names (`callGemini`, `tryParseJson`) so worker.js
+ * didn't need to change — those names are now misnomers but the
+ * imports continue to work.
+ *
+ * Why Cloudflare Workers AI?
+ *   • No separate API key to manage — the env.AI binding (declared in
+ *     wrangler.jsonc) gives the worker direct access.
+ *   • Free quota: 10,000 neurons/day on the Workers free plan
+ *     (≈ 30,000+ calls for an 8B model). Never expires, no card.
+ *   • Edge-hosted inference — same Cloudflare colo as your worker,
+ *     so latency is measured in tens of milliseconds.
+ *   • Same Llama 3.1 8B model the rest of the industry rates as
+ *     "good enough for short summarisation + structured output."
+ *
+ * Model selection: env.AI_MODEL, defaulting to
+ *   @cf/meta/llama-3.1-8b-instruct
+ * Catalog: https://developers.cloudflare.com/workers-ai/models/
+ * ─────────────────────────────────────────────────────────── */
 
 export async function callGemini(env, prompt, opts) {
-    if (!env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY secret not set');
-    const model = env.GEMINI_MODEL || 'gemini-1.5-flash';
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-        encodeURIComponent(model) + ':generateContent?key=' +
-        encodeURIComponent(env.GEMINI_API_KEY);
+    if (!env.AI || typeof env.AI.run !== 'function') {
+        throw new Error('Cloudflare AI binding not available — check wrangler.jsonc has the "ai" binding');
+    }
+    const model = (env.AI_MODEL || env.GEMINI_MODEL || '@cf/meta/llama-3.1-8b-instruct');
+    const wantJson = !!(opts && opts.json);
 
-    const body = {
-        contents: [{ parts: [{ text: String(prompt || '') }] }],
-        generationConfig: {
-            temperature: (opts && typeof opts.temperature === 'number') ? opts.temperature : 0.4,
-            topP: 0.95,
-            topK: 40,
-            maxOutputTokens: (opts && opts.maxTokens) || 1024,
-            responseMimeType: (opts && opts.json) ? 'application/json' : 'text/plain'
-        },
-        // Loosened to BLOCK_ONLY_HIGH so the model will summarise
-        // complaint / cancellation emails. Only admins see output,
-        // and they always review before clicking Send on any reply.
-        safetySettings: [
-            { category: 'HARM_CATEGORY_HARASSMENT',         threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HATE_SPEECH',        threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',  threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT',  threshold: 'BLOCK_ONLY_HIGH' }
-        ]
+    // Llama-style chat-completion input. We split the prompt into a
+    // light system message + a user message — that's what
+    // instruct-tuned Llama responds best to.
+    const systemHint = wantJson
+        ? 'You are a precise assistant. Always respond with a single valid JSON object that matches the schema described in the user message. No markdown, no code fences, no explanation — just the JSON.'
+        : 'You are a concise, friendly assistant for the Andaman Voyages travel agency. Answer using the format requested in the user message.';
+
+    const messages = [
+        { role: 'system', content: systemHint },
+        { role: 'user',   content: String(prompt || '') }
+    ];
+
+    const inferenceOpts = {
+        max_tokens:  (opts && opts.maxTokens)  || 1024,
+        temperature: (opts && typeof opts.temperature === 'number') ? opts.temperature : 0.4
     };
 
-    // Try once; if Google returns 429 (rate limited), wait the
-    // RetryDelay it suggests and retry exactly once. After that we
-    // surface the error so the caller can decide what to do (e.g. the
-    // frontend just shows a non-blocking toast and lets the admin try
-    // again — we never want to retry forever and burn the daily quota).
-    let res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    let json = await res.json().catch(() => ({}));
-    if (res.status === 429) {
-        const waitMs = parseRetryDelayMs(json) || 2000;
-        await new Promise(r => setTimeout(r, Math.min(waitMs, 15000)));
-        res  = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        json = await res.json().catch(() => ({}));
-    }
-    if (!res.ok) {
-        throw new Error('Gemini API ' + res.status + ': ' +
-            (json && json.error && json.error.message ? json.error.message : JSON.stringify(json)));
-    }
-    const text = (json.candidates && json.candidates[0] &&
-        json.candidates[0].content && json.candidates[0].content.parts &&
-        json.candidates[0].content.parts[0] &&
-        json.candidates[0].content.parts[0].text) || '';
-    return { text, raw: json };
-}
-
-/* Pull the suggested retry delay from a Gemini 429 response.
-   The error JSON shape is roughly:
-     { error: { details: [{ "@type": ".../RetryInfo", "retryDelay": "13.7s" }, ...] } }
-   We tolerate missing or malformed fields and fall back to null. */
-function parseRetryDelayMs(json) {
+    let result;
     try {
-        const details = json && json.error && json.error.details;
-        if (!Array.isArray(details)) return null;
-        for (const d of details) {
-            if (d && (d['@type'] || '').includes('RetryInfo') && d.retryDelay) {
-                const m = /^(\d+(?:\.\d+)?)s$/.exec(String(d.retryDelay));
-                if (m) return Math.ceil(parseFloat(m[1]) * 1000);
-            }
-        }
-    } catch (_) {}
-    return null;
+        result = await env.AI.run(model, { messages, ...inferenceOpts });
+    } catch (err) {
+        throw new Error('Cloudflare AI error: ' + (err && err.message || err));
+    }
+
+    // Llama 3.1 returns { response: '...' }. Some other models return
+    // { result: { response: '...' } } or a raw string. Normalise.
+    let text = '';
+    if (typeof result === 'string') {
+        text = result;
+    } else if (result && typeof result.response === 'string') {
+        text = result.response;
+    } else if (result && result.result && typeof result.result.response === 'string') {
+        text = result.result.response;
+    } else if (result && Array.isArray(result.choices) && result.choices[0]) {
+        text = String((result.choices[0].message && result.choices[0].message.content) || '');
+    } else {
+        text = JSON.stringify(result || {});
+    }
+
+    return { text: String(text).trim(), raw: result };
 }
 
-/* Try to extract JSON from a Gemini response. Gemini sometimes wraps
-   the JSON in ```json fences even with responseMimeType=json, so we
-   tolerate that here. Returns null if parsing fails. */
+/* Try to extract JSON from an LLM response. Llama sometimes wraps
+   the JSON in ```json fences or trailing prose, so we tolerate that.
+   Returns null if parsing fails. */
 export function tryParseJson(text) {
     if (!text) return null;
     let s = String(text).trim();
+    // Strip markdown fences if any
     s = s.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-    try { return JSON.parse(s); } catch (_) { return null; }
+    // First try as-is
+    try { return JSON.parse(s); } catch (_) {}
+    // Then try to extract the first {...} block
+    const m = /\{[\s\S]*\}/.exec(s);
+    if (m) {
+        try { return JSON.parse(m[0]); } catch (_) {}
+    }
+    return null;
 }
