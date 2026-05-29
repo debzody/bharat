@@ -130,7 +130,7 @@ async function handleSend(request, env) {
     } else {
         fromEmail = defaultFromEmail;
     }
-    const fromName  = env.FROM_NAME  || 'Bharat Tours & Travels';
+    const fromName  = env.FROM_NAME  || 'Bharat Transport & Tourism';
 
     const payload = {
         sender: { name: fromName, email: fromEmail },
@@ -233,7 +233,7 @@ async function handleInternalSend(request, env) {
     } else {
         fromEmail = defaultFromEmail;
     }
-    const fromName = env.FROM_NAME || 'Bharat Tours & Travels';
+    const fromName = env.FROM_NAME || 'Bharat Transport & Tourism';
 
     // Auto-reply hygiene — set the standard headers RFC 3834 wants
     // for templated/automated mail unless the caller already did.

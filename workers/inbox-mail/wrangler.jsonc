@@ -31,7 +31,7 @@
         "ALLOWED_SENDERS":     "booking@andamanvoyages.in,info@andamanvoyages.in,cancellation@andamanvoyages.in,enquiries@andamanvoyages.in",
         "FIREBASE_PROJECT_ID": "andaman-b886d",
         "FROM_EMAIL":          "booking@andamanvoyages.in",
-        "FROM_NAME":           "Bharat Tours & Travels"
+        "FROM_NAME":           "Bharat Transport & Tourism"
     }
 
     // ── Secrets (set after first deploy) ───────────────────────
