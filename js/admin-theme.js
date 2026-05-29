@@ -466,6 +466,8 @@
             '#' + PICKER_ID + ' .atp-row input[type="color"]{width:34px;height:28px;border:1px solid rgba(255,255,255,0.2);background:transparent;border-radius:6px;cursor:pointer;padding:0;}',
             '#' + PICKER_ID + ' .atp-reset{margin-top:10px;width:100%;padding:8px 10px;background:rgba(255,255,255,0.06);color:#e6eef8;border:1px solid rgba(255,255,255,0.18);border-radius:8px;cursor:pointer;font-size:12px;}',
             '#' + PICKER_ID + ' .atp-reset:hover{background:rgba(255,255,255,0.12);}',
+            '#' + PICKER_ID + ' .atp-default-btn{display:block;width:100%;margin:0 0 10px;padding:10px 12px;background:linear-gradient(135deg,#4cc9ff 0%,#16a085 100%);color:#06121f;border:0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.02em;box-shadow:0 4px 12px rgba(76,201,255,0.30);}',
+            '#' + PICKER_ID + ' .atp-default-btn:hover{filter:brightness(1.08);}',
             '@media print { #' + PICKER_ID + '{display:none !important;} }'
         ].join('');
         var style = document.createElement('style');
@@ -497,6 +499,21 @@
         title.className = 'atp-title';
         title.textContent = 'Admin background';
         panel.appendChild(title);
+
+        // Big "Default" button at the top — one click restores the
+        // original morning look (status-coloured booking rows, theme
+        // navy bg, default text). Sits ABOVE the swatches/pickers so
+        // it's the most obvious escape hatch.
+        var defaultBtn = document.createElement('button');
+        defaultBtn.type = 'button';
+        defaultBtn.className = 'atp-default-btn';
+        defaultBtn.innerHTML = '&#8634; Default theme';
+        defaultBtn.title = 'Restore the original look (clears bg + text picks)';
+        defaultBtn.addEventListener('click', function () {
+            setBgColor('');
+            setTextColor('');
+        });
+        panel.appendChild(defaultBtn);
 
         var grid = document.createElement('div');
         grid.className = 'atp-grid';
