@@ -1617,3 +1617,44 @@ select.pkg-input {
 .toggle-switch input:checked + .toggle-slider{background:#0d7a8a}
 .toggle-switch input:checked + .toggle-slider::before{transform:translateX(24px)}
 .toggle-switch input:focus + .toggle-slider{box-shadow:0 0 0 3px rgba(26,188,156,.25)}
+
+/* ── Admin Packages section: dark-blue background ───────────────
+   Per user request, ONLY the Packages section of the admin dashboard
+   gets a dark-blue panel — every other section (Overview, Bookings,
+   Inbox, Gallery, etc.) keeps the default light look.
+   Scope is strictly #section-packages so this rule cannot leak onto
+   any other dashboard section or any public page.                 */
+#section-packages {
+    background: #0a1929;
+    color: #e6eef8;
+    border-radius: 14px;
+    padding: 1.25rem 1.25rem 1.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+#section-packages .section-header h2,
+#section-packages .section-header h2 i {
+    color: #e6eef8;
+}
+#section-packages .publish-status {
+    color: #e6eef8;
+}
+/* Lift package editor cards so they remain visible on the dark bg */
+#section-packages .packages-editor-grid > * {
+    background: #142b47;
+    color: #e6eef8;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+#section-packages .packages-editor-grid input[type="text"],
+#section-packages .packages-editor-grid input[type="number"],
+#section-packages .packages-editor-grid input[type="url"],
+#section-packages .packages-editor-grid textarea,
+#section-packages .packages-editor-grid select {
+    background: #1b3556;
+    color: #e6eef8;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+#section-packages .packages-editor-grid label,
+#section-packages .packages-editor-grid h3,
+#section-packages .packages-editor-grid h4 {
+    color: #e6eef8;
+}
