@@ -355,6 +355,54 @@
         return { subject: subject.trim(), text: text.trim().slice(0, 5000), from: fromTxt.trim() };
     }
 
+    /* Inject a "🤖 Summarize" button into the preview's action toolbar.
+       We do NOT auto-summarize every opened email any more — that
+       blew through the Gemini free-tier RPM quota whenever the admin
+       clicked through their inbox quickly. Now the admin clicks the
+       button explicitly when they want a summary; cached results
+       still display automatically on re-open via sessionStorage. */
+    function injectSummarizeButton(email) {
+        if (!isConfigured()) return;
+        const actions = document.querySelector('#inboxPreview .ipv-actions');
+        if (!actions) return;
+        if (actions.querySelector('.ipv-ai-sum')) return; // already there
+
+        const id = email.id || email._id || email.messageId;
+        const cached = id ? readCachedSummary(id) : null;
+        if (cached) {
+            // Cached summary — render it without burning a quota call.
+            renderSummaryPanel(email, cached);
+            return;
+        }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ipv-ai-sum';
+        btn.innerHTML = '<i class="fas fa-robot"></i> AI summary';
+        btn.title = 'Ask Gemini for a one-line summary + intent';
+        btn.addEventListener('click', async () => {
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Summarising…';
+            try {
+                const sum = await summarizeIfPossible(email);
+                if (sum) {
+                    renderSummaryPanel(email, sum);
+                    btn.remove();   // job done — get out of the way
+                } else {
+                    toast('AI summary unavailable right now', 'error');
+                }
+            } catch (e) {
+                toast('AI summary failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
+        });
+        // Place at the end of the action row.
+        actions.appendChild(btn);
+    }
+
     let _previewObserver = null;
     let _previewDebounce = null;
     function attachPreviewObserver() {
@@ -364,15 +412,15 @@
             // Debounce — many small mutations come in a burst when js/inbox.js
             // builds the preview. Wait 80ms after the last one.
             clearTimeout(_previewDebounce);
-            _previewDebounce = setTimeout(async () => {
+            _previewDebounce = setTimeout(() => {
                 const email = readPreviewedEmail();
                 if (!email) return;
+                // Inject our two buttons (Suggest reply + AI summary).
+                // No automatic Gemini calls — admin opts in by clicking.
+                // If a cached summary exists for this email it is rendered
+                // synchronously inside injectSummarizeButton().
                 injectSuggestReplyButton(email);
-                // Fire-and-forget the summary.
-                try {
-                    const sum = await summarizeIfPossible(email);
-                    if (sum) renderSummaryPanel(email, sum);
-                } catch (e) {}
+                injectSummarizeButton(email);
             }, 80);
         });
         _previewObserver.observe(wrap, { childList: true, subtree: true });
@@ -392,6 +440,9 @@
             '.ipv-ai-reply{padding:.4rem .85rem;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;border:1px solid transparent;background:linear-gradient(135deg,#8e44ad,#3498db);color:#fff;display:inline-flex;align-items:center;gap:.35rem;box-shadow:0 2px 6px rgba(142,68,173,.22);}',
             '.ipv-ai-reply:hover:not(:disabled){filter:brightness(1.05);}',
             '.ipv-ai-reply:disabled{opacity:.7;cursor:not-allowed;}',
+            '.ipv-ai-sum{padding:.4rem .85rem;border-radius:6px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;border:1px solid #cfe2e6;background:#fff;color:#0d7a8a;display:inline-flex;align-items:center;gap:.35rem;}',
+            '.ipv-ai-sum:hover:not(:disabled){background:#e8f4f7;border-color:#0d7a8a;}',
+            '.ipv-ai-sum:disabled{opacity:.65;cursor:not-allowed;}',
             '.ai-report-panel{background:#fff;border:1px solid #e3e8ef;border-radius:12px;box-shadow:0 2px 8px rgba(10,31,68,0.05);margin-bottom:.75rem;overflow:hidden;}',
             '.ai-report-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;padding:.75rem 1rem;background:linear-gradient(135deg,#f6fafb 0%,#eef6f8 100%);border-bottom:1px solid #e3e8ef;}',
             '.ai-report-head h3{margin:0;font-size:.95rem;color:#1c2b48;display:inline-flex;align-items:center;gap:.4rem;}',
