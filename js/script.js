@@ -302,7 +302,7 @@ window.confirmBooking = async function() {
         key: 'rzp_live_SLfG8nnKN3tXPC', // Live key
         amount: price * 100, // Amount in paise
         currency: 'INR',
-        name: 'Bharat Tours & Travels',
+        name: 'Bharat Transport & Tourism',
         description: `${window.currentPackage} Package - Travel Booking`,
         image: 'https://andamanvoyages.in/images/logo.png',
         handler: async function(response) {

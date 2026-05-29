@@ -1,4 +1,4 @@
-// ── AI Chat Widget for Bharat Tours & Travels ─────────────────
+// ── AI Chat Widget for Bharat Transport & Tourism ─────────────────
 (function () {
     'use strict';
 
@@ -6,7 +6,7 @@
     function clientFallback(msg) {
         const q = (msg || '').toLowerCase();
         if (/hi|hello|hey|namaste|good/.test(q))
-            return '👋 Hello! Welcome to **Bharat Tours & Travels**! I\'m your Andaman travel assistant. Ask me anything about packages, prices, beaches or activities! 🏝️';
+            return '👋 Hello! Welcome to **Bharat Transport & Tourism**! I\'m your Andaman travel assistant. Ask me anything about packages, prices, beaches or activities! 🏝️';
         if (/price|cost|rate|how much|₹|rupee|afford/.test(q))
             return '💰 Our packages:\n• **Budget Escape** – ₹15,999/person (4N/5D)\n• **Standard Bliss** – ₹21,999/person (6N/7D)\n• **Luxury Retreat** – ₹28,999/person (6N/7D)\n• **Honeymoon Paradise** – ₹24,999/couple (5N/6D)\n\nAll include hotels, ferries & breakfast! 🏖️';
         if (/honeymoon|couple|romantic|anniversary|wedding/.test(q))
@@ -376,7 +376,7 @@
         dot.style.display = 'none';
         if (!opened) {
             opened = true;
-            addBot('👋 Hi! I\'m your **Andaman AI Guide** from Bharat Tours & Travels.\n\nAsk me anything about our packages, beaches, activities or pricing! 🌊');
+            addBot('👋 Hi! I\'m your **Andaman AI Guide** from Bharat Transport & Tourism.\n\nAsk me anything about our packages, beaches, activities or pricing! 🌊');
             renderQuick();
         }
         setTimeout(() => input.focus(), 250);
