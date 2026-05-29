@@ -249,6 +249,18 @@
             'body[data-admin-bg] table td {' +
             '  color: ' + tints.text + ' !important;' +
             '  border-color: ' + tints.border + ' !important;' +
+            '}' +
+            // Booking-list rows (#allBookingsBody) carry inline styles
+            // (`background:#e5f5e9` for confirmed, `#fff1d6` cancelled,
+            // `#fbe4e4` refunded) and inline `color:#5a6877` on individual
+            // cells. Without these overrides the rows stay light-green /
+            // pink / yellow over the admin bg and the text reads grey-on-
+            // soft. Force tr + every td to the surface tint and full text.
+            'body[data-admin-bg] #allBookingsBody tr,' +
+            'body[data-admin-bg] #allBookingsBody tr td {' +
+            '  background-color: ' + tints.surface + ' !important;' +
+            '  background: ' + tints.surface + ' !important;' +
+            '  color: ' + tints.text + ' !important;' +
             '}';
 
         if (existing) {
@@ -335,6 +347,14 @@
             'body[data-admin-text] textarea::placeholder {' +
             '  color: ' + c + ' !important;' +
             '  opacity: .55;' +
+            '}' +
+            // Booking-list rows have inline `style="color:#5a6877"` on a
+            // few cells (status / payment / date). Force them to the
+            // chosen text colour too so the whole row is consistent.
+            'body[data-admin-text] #allBookingsBody tr,' +
+            'body[data-admin-text] #allBookingsBody tr td,' +
+            'body[data-admin-text] #allBookingsBody tr td * {' +
+            '  color: ' + c + ' !important;' +
             '}';
 
         if (existing) {
