@@ -335,12 +335,10 @@
     function ensurePickerStyles() {
         if (document.getElementById('admin-theme-picker-style')) return;
         var css = [
-            // Position bottom-LEFT (most pages have WhatsApp / chat
-            // FABs on the right that sat on top of the picker, hiding
-            // it from view). Z-index 2147483000 sits above almost every
-            // third-party widget without quite overflowing into the
+            // Position bottom-RIGHT. Z-index 2147483000 sits above almost
+            // every third-party widget without quite overflowing into the
             // 32-bit signed-int max so toasts/alerts can still cover it.
-            '#' + PICKER_ID + '{position:fixed;bottom:18px;left:18px;z-index:2147483000;font-family:inherit;}',
+            '#' + PICKER_ID + '{position:fixed;bottom:18px;right:18px;z-index:2147483000;font-family:inherit;}',
             '#' + PICKER_ID + ' .atp-toggle{width:48px;height:48px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#4cc9ff,#f7c948);color:#06121f;font-size:22px;line-height:1;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;}',
             '#' + PICKER_ID + ' .atp-toggle:hover{filter:brightness(1.08);}',
             '#' + PICKER_ID + ' .atp-panel{position:absolute;bottom:54px;right:0;width:240px;background:#142b47;color:#e6eef8;border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:12px;box-shadow:0 18px 44px rgba(0,0,0,0.55);display:none;}',
