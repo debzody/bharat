@@ -1,41 +1,37 @@
-/* ─────────────────────────────────────────────────────────────────
- * admin-theme.js — auto-apply the dark-blue admin theme.
+/*
+ * admin-theme.js - auto-apply the dark-blue admin theme.
  *
  * What this does
  *   1. Detects whether the current visitor is an ADMIN or STAFF user
  *      using the same checks the rest of the site already trusts:
- *        • localStorage.currentUser → role === 'admin' | 'staff'
- *        • OR email ∈ window.ADMIN_EMAILS
- *        • OR email ∈ window.STAFF_EMAILS
+ *        - localStorage.currentUser -> role === 'admin' | 'staff'
+ *        - OR email in window.ADMIN_EMAILS
+ *        - OR email in window.STAFF_EMAILS
  *      (firebase-config.js exposes both lists to the page.)
- *   2. If yes, adds `class="admin-theme"` to <body> as early as
- *      possible — and to <html> too — so css/admin-theme.css takes
- *      over before the first paint, avoiding a "white flash → dark
- *      flip" jank on slow connections.
- *   3. Re-runs whenever a Firebase auth-state change fires (login /
- *      logout) so the theme appears immediately on sign-in and
- *      disappears on logout, without a page reload.
- *   4. Listens for the `auth:changed` custom event that auth.js
- *      dispatches, plus the `storage` event so a logout in another
- *      tab also flips the theme back here.
+ *   2. If yes, adds class="admin-theme" to <body> as early as possible
+ *      so css/admin-theme.css takes over before the first paint.
+ *   3. Re-runs on Firebase auth-state change, auth:changed events, and
+ *      storage events for cross-tab logout sync.
+ *   4. ADMIN-ONLY: lets admins (NOT staff) pick a custom background
+ *      colour for the console via a small floating "Theme" picker.
+ *      The choice is persisted in localStorage (per-browser) and is
+ *      applied by overriding the --at-bg CSS custom-property on
+ *      body.admin-theme. Choosing "Default" clears the override.
  *
  * Public API
- *   window.AdminTheme.isAdminOrStaff()  → boolean
- *   window.AdminTheme.apply()           → toggle <body class>
- *   window.AdminTheme.force(true|false) → manual override (testing)
- *
- * Loaded on dashboard.html and bookings.html as a tiny synchronous
- * <script> in <head> right after firebase-config.js (so ADMIN_EMAILS /
- * STAFF_EMAILS are already populated). It does NOT load on public
- * pages — there's no benefit, and it would be wasted bytes.
- * ────────────────────────────────────────────────────────────────*/
+ *   window.AdminTheme.isAdminOrStaff()      -> 'admin' | 'staff' | false
+ *   window.AdminTheme.apply()               -> toggle <body class>
+ *   window.AdminTheme.force(true|false)     -> manual override (testing)
+ *   window.AdminTheme.setBgColor('#hex'|'') -> admin background override
+ *   window.AdminTheme.getBgColor()          -> current override or ''
+ */
 (function () {
     'use strict';
 
     var BODY_CLASS = 'admin-theme';
-    var HTML_CLASS = 'admin-theme';   // also stamp <html> so very early
-                                       // CSS selectors (root font / scrollbar
-                                       // colour-scheme) can pick it up too
+    var HTML_CLASS = 'admin-theme';
+    var BG_STORAGE_KEY = 'adminThemeBgColor';
+    var PICKER_ID = 'admin-theme-picker';
 
     /* Read & normalise the email list helpers from firebase-config.js. */
     function lc(arr) {
@@ -45,8 +41,7 @@
     }
 
     function isAdminOrStaff() {
-        // 1) Live Firebase auth instance (most reliable; populated after
-        //    firebase-config.js's __firebaseReady promise resolves).
+        // 1) Live Firebase auth instance (most reliable).
         try {
             if (window.__authInstance && window.__authInstance.currentUser) {
                 var fu = window.__authInstance.currentUser;
@@ -58,8 +53,7 @@
             }
         } catch (_) {}
 
-        // 2) Fall back to the localStorage profile cache (set by
-        //    auth.js after every successful sign-in).
+        // 2) Fall back to localStorage profile cache.
         try {
             var raw = localStorage.getItem('currentUser');
             if (raw) {
@@ -80,13 +74,45 @@
         return false;
     }
 
+    /* ---- Background-colour override (admin-only) ---- */
+    function getBgColor() {
+        try { return localStorage.getItem(BG_STORAGE_KEY) || ''; } catch (_) { return ''; }
+    }
+
+    function applyBgColor() {
+        var colour = getBgColor();
+        var body = document.body;
+        if (!body) return;
+        if (colour) {
+            body.style.setProperty('--at-bg', colour);
+            body.setAttribute('data-admin-bg', colour);
+        } else {
+            body.style.removeProperty('--at-bg');
+            body.removeAttribute('data-admin-bg');
+        }
+    }
+
+    function setBgColor(colour) {
+        try {
+            if (colour && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(colour)) {
+                localStorage.setItem(BG_STORAGE_KEY, colour);
+            } else {
+                localStorage.removeItem(BG_STORAGE_KEY);
+            }
+        } catch (_) {}
+        applyBgColor();
+        // Also refresh the picker UI if it's mounted.
+        try { refreshPicker(); } catch (_) {}
+        return getBgColor();
+    }
+
     function apply() {
-        // Honour an explicit user override stored by force(true|false)
         var forced = null;
         try { forced = sessionStorage.getItem('__adminThemeForce'); } catch (_) {}
+        var role = isAdminOrStaff();
         var enabled = (forced === '1') ? true
                     : (forced === '0') ? false
-                    : !!isAdminOrStaff();
+                    : !!role;
 
         var html = document.documentElement;
         var body = document.body;
@@ -97,11 +123,24 @@
             html.classList.remove(HTML_CLASS);
             if (body) body.classList.remove(BODY_CLASS);
         }
+
+        if (enabled) {
+            applyBgColor();
+        } else if (body) {
+            body.style.removeProperty('--at-bg');
+            body.removeAttribute('data-admin-bg');
+        }
+
+        // Picker is admin-only.
+        if (enabled && role === 'admin') {
+            mountPicker();
+        } else {
+            unmountPicker();
+        }
+
         return enabled;
     }
 
-    /* Manual override — handy for screenshots / QA. The flag lives in
-       sessionStorage so it auto-clears when the tab is closed. */
     function force(value) {
         try {
             if (value === true || value === 1 || value === '1') {
@@ -115,10 +154,164 @@
         return apply();
     }
 
-    /* Run immediately so the dark theme is in place before the first
-       paint when possible. We also re-run on DOMContentLoaded so we
-       can stamp the <body> element (which doesn't exist while we're
-       in <head>). */
+    /* ---- Floating colour-picker widget (admins only) ---- */
+    var PRESETS = [
+        { name: 'Default Navy', value: '' },
+        { name: 'Charcoal',     value: '#1a1a1a' },
+        { name: 'Forest',       value: '#0f2e1f' },
+        { name: 'Plum',         value: '#2a0f3d' },
+        { name: 'Wine',         value: '#3d0f1a' },
+        { name: 'Slate',        value: '#1f2937' },
+        { name: 'Espresso',     value: '#2b1a0f' },
+        { name: 'Midnight',     value: '#000814' }
+    ];
+
+    function ensurePickerStyles() {
+        if (document.getElementById('admin-theme-picker-style')) return;
+        var css = [
+            '#' + PICKER_ID + '{position:fixed;bottom:18px;right:18px;z-index:99999;font-family:inherit;}',
+            '#' + PICKER_ID + ' .atp-toggle{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.18);background:linear-gradient(135deg,#4cc9ff,#f7c948);color:#06121f;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;}',
+            '#' + PICKER_ID + ' .atp-toggle:hover{filter:brightness(1.08);}',
+            '#' + PICKER_ID + ' .atp-panel{position:absolute;bottom:54px;right:0;width:240px;background:#142b47;color:#e6eef8;border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:12px;box-shadow:0 18px 44px rgba(0,0,0,0.55);display:none;}',
+            '#' + PICKER_ID + '.open .atp-panel{display:block;}',
+            '#' + PICKER_ID + ' .atp-title{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#8aa3c2;margin:0 0 8px;font-weight:700;}',
+            '#' + PICKER_ID + ' .atp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}',
+            '#' + PICKER_ID + ' .atp-swatch{position:relative;aspect-ratio:1;border-radius:8px;border:1px solid rgba(255,255,255,0.18);cursor:pointer;padding:0;}',
+            '#' + PICKER_ID + ' .atp-swatch[data-default="1"]{background:repeating-linear-gradient(45deg,#0a1929,#0a1929 4px,#142b47 4px,#142b47 8px);}',
+            '#' + PICKER_ID + ' .atp-swatch.active{outline:2px solid #4cc9ff;outline-offset:1px;}',
+            '#' + PICKER_ID + ' .atp-row{display:flex;gap:6px;align-items:center;margin-top:6px;}',
+            '#' + PICKER_ID + ' .atp-row label{font-size:12px;color:#8aa3c2;flex:1;}',
+            '#' + PICKER_ID + ' .atp-row input[type="color"]{width:34px;height:28px;border:1px solid rgba(255,255,255,0.2);background:transparent;border-radius:6px;cursor:pointer;padding:0;}',
+            '#' + PICKER_ID + ' .atp-reset{margin-top:10px;width:100%;padding:8px 10px;background:rgba(255,255,255,0.06);color:#e6eef8;border:1px solid rgba(255,255,255,0.18);border-radius:8px;cursor:pointer;font-size:12px;}',
+            '#' + PICKER_ID + ' .atp-reset:hover{background:rgba(255,255,255,0.12);}',
+            '@media print { #' + PICKER_ID + '{display:none !important;} }'
+        ].join('');
+        var style = document.createElement('style');
+        style.id = 'admin-theme-picker-style';
+        style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+    }
+
+    function buildPicker() {
+        var wrap = document.createElement('div');
+        wrap.id = PICKER_ID;
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'atp-toggle';
+        btn.setAttribute('aria-label', 'Choose admin background colour');
+        btn.title = 'Admin theme background';
+        btn.innerHTML = '&#127912;'; // artist palette emoji
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            wrap.classList.toggle('open');
+        });
+
+        var panel = document.createElement('div');
+        panel.className = 'atp-panel';
+        panel.addEventListener('click', function (e) { e.stopPropagation(); });
+
+        var title = document.createElement('div');
+        title.className = 'atp-title';
+        title.textContent = 'Admin background';
+        panel.appendChild(title);
+
+        var grid = document.createElement('div');
+        grid.className = 'atp-grid';
+        PRESETS.forEach(function (p) {
+            var sw = document.createElement('button');
+            sw.type = 'button';
+            sw.className = 'atp-swatch';
+            sw.setAttribute('data-value', p.value);
+            sw.title = p.name;
+            sw.setAttribute('aria-label', p.name);
+            if (p.value) {
+                sw.style.background = p.value;
+            } else {
+                sw.setAttribute('data-default', '1');
+            }
+            sw.addEventListener('click', function () {
+                setBgColor(p.value);
+            });
+            grid.appendChild(sw);
+        });
+        panel.appendChild(grid);
+
+        // Custom colour row
+        var row = document.createElement('div');
+        row.className = 'atp-row';
+        var rowLabel = document.createElement('label');
+        rowLabel.textContent = 'Custom colour';
+        var colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.setAttribute('aria-label', 'Custom background colour');
+        var current = getBgColor();
+        colorInput.value = current && /^#[0-9a-fA-F]{6}$/.test(current) ? current : '#0a1929';
+        colorInput.addEventListener('input', function () {
+            setBgColor(colorInput.value);
+        });
+        row.appendChild(rowLabel);
+        row.appendChild(colorInput);
+        panel.appendChild(row);
+
+        // Reset button
+        var reset = document.createElement('button');
+        reset.type = 'button';
+        reset.className = 'atp-reset';
+        reset.textContent = 'Reset to default';
+        reset.addEventListener('click', function () {
+            setBgColor('');
+        });
+        panel.appendChild(reset);
+
+        wrap.appendChild(btn);
+        wrap.appendChild(panel);
+
+        // Close on outside click.
+        document.addEventListener('click', function (e) {
+            if (!wrap.contains(e.target)) wrap.classList.remove('open');
+        });
+        // Close on Escape.
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') wrap.classList.remove('open');
+        });
+
+        return wrap;
+    }
+
+    function refreshPicker() {
+        var wrap = document.getElementById(PICKER_ID);
+        if (!wrap) return;
+        var current = getBgColor();
+        // Highlight active swatch
+        var swatches = wrap.querySelectorAll('.atp-swatch');
+        Array.prototype.forEach.call(swatches, function (s) {
+            if (s.getAttribute('data-value') === current) s.classList.add('active');
+            else s.classList.remove('active');
+        });
+        // Sync colour input
+        var ci = wrap.querySelector('input[type="color"]');
+        if (ci && current && /^#[0-9a-fA-F]{6}$/.test(current)) ci.value = current;
+    }
+
+    function mountPicker() {
+        if (!document.body) return;
+        if (document.getElementById(PICKER_ID)) {
+            refreshPicker();
+            return;
+        }
+        ensurePickerStyles();
+        var widget = buildPicker();
+        document.body.appendChild(widget);
+        refreshPicker();
+    }
+
+    function unmountPicker() {
+        var existing = document.getElementById(PICKER_ID);
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    }
+
+    /* ---- Boot ---- */
     apply();
 
     if (document.readyState === 'loading') {
@@ -129,10 +322,10 @@
     document.addEventListener('auth:changed', apply);
     window.addEventListener('storage', function (e) {
         if (e && (e.key === 'currentUser' || e.key === 'token')) apply();
+        if (e && e.key === BG_STORAGE_KEY) { applyBgColor(); refreshPicker(); }
     });
 
-    /* Wait for the Firebase auth listener to fire its first event so
-       we re-evaluate once we definitively know the signed-in user. */
+    /* Wait for the Firebase auth listener to fire. */
     if (window.__firebaseReady && typeof window.__firebaseReady.then === 'function') {
         window.__firebaseReady.then(function (refs) {
             try {
@@ -147,6 +340,8 @@
     window.AdminTheme = {
         isAdminOrStaff: isAdminOrStaff,
         apply:          apply,
-        force:          force
+        force:          force,
+        setBgColor:     setBgColor,
+        getBgColor:     getBgColor
     };
 })();
