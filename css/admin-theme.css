@@ -1,0 +1,462 @@
+/* ─────────────────────────────────────────────────────────────────
+ * admin-theme.css — Dark-blue admin / staff console theme.
+ *
+ * GOAL
+ *   Give signed-in ADMIN and STAFF users a distinctive dark-blue
+ *   workspace look so it's immediately obvious they're inside the
+ *   internal console (and never accidentally testing the customer-
+ *   facing site). Customers / logged-out visitors continue to see
+ *   the existing light teal theme — this file only takes effect when
+ *   js/admin-theme.js adds `class="admin-theme"` to <body>.
+ *
+ * SCOPE
+ *   Loaded only on dashboard.html + bookings.html (the two admin-
+ *   gated pages). The dark theme NEVER applies on public pages even
+ *   if the file is accidentally linked there, because every rule is
+ *   scoped under `body.admin-theme`.
+ *
+ * COLOUR TOKENS (all CSS custom-properties so individual sections
+ * can be tweaked without grep)
+ *
+ *   --at-bg            page background          deep navy
+ *   --at-surface       cards / panels           lifted navy
+ *   --at-surface-2     nested cards / inputs    slightly lighter
+ *   --at-border        subtle separator         translucent white
+ *   --at-text          primary body copy        near-white
+ *   --at-text-muted    captions / placeholders  cool grey
+ *   --at-accent        primary CTA / link       cyan
+ *   --at-accent-warm   highlights / streak      amber gold
+ *   --at-success       success state            mint green
+ *   --at-danger        error / destructive      coral red
+ *
+ * The palette is anchored at #0a1929 (deep navy 900) — the same
+ * dark blue used by Material's "navy" surface variants — so it
+ * reads as a serious "admin console" rather than a generic dark
+ * mode. White accent on the topbar logo + amber gold highlights
+ * keep the brand identity recognisable.
+ *
+ * NB: Most existing component styles in dashboard.css use teal
+ * (#0d7a8a) and light greys. Rather than rewriting them, we use
+ * CSS variable overrides where dashboard.css already references
+ * them, AND specific component overrides (.data-table, .badge,
+ * .stat-card etc.) for the parts that hard-code colours.
+ * ────────────────────────────────────────────────────────────────*/
+
+body.admin-theme {
+    /* Palette tokens (scoped, won't leak into public pages) */
+    --at-bg:           #0a1929;
+    --at-bg-2:         #0f2138;
+    --at-surface:      #142b47;
+    --at-surface-2:    #1b3556;
+    --at-surface-hi:   #224170;
+    --at-border:       rgba(255, 255, 255, 0.10);
+    --at-border-hi:    rgba(255, 255, 255, 0.18);
+    --at-text:         #e6eef8;
+    --at-text-muted:   #8aa3c2;
+    --at-text-dim:     #6b85a3;
+    --at-accent:       #4cc9ff;     /* cyan — primary CTA / links */
+    --at-accent-hi:    #7cdaff;
+    --at-accent-warm:  #f7c948;     /* amber gold — secondary highlight */
+    --at-success:      #4ade80;
+    --at-danger:       #ff6b8a;
+    --at-warning:      #fbbf24;
+    --at-info:         #60a5fa;
+
+    /* Override style.css's teal CSS vars so any component that uses
+       them (buttons, links, badges) takes on the dark-theme accent. */
+    --primary-teal:        var(--at-accent);
+    --primary-teal-dark:   var(--at-accent-hi);
+    --primary-teal-soft:   var(--at-info);
+    --mmt-blue:            var(--at-accent);
+    --mmt-text:            var(--at-text);
+    --mmt-muted:           var(--at-text-muted);
+    --mmt-line:            var(--at-border);
+
+    background: var(--at-bg) !important;
+    color: var(--at-text) !important;
+    color-scheme: dark;
+}
+
+/* ── 1. PAGE CHROME ──────────────────────────────────────────── */
+
+body.admin-theme .dashboard-body,
+body.admin-theme.dashboard-body {
+    background: var(--at-bg) !important;
+    color: var(--at-text) !important;
+}
+
+/* Soft radial sheen on the page so the flat navy doesn't look dead. */
+body.admin-theme::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(1100px 600px at 80% -10%, rgba(76,201,255,0.08), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(247,201,72,0.05), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+body.admin-theme > * { position: relative; z-index: 1; }
+
+/* ── 2. TOPBAR ──────────────────────────────────────────────── */
+
+body.admin-theme .topbar {
+    background: linear-gradient(180deg, rgba(20,43,71,0.96) 0%, rgba(15,33,56,0.96) 100%) !important;
+    border: 1px solid var(--at-border) !important;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.45) !important;
+    backdrop-filter: saturate(160%) blur(16px);
+    -webkit-backdrop-filter: saturate(160%) blur(16px);
+}
+body.admin-theme .topbar.scrolled {
+    background: linear-gradient(180deg, rgba(10,25,41,0.98), rgba(10,25,41,0.98)) !important;
+    border-color: var(--at-border-hi) !important;
+}
+body.admin-theme .topbar-logo,
+body.admin-theme .topbar-logo:hover {
+    color: #fff !important;
+}
+body.admin-theme .brand-line1 { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+body.admin-theme .brand-line2 {
+    color: var(--at-accent-warm) !important;
+    -webkit-text-fill-color: var(--at-accent-warm) !important;
+}
+
+/* Topnav items — keep dark, lift on hover. */
+body.admin-theme .topnav-item,
+body.admin-theme .topnav-item span,
+body.admin-theme .topnav-item i {
+    color: rgba(255,255,255,0.78) !important;
+}
+body.admin-theme .topnav-item:hover,
+body.admin-theme .topnav-item.active {
+    background: rgba(76,201,255,0.10) !important;
+    color: #fff !important;
+}
+body.admin-theme .topnav-item.active i,
+body.admin-theme .topnav-item.active span {
+    color: var(--at-accent) !important;
+}
+body.admin-theme .topnav-item.active::after {
+    background: var(--at-accent) !important;
+}
+body.admin-theme .topnav-cta {
+    background: linear-gradient(90deg, var(--at-accent) 0%, var(--at-info) 100%) !important;
+    color: #06121f !important;
+    box-shadow: 0 6px 18px rgba(76,201,255,0.30) !important;
+}
+body.admin-theme .topnav-cta i,
+body.admin-theme .topnav-cta span {
+    color: #06121f !important;
+}
+
+/* Hamburger lines stay white on dark bg. */
+body.admin-theme .topbar .hamburger span { background: #fff !important; }
+
+/* Mobile slide-down menu — readable on dark. */
+body.admin-theme body.nav-open .topnav,
+body.admin-theme .topnav.open {
+    background: var(--at-surface) !important;
+    border: 1px solid var(--at-border) !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.55) !important;
+}
+
+/* ── 3. ADMIN BANNER  ───────────────────────────────────────── */
+
+/* Subtle top strip so admins always see "you are in admin mode". */
+body.admin-theme::after {
+    content: "ADMIN CONSOLE";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--at-accent), var(--at-accent-warm), var(--at-accent));
+    color: transparent;
+    z-index: 99;
+    pointer-events: none;
+}
+
+/* ── 4. CARDS / SECTIONS / SURFACES ──────────────────────────── */
+
+body.admin-theme .dashboard-section,
+body.admin-theme .stat-card,
+body.admin-theme .card,
+body.admin-theme .panel,
+body.admin-theme .modal-content,
+body.admin-theme .dropdown-menu,
+body.admin-theme .um-dropdown,
+body.admin-theme .user-menu-dropdown,
+body.admin-theme .user-menu-dropdown-floating {
+    background: var(--at-surface) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.40) !important;
+}
+body.admin-theme .dashboard-section h1,
+body.admin-theme .dashboard-section h2,
+body.admin-theme .dashboard-section h3,
+body.admin-theme .stat-card .stat-num,
+body.admin-theme .stat-card .stat-label {
+    color: var(--at-text) !important;
+}
+
+/* Stat-card numeric — bright accent so it pops on dark. */
+body.admin-theme .stat-card .stat-num {
+    color: var(--at-accent) !important;
+    text-shadow: 0 0 24px rgba(76,201,255,0.18);
+}
+body.admin-theme .stat-card .stat-label {
+    color: var(--at-text-muted) !important;
+}
+
+/* Section headers (with accent stripe). */
+body.admin-theme .dashboard-section h2,
+body.admin-theme .section-title {
+    border-bottom: 1px solid var(--at-border) !important;
+    padding-bottom: .5rem;
+}
+
+/* ── 5. TABLES ──────────────────────────────────────────────── */
+
+body.admin-theme .data-table,
+body.admin-theme table {
+    background: transparent !important;
+    color: var(--at-text) !important;
+    border-color: var(--at-border) !important;
+}
+body.admin-theme .data-table th,
+body.admin-theme table th {
+    background: var(--at-surface-2) !important;
+    color: var(--at-text) !important;
+    border-color: var(--at-border) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    font-size: 0.78rem !important;
+}
+body.admin-theme .data-table td,
+body.admin-theme table td {
+    background: transparent !important;
+    color: var(--at-text) !important;
+    border-color: var(--at-border) !important;
+}
+body.admin-theme .data-table tbody tr:nth-child(even) td,
+body.admin-theme table tbody tr:nth-child(even) td {
+    background: rgba(255,255,255,0.025) !important;
+}
+/* Hover row highlight */
+body.admin-theme .data-table tbody tr:hover td,
+body.admin-theme table tbody tr:hover td {
+    background: rgba(76,201,255,0.06) !important;
+}
+
+/* ── 6. FORM CONTROLS ────────────────────────────────────────── */
+
+body.admin-theme input[type="text"],
+body.admin-theme input[type="email"],
+body.admin-theme input[type="tel"],
+body.admin-theme input[type="url"],
+body.admin-theme input[type="number"],
+body.admin-theme input[type="search"],
+body.admin-theme input[type="password"],
+body.admin-theme input[type="date"],
+body.admin-theme input[type="time"],
+body.admin-theme textarea,
+body.admin-theme select {
+    background: var(--at-surface-2) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border-hi) !important;
+    border-radius: 8px;
+}
+body.admin-theme input:focus,
+body.admin-theme textarea:focus,
+body.admin-theme select:focus {
+    outline: none !important;
+    border-color: var(--at-accent) !important;
+    box-shadow: 0 0 0 3px rgba(76,201,255,0.18) !important;
+}
+body.admin-theme input::placeholder,
+body.admin-theme textarea::placeholder {
+    color: var(--at-text-dim) !important;
+}
+body.admin-theme label,
+body.admin-theme .form-label {
+    color: var(--at-text-muted) !important;
+}
+
+/* Native date / time picker icons need a colour-scheme hint to flip */
+body.admin-theme input[type="date"],
+body.admin-theme input[type="time"] {
+    color-scheme: dark;
+}
+
+/* ── 7. BUTTONS ──────────────────────────────────────────────── */
+
+body.admin-theme .btn-primary,
+body.admin-theme button.primary,
+body.admin-theme .save-btn {
+    background: linear-gradient(135deg, var(--at-accent) 0%, var(--at-info) 100%) !important;
+    color: #06121f !important;
+    border: none !important;
+    box-shadow: 0 6px 18px rgba(76,201,255,0.30) !important;
+}
+body.admin-theme .btn-primary:hover {
+    filter: brightness(1.08);
+}
+body.admin-theme .btn-secondary,
+body.admin-theme button.secondary {
+    background: var(--at-surface-hi) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border-hi) !important;
+}
+body.admin-theme .btn-danger,
+body.admin-theme .delete-btn {
+    background: var(--at-danger) !important;
+    color: #1a0008 !important;
+    border: none !important;
+}
+body.admin-theme .btn-success {
+    background: var(--at-success) !important;
+    color: #04140a !important;
+    border: none !important;
+}
+
+/* ── 8. BADGES / PILLS ───────────────────────────────────────── */
+
+body.admin-theme .badge {
+    background: rgba(255,255,255,0.07) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border-hi) !important;
+}
+body.admin-theme .badge-success,
+body.admin-theme .badge.success { background: rgba(74,222,128,0.18) !important; color: var(--at-success) !important; border-color: rgba(74,222,128,0.35) !important; }
+body.admin-theme .badge-danger,
+body.admin-theme .badge.danger   { background: rgba(255,107,138,0.18) !important; color: var(--at-danger)  !important; border-color: rgba(255,107,138,0.35) !important; }
+body.admin-theme .badge-warning,
+body.admin-theme .badge.warning  { background: rgba(251,191,36,0.18) !important;  color: var(--at-warning) !important; border-color: rgba(251,191,36,0.35) !important; }
+body.admin-theme .badge-info,
+body.admin-theme .badge.info     { background: rgba(96,165,250,0.18) !important;  color: var(--at-info)    !important; border-color: rgba(96,165,250,0.35) !important; }
+
+/* ── 9. LINKS ────────────────────────────────────────────────── */
+
+body.admin-theme a,
+body.admin-theme .link {
+    color: var(--at-accent) !important;
+}
+body.admin-theme a:hover {
+    color: var(--at-accent-hi) !important;
+}
+
+/* ── 10. SCROLLBAR ───────────────────────────────────────────── */
+
+body.admin-theme::-webkit-scrollbar { width: 12px; height: 12px; }
+body.admin-theme::-webkit-scrollbar-track { background: var(--at-bg-2); }
+body.admin-theme::-webkit-scrollbar-thumb {
+    background: var(--at-surface-hi);
+    border-radius: 6px;
+    border: 3px solid var(--at-bg-2);
+}
+body.admin-theme::-webkit-scrollbar-thumb:hover { background: var(--at-accent); }
+
+/* ── 11. SIDE NAV / SUB NAV (dashboard sections) ─────────────── */
+
+body.admin-theme .dashboard-nav,
+body.admin-theme .dash-side-nav,
+body.admin-theme .sub-nav {
+    background: var(--at-surface) !important;
+    border-bottom: 1px solid var(--at-border) !important;
+}
+body.admin-theme .dashboard-nav a,
+body.admin-theme .dash-side-nav a,
+body.admin-theme .sub-nav a {
+    color: var(--at-text-muted) !important;
+}
+body.admin-theme .dashboard-nav a:hover,
+body.admin-theme .dashboard-nav a.active,
+body.admin-theme .dash-side-nav a:hover,
+body.admin-theme .dash-side-nav a.active,
+body.admin-theme .sub-nav a:hover,
+body.admin-theme .sub-nav a.active {
+    color: var(--at-accent) !important;
+    background: rgba(76,201,255,0.08) !important;
+}
+
+/* ── 12. TOASTS / ALERTS ─────────────────────────────────────── */
+
+body.admin-theme .toast,
+body.admin-theme .alert {
+    background: var(--at-surface) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border-hi) !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.55) !important;
+}
+
+/* ── 13. MODALS / BACKDROPS ──────────────────────────────────── */
+
+body.admin-theme .modal {
+    background: rgba(4,12,22,0.72) !important;
+    backdrop-filter: blur(2px);
+}
+body.admin-theme .modal-content {
+    background: var(--at-surface) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border-hi) !important;
+}
+body.admin-theme .modal-content .close,
+body.admin-theme .modal-content [data-close] {
+    color: var(--at-text-muted) !important;
+}
+
+/* ── 14. CHIPS / TAG INPUTS ──────────────────────────────────── */
+
+body.admin-theme .chip,
+body.admin-theme .tag {
+    background: var(--at-surface-hi) !important;
+    color: var(--at-text) !important;
+    border: 1px solid var(--at-border-hi) !important;
+}
+
+/* ── 15. CODE / PRE BLOCKS (settings docs, payload previews) ── */
+
+body.admin-theme code,
+body.admin-theme pre {
+    background: var(--at-bg-2) !important;
+    color: var(--at-accent-warm) !important;
+    border: 1px solid var(--at-border) !important;
+    border-radius: 6px;
+}
+
+/* ── 16. CHARTS / KPI HEADERS — keep accent text readable ───── */
+
+body.admin-theme .stat-num,
+body.admin-theme .kpi-num,
+body.admin-theme .metric-value {
+    color: var(--at-accent) !important;
+}
+body.admin-theme .stat-label,
+body.admin-theme .kpi-label,
+body.admin-theme .metric-label {
+    color: var(--at-text-muted) !important;
+}
+
+/* ── 17. EMPTY STATES + DROPZONES ────────────────────────────── */
+
+body.admin-theme .empty-state,
+body.admin-theme .dropzone {
+    background: var(--at-surface) !important;
+    color: var(--at-text-muted) !important;
+    border: 1px dashed var(--at-border-hi) !important;
+}
+
+/* ── 18. PRINT — fall back to plain B&W on print ─────────────── */
+
+@media print {
+    body.admin-theme {
+        background: #fff !important;
+        color: #000 !important;
+    }
+    body.admin-theme::before,
+    body.admin-theme::after {
+        display: none !important;
+    }
+}
