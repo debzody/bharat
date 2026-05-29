@@ -2018,6 +2018,21 @@
         // Deploy: cd workers/refund-test && npm install && npx wrangler secret put RAZORPAY_KEY_ID && npx wrangler secret put RAZORPAY_KEY_SECRET && npx wrangler deploy
         // Then replace the placeholder below with the deployed URL:
         window.REFUND_TEST_WORKER_URL = 'https://refund-test.pittu-das2.workers.dev';
+
+        // ── AI Assistant worker (Gemini 1.5 Flash) ──────────────
+        // Powers: ✨ Suggest reply in Inbox, AI summary on each opened
+        // email, "AI Daily Report" panel on Overview, and the daily
+        // 8 AM IST cron-triggered email summary.
+        // Deploy:  cd workers/ai-assistant && npm install
+        //          npx wrangler login
+        //          npx wrangler secret put GEMINI_API_KEY
+        //          npx wrangler secret put BREVO_API_KEY
+        //          printf %s '<service-account JSON>' | npx wrangler secret put FIREBASE_SERVICE_ACCOUNT_KEY
+        //          npx wrangler deploy
+        // Then paste the deployed URL below. Until set, all AI features
+        // silently no-op — the rest of the dashboard works normally.
+        // See ai_assistant_setup.md for full setup walkthrough.
+        window.AI_ASSISTANT_WORKER_URL = '';
     </script>
     <!-- firebase-config.js is already loaded once near the top of <head>
          (line ~27). Loading it a second time here re-runs `const
@@ -2029,6 +2044,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
     <script src="js/refund.js?v=2"></script>
+    <script src="js/ai-assistant.js?v=1"></script>
     <script src="js/dashboard.js?v=43"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=6"></script>
