@@ -326,8 +326,48 @@
                 '</div>';
             body.innerHTML = meta + '<div class="ai-report-html">' + (out.html || '') + '</div>';
         } catch (err) {
-            body.innerHTML = '<p class="ai-report-error"><i class="fas fa-triangle-exclamation"></i> ' +
-                escapeHtml(err.message) + '</p>';
+            // ── Friendly "secret not set" setup card ───────────────
+            // The Cloudflare Worker throws this exact message when its
+            // FIREBASE_SERVICE_ACCOUNT_KEY (or BREVO_API_KEY / GEMINI_API_KEY)
+            // hasn't been provisioned via `wrangler secret put`. Instead of
+            // showing the bare error string, we render a one-step setup card
+            // with the exact CLI commands so the admin can fix it in 60 s.
+            const m = String(err.message || '').match(/^([A-Z_]+)\s+secret\s+not\s+set/i);
+            if (m) {
+                const secret = m[1];
+                body.innerHTML =
+                    '<div class="ai-report-setup">' +
+                        '<div class="ai-report-setup-head">' +
+                            '<i class="fas fa-circle-exclamation"></i> ' +
+                            '<strong>AI assistant not fully configured</strong>' +
+                        '</div>' +
+                        '<p>The Cloudflare Worker is missing the <code>' + escapeHtml(secret) + '</code> secret. ' +
+                            'Run these commands once on your machine to fix it:</p>' +
+                        '<pre class="ai-report-setup-cmds">' +
+                            'cd workers/ai-assistant\n' +
+                            'npm install            # one-time\n' +
+                            'npx wrangler login     # one-time browser auth\n' +
+                            (secret === 'GEMINI_API_KEY'
+                                ? '# Get key from https://aistudio.google.com/app/apikey\n' +
+                                  'npx wrangler secret put GEMINI_API_KEY\n'
+                              : secret === 'BREVO_API_KEY'
+                                ? '# Get key from https://app.brevo.com/settings/keys/api\n' +
+                                  'npx wrangler secret put BREVO_API_KEY\n'
+                                : '# Firebase Console → Project settings → Service accounts\n' +
+                                  '#   → Generate new private key (downloads a JSON file)\n' +
+                                  'cat ~/Downloads/&lt;your-service-account&gt;.json | \\\n' +
+                                  '    npx wrangler secret put FIREBASE_SERVICE_ACCOUNT_KEY\n') +
+                            'npx wrangler deploy' +
+                        '</pre>' +
+                        '<p style="margin-top:.5rem;font-size:.82rem;color:#7a8b96;">' +
+                            'Full walkthrough: <code>ai_assistant_setup.md</code> in the repo. ' +
+                            'Until configured, this widget stays inert &mdash; the rest of the dashboard is unaffected.' +
+                        '</p>' +
+                    '</div>';
+            } else {
+                body.innerHTML = '<p class="ai-report-error"><i class="fas fa-triangle-exclamation"></i> ' +
+                    escapeHtml(err.message) + '</p>';
+            }
         } finally {
             btn.disabled = false;
             btn.innerHTML = original;
@@ -458,7 +498,14 @@
             '.ai-report-meta span{padding:.3rem .65rem;background:#f3f8fa;border:1px solid #cfe2e6;border-radius:999px;color:#0d2c3a;font-weight:600;font-size:.78rem;}',
             '.ai-report-html h2{font-size:1rem;color:#1c2b48;margin:1rem 0 .35rem;}',
             '.ai-report-html ul,.ai-report-html ol{margin:0 0 .5rem 1.25rem;}',
-            '.ai-report-html li{margin-bottom:.25rem;}'
+            '.ai-report-html li{margin-bottom:.25rem;}',
+            /* Friendly setup card shown when a Worker secret is missing */
+            '.ai-report-setup{background:#fef9e7;border:1px solid #f1c40f;border-radius:8px;padding:.85rem 1rem;color:#7d6608;}',
+            '.ai-report-setup-head{display:flex;align-items:center;gap:.45rem;margin-bottom:.5rem;font-size:.95rem;color:#7d6608;}',
+            '.ai-report-setup-head i{color:#f39c12;font-size:1rem;}',
+            '.ai-report-setup p{margin:.25rem 0;color:#5a4a08;font-size:.86rem;line-height:1.55;}',
+            '.ai-report-setup code{background:#fff8e1;border:1px solid #f5d76e;border-radius:4px;padding:.05rem .35rem;font-size:.82rem;color:#7d6608;}',
+            '.ai-report-setup-cmds{background:#1c2b48;color:#e1f4ff;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.78rem;line-height:1.55;padding:.7rem .9rem;border-radius:6px;overflow-x:auto;white-space:pre;margin:.4rem 0 .25rem;}'
         ].join('\n');
         document.head.appendChild(css);
     }
