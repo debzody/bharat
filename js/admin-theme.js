@@ -79,16 +79,71 @@
         try { return localStorage.getItem(BG_STORAGE_KEY) || ''; } catch (_) { return ''; }
     }
 
+    /* Inject (or update) a high-specificity style block that paints
+       the admin-chosen colour onto every "page" surface — html, body,
+       .dashboard-body and .dashboard-main — using !important so the
+       existing theme classes (theme-light, theme-hacker, theme-ocean,
+       theme-sunset, theme-midnight, theme-cyberpunk and admin-theme)
+       can't outrank it. We also clear any background-image (those
+       themes use radial / conic gradients) so the chosen flat colour
+       is what the admin actually sees. */
+    var BG_STYLE_ID = 'admin-theme-bg-override';
     function applyBgColor() {
         var colour = getBgColor();
         var body = document.body;
-        if (!body) return;
-        if (colour) {
+        var html = document.documentElement;
+        var existing = document.getElementById(BG_STYLE_ID);
+
+        if (!colour) {
+            // Clear all overrides.
+            if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+            if (body) {
+                body.style.removeProperty('--at-bg');
+                body.removeAttribute('data-admin-bg');
+            }
+            if (html) html.style.removeProperty('background-color');
+            return;
+        }
+
+        // Stamp the variable + data-attr (cheap, plus cooperates with CSS).
+        if (body) {
             body.style.setProperty('--at-bg', colour);
             body.setAttribute('data-admin-bg', colour);
+        }
+        // And inject a global override that wins against every theme rule.
+        var css =
+            'html[data-admin-bg], html[data-admin-bg] body,' +
+            'body[data-admin-bg], body[data-admin-bg].dashboard-body,' +
+            'body[data-admin-bg] .dashboard-main, body[data-admin-bg] .dashboard-body,' +
+            'body[data-admin-bg].theme-light, body[data-admin-bg].theme-hacker,' +
+            'body[data-admin-bg].theme-ocean, body[data-admin-bg].theme-sunset,' +
+            'body[data-admin-bg].theme-midnight, body[data-admin-bg].theme-cyberpunk,' +
+            'body[data-admin-bg].admin-theme {' +
+            '  background-color: ' + colour + ' !important;' +
+            '  background-image: none !important;' +
+            '}' +
+            // Kill the decorative ::before / ::after gradient layers some
+            // dashboard themes paint over the body; otherwise the chosen
+            // colour can be hidden behind them.
+            'body[data-admin-bg]::before, body[data-admin-bg]::after {' +
+            '  background: transparent !important;' +
+            '  background-image: none !important;' +
+            '}';
+
+        if (existing) {
+            existing.textContent = css;
         } else {
-            body.style.removeProperty('--at-bg');
-            body.removeAttribute('data-admin-bg');
+            var style = document.createElement('style');
+            style.id = BG_STYLE_ID;
+            style.appendChild(document.createTextNode(css));
+            document.head.appendChild(style);
+        }
+
+        // Mirror onto <html> so when body bg is transparent (some themes)
+        // the page still shows the chosen colour behind everything.
+        if (html) {
+            html.setAttribute('data-admin-bg', colour);
+            html.style.backgroundColor = colour;
         }
     }
 
