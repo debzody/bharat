@@ -123,3 +123,60 @@ export async function firestoreCreateIfMissing(env, token, collection, docId, da
     if (res.status === 409 || /already exists/i.test(txt)) return false;
     throw new Error('Firestore create failed: ' + res.status + ' ' + txt);
 }
+
+/* ── Firestore typed-value DECODER ───────────────────────────────
+ * Inverse of toFirestoreValue. Used when this Worker needs to READ
+ * a doc (e.g. /settings/inboxAutoReply) to pick up live template
+ * settings the admin edited from the dashboard. */
+function fromFirestoreValue(v) {
+    if (!v || typeof v !== 'object') return null;
+    if ('nullValue'    in v) return null;
+    if ('stringValue'  in v) return v.stringValue;
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('integerValue' in v) return Number(v.integerValue);
+    if ('doubleValue'  in v) return Number(v.doubleValue);
+    if ('timestampValue' in v) return v.timestampValue;
+    if ('arrayValue'   in v) {
+        const arr = (v.arrayValue && v.arrayValue.values) || [];
+        return arr.map(fromFirestoreValue);
+    }
+    if ('mapValue' in v) {
+        return fieldsToObject((v.mapValue && v.mapValue.fields) || {});
+    }
+    return null;
+}
+function fieldsToObject(fields) {
+    const out = {};
+    for (const k of Object.keys(fields || {})) {
+        out[k] = fromFirestoreValue(fields[k]);
+    }
+    return out;
+}
+
+/* GET /<collection>/<docId> — returns the doc data, or null if it
+ * doesn't exist yet. Used by the auto-reply path to pick up the live
+ * /settings/inboxAutoReply template the admin set in the dashboard. */
+export async function firestoreGetDoc(env, token, collection, docId) {
+    const projectId = env.FIREBASE_PROJECT_ID;
+    if (!projectId) throw new Error('FIREBASE_PROJECT_ID not configured');
+
+    const url = 'https://firestore.googleapis.com/v1/projects/' + projectId +
+        '/databases/(default)/documents/' + encodeURIComponent(collection) +
+        '/' + encodeURIComponent(docId);
+
+    const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+        }
+    });
+
+    if (res.status === 404) return null;
+    if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error('Firestore get failed: ' + res.status + ' ' + txt);
+    }
+    const json = await res.json().catch(() => ({}));
+    return fieldsToObject(json.fields || {});
+}
