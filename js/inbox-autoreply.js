@@ -415,7 +415,7 @@
                         '<label>From mailbox' +
                             '<select id="iarDefaultFrom">' +
                                 '<option value="mailbox">Same mailbox the mail came in</option>' +
-                                '<option value="no-reply@andamanvoyages.in">no-reply@andamanvoyages.in (recommended for auto-replies)</option>' +
+                                '<option value="noreply@andamanvoyages.in">noreply@andamanvoyages.in (recommended for auto-replies)</option>' +
                                 '<option value="booking@andamanvoyages.in">booking@andamanvoyages.in</option>' +
                                 '<option value="info@andamanvoyages.in">info@andamanvoyages.in</option>' +
                                 '<option value="cancellation@andamanvoyages.in">cancellation@andamanvoyages.in</option>' +
