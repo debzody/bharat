@@ -49,7 +49,14 @@
         "REPORT_TO_EMAIL":     "deb@andamanvoyages.in",
         "REPORT_FROM_EMAIL":   "info@andamanvoyages.in",
         "REPORT_FROM_NAME":    "Andaman Voyages — Daily AI Report",
-        "GEMINI_MODEL":        "gemini-2.5-flash"
+        // Free-tier rate limits as of Nov 2026:
+        //   gemini-2.5-flash       —  5 RPM,  250 RPD  (best quality, tight quota)
+        //   gemini-2.5-flash-lite  — 15 RPM, 1000 RPD  ← we use this — best balance
+        //   gemini-2.0-flash-lite  — 30 RPM,  200 RPD  (highest RPM but small RPD)
+        //   gemini-flash-latest    — auto-rotates to best Flash; quota varies
+        // gemini-2.5-flash-lite is plenty good for inbox summaries +
+        // reply drafts, and 1,000 req/day = ~30 emails/day for ~30 days.
+        "GEMINI_MODEL":        "gemini-2.5-flash-lite"
     }
 
     // ── Secrets (set after first deploy) ──────────────────────
