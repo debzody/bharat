@@ -31,6 +31,7 @@
     var BODY_CLASS = 'admin-theme';
     var HTML_CLASS = 'admin-theme';
     var BG_STORAGE_KEY = 'adminThemeBgColor';
+    var TEXT_STORAGE_KEY = 'adminThemeTextColor';
     var PICKER_ID = 'admin-theme-picker';
 
     /* Read & normalise the email list helpers from firebase-config.js. */
@@ -77,6 +78,15 @@
     /* ---- Background-colour override (admin-only) ---- */
     function getBgColor() {
         try { return localStorage.getItem(BG_STORAGE_KEY) || ''; } catch (_) { return ''; }
+    }
+
+    /* ---- Text-colour override (admin-only) ----
+       Independent from the bg picker. When set, every visible text element
+       (headings, paragraphs, table cells, labels, list items, links) gets
+       repainted to this hex. Reset returns text to whatever the bg picker
+       (or the underlying theme) chose. */
+    function getTextColor() {
+        try { return localStorage.getItem(TEXT_STORAGE_KEY) || ''; } catch (_) { return ''; }
     }
 
     /* Convert a #hex string to {r,g,b}. Accepts 3- or 6-char shorthand. */
@@ -267,9 +277,87 @@
             }
         } catch (_) {}
         applyBgColor();
+        // Re-apply the text override too — its specificity sits on top of
+        // the bg-derived text colour, so we need it after every bg change.
+        applyTextColor();
         // Also refresh the picker UI if it's mounted.
         try { refreshPicker(); } catch (_) {}
         return getBgColor();
+    }
+
+    /* ---- Text-colour override implementation ---- */
+    var TEXT_STYLE_ID = 'admin-theme-text-override';
+    function applyTextColor() {
+        var colour = getTextColor();
+        var existing = document.getElementById(TEXT_STYLE_ID);
+        var body = document.body;
+
+        if (!colour) {
+            // Clear stamp + style block.
+            if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+            if (body) body.removeAttribute('data-admin-text');
+            return;
+        }
+
+        if (body) body.setAttribute('data-admin-text', colour);
+
+        // High-specificity rules that paint EVERY visible text node in the
+        // admin area with the chosen colour. We list each kind of element
+        // explicitly (rather than using the universal selector `*`) so
+        // icons, badges, accent labels and brand-coloured chips keep their
+        // own colours — only "regular" text gets repainted.
+        var c = colour;
+        var css =
+            'body[data-admin-text],' +
+            'body[data-admin-text] h1, body[data-admin-text] h2,' +
+            'body[data-admin-text] h3, body[data-admin-text] h4,' +
+            'body[data-admin-text] h5, body[data-admin-text] h6,' +
+            'body[data-admin-text] p, body[data-admin-text] span,' +
+            'body[data-admin-text] div, body[data-admin-text] label,' +
+            'body[data-admin-text] li, body[data-admin-text] td,' +
+            'body[data-admin-text] th, body[data-admin-text] small,' +
+            'body[data-admin-text] strong, body[data-admin-text] em,' +
+            'body[data-admin-text] code, body[data-admin-text] pre,' +
+            'body[data-admin-text] .stat-value, body[data-admin-text] .stat-label,' +
+            'body[data-admin-text] .topbar-title, body[data-admin-text] .section-title,' +
+            'body[data-admin-text] .topbar-user,' +
+            'body[data-admin-text] .topnav-item, body[data-admin-text] .topnav-item span,' +
+            'body[data-admin-text] .data-table, body[data-admin-text] table,' +
+            'body[data-admin-text] input, body[data-admin-text] textarea,' +
+            'body[data-admin-text] select {' +
+            '  color: ' + c + ' !important;' +
+            '}' +
+            'body[data-admin-text] a:not(.btn-add-package):not(.btn-save-packages):not(.action-btn) {' +
+            '  color: ' + c + ' !important;' +
+            '  text-decoration-color: ' + c + ' !important;' +
+            '}' +
+            'body[data-admin-text] input::placeholder,' +
+            'body[data-admin-text] textarea::placeholder {' +
+            '  color: ' + c + ' !important;' +
+            '  opacity: .55;' +
+            '}';
+
+        if (existing) {
+            existing.textContent = css;
+        } else {
+            var style = document.createElement('style');
+            style.id = TEXT_STYLE_ID;
+            style.appendChild(document.createTextNode(css));
+            document.head.appendChild(style);
+        }
+    }
+
+    function setTextColor(colour) {
+        try {
+            if (colour && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(colour)) {
+                localStorage.setItem(TEXT_STORAGE_KEY, colour);
+            } else {
+                localStorage.removeItem(TEXT_STORAGE_KEY);
+            }
+        } catch (_) {}
+        applyTextColor();
+        try { refreshPicker(); } catch (_) {}
+        return getTextColor();
     }
 
     function apply() {
@@ -292,9 +380,14 @@
 
         if (enabled) {
             applyBgColor();
+            applyTextColor();
         } else if (body) {
             body.style.removeProperty('--at-bg');
             body.removeAttribute('data-admin-bg');
+            // Clean up text override on logout too.
+            body.removeAttribute('data-admin-text');
+            var ts = document.getElementById(TEXT_STYLE_ID);
+            if (ts && ts.parentNode) ts.parentNode.removeChild(ts);
         }
 
         // Picker is admin-only.
@@ -406,11 +499,11 @@
         });
         panel.appendChild(grid);
 
-        // Custom colour row
+        // Custom BG colour row
         var row = document.createElement('div');
         row.className = 'atp-row';
         var rowLabel = document.createElement('label');
-        rowLabel.textContent = 'Custom colour';
+        rowLabel.textContent = 'Background';
         var colorInput = document.createElement('input');
         colorInput.type = 'color';
         colorInput.setAttribute('aria-label', 'Custom background colour');
@@ -423,13 +516,31 @@
         row.appendChild(colorInput);
         panel.appendChild(row);
 
-        // Reset button
+        // Custom TEXT colour row — independent from the bg.
+        var textRow = document.createElement('div');
+        textRow.className = 'atp-row';
+        var textLabel = document.createElement('label');
+        textLabel.textContent = 'Text colour';
+        var textInput = document.createElement('input');
+        textInput.type = 'color';
+        textInput.setAttribute('aria-label', 'Custom text colour');
+        var currentText = getTextColor();
+        textInput.value = currentText && /^#[0-9a-fA-F]{6}$/.test(currentText) ? currentText : '#e6eef8';
+        textInput.addEventListener('input', function () {
+            setTextColor(textInput.value);
+        });
+        textRow.appendChild(textLabel);
+        textRow.appendChild(textInput);
+        panel.appendChild(textRow);
+
+        // Reset button — clears BOTH bg and text overrides.
         var reset = document.createElement('button');
         reset.type = 'button';
         reset.className = 'atp-reset';
         reset.textContent = 'Reset to default';
         reset.addEventListener('click', function () {
             setBgColor('');
+            setTextColor('');
         });
         panel.appendChild(reset);
 
@@ -492,6 +603,7 @@
     window.addEventListener('storage', function (e) {
         if (e && (e.key === 'currentUser' || e.key === 'token')) apply();
         if (e && e.key === BG_STORAGE_KEY) { applyBgColor(); refreshPicker(); }
+        if (e && e.key === TEXT_STORAGE_KEY) { applyTextColor(); refreshPicker(); }
     });
 
     /* Wait for the Firebase auth listener to fire. */
@@ -511,6 +623,8 @@
         apply:          apply,
         force:          force,
         setBgColor:     setBgColor,
-        getBgColor:     getBgColor
+        getBgColor:     getBgColor,
+        setTextColor:   setTextColor,
+        getTextColor:   getTextColor
     };
 })();
