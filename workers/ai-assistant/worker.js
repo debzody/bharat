@@ -48,7 +48,7 @@ export default {
             return jsonResponse(env, request, {
                 ok: true,
                 service: 'ai-assistant',
-                model: env.GEMINI_MODEL || 'gemini-1.5-flash'
+                model: env.AI_MODEL || env.GEMINI_MODEL || '@cf/meta/llama-3.1-8b-instruct'
             });
         }
         try {
