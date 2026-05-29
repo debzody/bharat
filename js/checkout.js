@@ -888,7 +888,7 @@
             key: RAZORPAY_KEY,
             amount: advance * 100,            // ← charge only the 5% advance
             currency: 'INR',
-            name: 'Bharat Tours & Travels',
+            name: 'Bharat Transport & Tourism',
             description: 'Booking advance (' + R + Number(advancePerHead()).toLocaleString('en-IN') + '/head x ' + headCount() + ') for ' + state.cart.name + ' (Ref ' + ref + ')',
             image: 'https://andamanvoyages.in/images/logo.png',
             prefill: { name: name, email: email, contact: phone },

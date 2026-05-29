@@ -260,19 +260,43 @@
         return modal;
     }
 
-    function openCompose() {
+    /* Open the Compose modal, optionally pre-filled.
+       prefill = { to, subject, body, replyTo, from } — every field optional.
+       External callers (e.g. js/ai-assistant.js) drop the AI-generated reply
+       straight in by calling openCompose({ to, subject, body }). */
+    function openCompose(prefill) {
         const modal = ensureComposeModal();
-        const tEl = $('icTo'); if (tEl) tEl.value = '';
-        const sEl = $('icSubject'); if (sEl) sEl.value = '';
-        const rEl = $('icReplyTo'); if (rEl) rEl.value = '';
-        const bEl = $('icBody'); if (bEl) bEl.value = '';
-        const stEl = $('icStatus'); if (stEl) { stEl.textContent = ''; stEl.style.color = ''; }
+        prefill = prefill || {};
+        const tEl  = $('icTo');      if (tEl)  tEl.value  = prefill.to      || '';
+        const sEl  = $('icSubject'); if (sEl)  sEl.value  = prefill.subject || '';
+        const rEl  = $('icReplyTo'); if (rEl)  rEl.value  = prefill.replyTo || '';
+        const bEl  = $('icBody');    if (bEl)  bEl.value  = prefill.body    || '';
+        const stEl = $('icStatus');  if (stEl) { stEl.textContent = ''; stEl.style.color = ''; }
+        // If a "from" was suggested and the option exists in the dropdown, select it.
+        if (prefill.from) {
+            const fromSel = $('icFrom');
+            if (fromSel) {
+                for (let i = 0; i < fromSel.options.length; i++) {
+                    if (fromSel.options[i].value === prefill.from) { fromSel.selectedIndex = i; break; }
+                }
+            }
+        }
         modal.classList.add('open');
-        setTimeout(function () { const to = $('icTo'); if (to) to.focus(); }, 60);
+        // Focus the first empty field so the admin can start typing immediately.
+        setTimeout(function () {
+            if (!prefill.to && $('icTo'))           $('icTo').focus();
+            else if (!prefill.subject && $('icSubject')) $('icSubject').focus();
+            else if (!prefill.body && $('icBody'))  $('icBody').focus();
+            else if ($('icBody'))                   $('icBody').focus();
+        }, 60);
     }
 
     /* ── Public hooks ─────────────────────────────────────── */
-    window.loadInboxSent = loadSent;
+    window.loadInboxSent    = loadSent;
+    // Exposed for external callers (notably js/ai-assistant.js's
+    // "Suggest reply" button — it calls openComposeModal({ to, subject, body })
+    // to drop the AI-generated draft straight into the modal).
+    window.openComposeModal = openCompose;
 
     function init() {
         const composeBtn = $('inboxComposeBtn');

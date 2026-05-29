@@ -33,7 +33,7 @@ const STATIC_URLS = [
     { loc: '/flights.html', priority: '0.9', changefreq: 'weekly',  image: 'images/neil2.jpg',  imageTitle: 'Flights to Andaman' },
     { loc: '/cabs.html',    priority: '0.9', changefreq: 'weekly',  image: 'images/beach1.jpg', imageTitle: 'Andaman Cab Hire' },
     { loc: '/gallery.html', priority: '0.8', changefreq: 'weekly',  image: 'images/beach2.jpg', imageTitle: 'Andaman Photo Gallery' },
-    { loc: '/about.html',   priority: '0.6', changefreq: 'monthly', image: 'images/logo.png',   imageTitle: 'About Bharat Tours and Travels' },
+    { loc: '/about.html',   priority: '0.6', changefreq: 'monthly', image: 'images/logo.png',   imageTitle: 'About Bharat Transport and Tourism' },
     { loc: '/privacy.html', priority: '0.3', changefreq: 'yearly' },
     { loc: '/terms.html',   priority: '0.3', changefreq: 'yearly' }
 ];
