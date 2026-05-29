@@ -44,16 +44,26 @@
     function isConfigured() { return !!workerUrl(); }
 
     async function getIdToken() {
+        // Match the pattern js/refund.js uses (which works on dashboard.html).
+        // The dashboard waits on window.__firebaseReady — a Promise that
+        // resolves to { auth, db, ... } once js/firebase-config.js has finished
+        // bootstrapping the modular Firebase SDK. The legacy compat fallback
+        // uses window.firebase.auth().currentUser for very-old code paths.
         try {
+            if (window.__firebaseReady) {
+                const fb = await window.__firebaseReady;
+                if (fb && fb.auth && fb.auth.currentUser) {
+                    return await fb.auth.currentUser.getIdToken();
+                }
+            }
+            if (window.firebase && window.firebase.auth) {
+                const u = window.firebase.auth().currentUser;
+                if (u) return await u.getIdToken();
+            }
+            // Last-ditch: legacy globals some pages set
             const auth = window.__authInstance;
-            const fns  = window.__firebaseAuthFns;
-            if (auth && auth.currentUser) {
-                if (fns && typeof fns.getIdToken === 'function') {
-                    return await fns.getIdToken(auth.currentUser, false);
-                }
-                if (typeof auth.currentUser.getIdToken === 'function') {
-                    return await auth.currentUser.getIdToken(false);
-                }
+            if (auth && auth.currentUser && typeof auth.currentUser.getIdToken === 'function') {
+                return await auth.currentUser.getIdToken();
             }
         } catch (e) {}
         return null;
