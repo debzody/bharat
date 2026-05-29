@@ -49,7 +49,7 @@
         "REPORT_TO_EMAIL":     "deb@andamanvoyages.in",
         "REPORT_FROM_EMAIL":   "info@andamanvoyages.in",
         "REPORT_FROM_NAME":    "Andaman Voyages — Daily AI Report",
-        "GEMINI_MODEL":        "gemini-1.5-flash"
+        "GEMINI_MODEL":        "gemini-2.5-flash"
     }
 
     // ── Secrets (set after first deploy) ──────────────────────
