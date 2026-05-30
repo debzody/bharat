@@ -88,10 +88,11 @@ btn.title='Live chat with our team';
 btn.innerHTML=ICN.chat+'<span class="lc-label">LIVE</span><span class="lc-dot-new" id="lcDotNew"></span>';
 document.body.appendChild(btn);
 
-/* Draggable floating button — position persists in localStorage */
+/* Draggable floating button — uses Pointer Events for unified
+ * mouse/touch/pen support. Position persists in localStorage. */
 (function(){
   var KEY='lcBtnPos';
-  var dragging=false,startX=0,startY=0,startL=0,startT=0,moved=false;
+  var dragging=false,didDrag=false,startX=0,startY=0,startL=0,startT=0,pid=null;
   function applyPos(){
     try{
       var raw=localStorage.getItem(KEY);
@@ -100,57 +101,61 @@ document.body.appendChild(btn);
       if(p&&typeof p.left==='number'&&typeof p.top==='number'){
         var maxL=Math.max(8,window.innerWidth-66);
         var maxT=Math.max(8,window.innerHeight-66);
-        var L=Math.min(Math.max(8,p.left),maxL);
-        var T=Math.min(Math.max(8,p.top),maxT);
-        btn.style.left=L+'px';btn.style.top=T+'px';btn.style.right='auto';btn.style.bottom='auto';
+        btn.style.left=Math.min(Math.max(8,p.left),maxL)+'px';
+        btn.style.top=Math.min(Math.max(8,p.top),maxT)+'px';
+        btn.style.right='auto';btn.style.bottom='auto';
       }
     }catch(_){}
   }
   applyPos();
   window.addEventListener('resize',applyPos);
-  function pt(e){var t=e.touches&&e.touches[0]||e;return{x:t.clientX,y:t.clientY};}
-  function down(e){
+
+  btn.addEventListener('pointerdown',function(e){
     if(e.button!==undefined&&e.button!==0)return;
-    dragging=true;moved=false;
-    var p=pt(e);startX=p.x;startY=p.y;
+    dragging=true;didDrag=false;pid=e.pointerId;
+    startX=e.clientX;startY=e.clientY;
     var r=btn.getBoundingClientRect();
     startL=r.left;startT=r.top;
-    btn.style.left=startL+'px';btn.style.top=startT+'px';btn.style.right='auto';btn.style.bottom='auto';
+    btn.style.left=startL+'px';btn.style.top=startT+'px';
+    btn.style.right='auto';btn.style.bottom='auto';
     btn.style.transition='none';btn.style.cursor='grabbing';
-    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
-    document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
-  }
-  function move(e){
-    if(!dragging)return;
-    if(e.cancelable)e.preventDefault();
-    var p=pt(e);
-    var dx=p.x-startX,dy=p.y-startY;
-    if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;
+    try{btn.setPointerCapture(e.pointerId);}catch(_){}
+  });
+
+  btn.addEventListener('pointermove',function(e){
+    if(!dragging||e.pointerId!==pid)return;
+    var dx=e.clientX-startX,dy=e.clientY-startY;
+    if(!didDrag&&(Math.abs(dx)>4||Math.abs(dy)>4))didDrag=true;
+    if(!didDrag)return;
     var maxL=Math.max(8,window.innerWidth-66);
     var maxT=Math.max(8,window.innerHeight-66);
-    var L=Math.min(Math.max(8,startL+dx),maxL);
-    var T=Math.min(Math.max(8,startT+dy),maxT);
-    btn.style.left=L+'px';btn.style.top=T+'px';
-  }
-  function up(){
+    btn.style.left=Math.min(Math.max(8,startL+dx),maxL)+'px';
+    btn.style.top=Math.min(Math.max(8,startT+dy),maxT)+'px';
+  });
+
+  function endDrag(e){
     if(!dragging)return;
+    if(e&&e.pointerId!==pid)return;
     dragging=false;
     btn.style.transition='';btn.style.cursor='';
-    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
-    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
-    if(moved){
+    try{btn.releasePointerCapture(pid);}catch(_){}
+    pid=null;
+    if(didDrag){
       try{
-        var L=parseInt(btn.style.left,10),T=parseInt(btn.style.top,10);
-        localStorage.setItem(KEY,JSON.stringify({left:L,top:T}));
+        localStorage.setItem(KEY,JSON.stringify({
+          left:parseInt(btn.style.left,10),
+          top:parseInt(btn.style.top,10)
+        }));
       }catch(_){}
-      // Suppress the click that follows drag-release
-      var sup=function(e){e.stopPropagation();e.preventDefault();btn.removeEventListener('click',sup,true);};
-      btn.addEventListener('click',sup,true);
-      setTimeout(function(){btn.removeEventListener('click',sup,true);},50);
+      // Suppress the click that follows the drag (capture-phase, one-shot)
+      var sup=function(ev){ev.stopPropagation();ev.preventDefault();window.removeEventListener('click',sup,true);};
+      window.addEventListener('click',sup,true);
+      setTimeout(function(){window.removeEventListener('click',sup,true);},80);
     }
   }
-  btn.addEventListener('mousedown',down);
-  btn.addEventListener('touchstart',down,{passive:false});
+  btn.addEventListener('pointerup',endDrag);
+  btn.addEventListener('pointercancel',endDrag);
+  btn.addEventListener('lostpointercapture',endDrag);
   btn.addEventListener('dragstart',function(e){e.preventDefault();});
 })();
 
