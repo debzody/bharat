@@ -144,12 +144,17 @@
                 const when = r.createdAt && r.createdAt.toDate
                     ? r.createdAt.toDate().toLocaleString()
                     : (r.sentAt || '—');
+                // "From" should reflect the mailbox the email was sent from
+                // (e.g. booking@andamanvoyages.in) — NOT the admin who clicked
+                // Send. Fall back to sentBy only if the from field is missing
+                // on legacy records.
+                const fromAddr = r.from || r.sentBy || '—';
                 rows.push(
                     '<tr>' +
                         '<td>' + escapeHtml(when) + '</td>' +
                         '<td>' + escapeHtml(r.to || '') + '</td>' +
                         '<td>' + escapeHtml(r.subject || '') + '</td>' +
-                        '<td>' + escapeHtml(r.sentBy || '') + '</td>' +
+                        '<td>' + escapeHtml(fromAddr) + '</td>' +
                         '<td><span class="badge badge-confirmed">SENT</span></td>' +
                     '</tr>'
                 );
