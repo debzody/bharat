@@ -686,7 +686,6 @@ document.addEventListener('DOMContentLoaded', function () {
             +   '</div>'
             +   '<div class="rd-summary" style="margin-bottom:1rem;">'
             +     '<div class="rd-row"><span class="rd-k">Package</span><span class="rd-v">' + escHtml(String(packageName)) + '</span></div>'
-            +     '<div class="rd-row"><span class="rd-k">Duration</span><span class="rd-v">' + escHtml(String(booking.duration || '-')) + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Travel date</span><span class="rd-v">' + escHtml(tripDate ? formatDate(tripDate) : '-') + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment ID</span><span class="rd-v">' + escHtml(String(booking.payment_id || '-')) + '</span></div>'
             +     '<div class="rd-row"><span class="rd-k">Payment status</span><span class="rd-v">' + escHtml(paymentState.label) + '</span></div>'
