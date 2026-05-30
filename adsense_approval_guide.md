@@ -37,19 +37,22 @@ Google **denies AdSense applications** from sites that serve EU/UK visitors with
 
 **Two ways to fix:**
 
-### Option A — Use Google's free Funding Choices (recommended)
+### Option A — Use AdSense → Privacy & messaging (recommended)
 
-1. Sign in to [Funding Choices](https://fundingchoices.google.com/start/) with the same Google account as AdSense.
-2. Click **Get started** → choose `andamanvoyages.in`.
-3. Pick **GDPR / IAB TCF v2.2** consent message (the default).
-4. Funding Choices generates a snippet like:
-   ```html
-   <script async src="https://fundingchoicesmessages.google.com/i/pub-8154901590978667?ers=1" nonce="…"></script>
-   <script>(function(){function signalGooglefcPresent(){…})();}</script>
-   ```
-5. Paste it just **after** the existing AdSense `<script async>` tag (i.e. just before `</head>`) on every public page.
+Google retired the standalone `fundingchoices.google.com` site in 2023. The same tool is now built into AdSense itself, free and IAB-TCF-v2.2 certified.
 
-Funding Choices is free, IAB-certified, integrates with AdSense automatically, and you can A/B-test the message wording from the dashboard.
+1. Sign in to [adsense.google.com](https://adsense.google.com/) with the publisher account that owns `pub-8154901590978667`.
+2. In the left sidebar, click **Privacy & messaging**. (If you don't see it, your account is too new — wait until it appears, usually within 24 h of submitting your site for review.)
+3. Click **Manage** under **GDPR** → **Create message** → **Continue**.
+4. Pick the regions: at minimum **EEA + UK + Switzerland** (you can also add **California (CCPA)** under the CCPA tab — same flow).
+5. Customise the banner text, language(s), and brand colour. The default is fine for most sites.
+6. Click **Publish**. AdSense automatically wires the message into the loader script you already have on the site — **no extra code is needed**. The banner will appear for any visitor whose IP is from a covered region, the next time they load a page.
+
+To verify it's live: open your site in a private window using a VPN set to a UK/Germany IP. The consent banner should slide up within 1–2 seconds.
+
+If **Privacy & messaging** is not yet visible in your AdSense menu (common for accounts still under initial review):
+- AdSense usually adds it once the site moves to "Ready" / "Approved".
+- Until then, fall back to **Option B** below so reviewers see *some* banner during their site visit (this can actually accelerate approval).
 
 ### Option B — Drop in a lightweight self-hosted banner
 
