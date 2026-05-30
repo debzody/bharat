@@ -68,6 +68,9 @@ function toFirestoreValue(v) {
         if (Number.isInteger(v))              return { integerValue: String(v) };
         return { doubleValue: v };
     }
+    if (v instanceof Date) {
+        return { timestampValue: v.toISOString() };
+    }
     if (Array.isArray(v)) {
         return { arrayValue: { values: v.map(toFirestoreValue) } };
     }
@@ -151,6 +154,36 @@ function fieldsToObject(fields) {
         out[k] = fromFirestoreValue(fields[k]);
     }
     return out;
+}
+
+/* POST /<collection> — Firestore auto-generates the doc ID.
+ * Used to append append-only log records (e.g. /sentEmails) where we
+ * don't care about the ID. Returns the auto-generated docId on success. */
+export async function firestoreAddDoc(env, token, collection, data) {
+    const projectId = env.FIREBASE_PROJECT_ID;
+    if (!projectId) throw new Error('FIREBASE_PROJECT_ID not configured');
+
+    const url = 'https://firestore.googleapis.com/v1/projects/' + projectId +
+        '/databases/(default)/documents/' + encodeURIComponent(collection);
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fields: fieldsFromObject(data) })
+    });
+
+    if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error('Firestore addDoc failed: ' + res.status + ' ' + txt);
+    }
+    const json = await res.json().catch(() => ({}));
+    // Firestore returns the full resource name; pull the trailing ID.
+    const name = String(json.name || '');
+    const id = name.split('/').pop() || '';
+    return id;
 }
 
 /* GET /<collection>/<docId> — returns the doc data, or null if it

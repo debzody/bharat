@@ -1,8 +1,28 @@
 /* ── brevo.js — minimal Brevo v3 transactional-email send ──── */
 
+// ── Hard-coded list of OUR five official mailboxes ─────────────
+// Defence-in-depth: even if REPORT_FROM_EMAIL or env.FROM_EMAIL is
+// misconfigured, this Worker can never send FROM an address outside
+// this list. Update only if a new official mailbox is added in
+// Cloudflare Email Routing AND verified in Brevo.
+const OFFICIAL_SENDERS = [
+    'info@andamanvoyages.in',
+    'booking@andamanvoyages.in',
+    'cancellation@andamanvoyages.in',
+    'enquiries@andamanvoyages.in',
+    'noreply@andamanvoyages.in'
+];
+
+function ensureOfficial(addr) {
+    const a = String(addr || '').trim().toLowerCase();
+    if (OFFICIAL_SENDERS.includes(a)) return a;
+    console.warn('ai-assistant brevo: From "' + a + '" not official — falling back to info@');
+    return 'info@andamanvoyages.in';
+}
+
 export async function sendBrevoEmail(env, opts) {
     if (!env.BREVO_API_KEY) throw new Error('BREVO_API_KEY secret not set');
-    const fromEmail = opts.fromEmail || env.REPORT_FROM_EMAIL || env.FROM_EMAIL;
+    const fromEmail = ensureOfficial(opts.fromEmail || env.REPORT_FROM_EMAIL || env.FROM_EMAIL);
     const fromName  = opts.fromName  || env.REPORT_FROM_NAME  || env.FROM_NAME || 'Andaman Voyages';
     if (!fromEmail) throw new Error('Brevo: from email not configured');
     if (!opts.to)   throw new Error('Brevo: to email is required');
