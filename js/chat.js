@@ -17,13 +17,18 @@
     'use strict';
 
     // ── chatProvider gate (must mirror js/brevo.js) ─────────
+    // Default = 'custom' (matches js/dataStore.js → SETTINGS_DEFAULT)
+    // so brand-new visitors immediately see the new Firestore-backed
+    // widget. Admin can flip it back to 'brevo' from /dashboard →
+    // Settings → Chat Widget; the choice persists in localStorage so
+    // returning visitors get whichever the admin selected.
     function loadCachedProvider() {
         try {
             var raw = localStorage.getItem('siteSettings');
-            if (!raw) return 'brevo';
+            if (!raw) return 'custom';
             var s = JSON.parse(raw) || {};
-            return (s.chatProvider || 'brevo').toLowerCase();
-        } catch (_) { return 'brevo'; }
+            return (s.chatProvider || 'custom').toLowerCase();
+        } catch (_) { return 'custom'; }
     }
     var CHAT_PROVIDER = loadCachedProvider();
     if (CHAT_PROVIDER === 'brevo' || CHAT_PROVIDER === 'none') {

@@ -41,13 +41,17 @@
     // page-load) so first-paint isn't gated on a Firestore round-trip.
     // When no cache is available, default to 'brevo' so existing visitors
     // don't lose chat during migration.
+    // Default = 'custom' (matches js/dataStore.js → SETTINGS_DEFAULT).
+    // brevo.js loads ONLY when the admin has explicitly picked 'brevo'
+    // in /dashboard → Settings → Chat Widget. Brand-new visitors see
+    // the new Firestore-backed widget (js/chat.js) by default.
     function loadCachedProvider() {
         try {
             var raw = localStorage.getItem('siteSettings');
-            if (!raw) return 'brevo';
+            if (!raw) return 'custom';
             var s = JSON.parse(raw) || {};
-            return (s.chatProvider || 'brevo').toLowerCase();
-        } catch (_) { return 'brevo'; }
+            return (s.chatProvider || 'custom').toLowerCase();
+        } catch (_) { return 'custom'; }
     }
     var provider = loadCachedProvider();
     if (provider !== 'brevo') {
