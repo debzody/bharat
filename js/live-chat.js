@@ -34,7 +34,7 @@
 
     /* CSS — uses only single quotes and concat to avoid template literal issues */
     var CSS = '';
-    CSS += '.lc-btn{position:fixed;bottom:180px;left:28px;z-index:99999;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 6px 24px rgba(231,76,60,.55);transition:transform .2s,box-shadow .2s}';
+    CSS += '.lc-btn{position:fixed;bottom:28px;left:28px;z-index:99999;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 6px 24px rgba(231,76,60,.55);transition:transform .2s,box-shadow .2s}';
     CSS += '.lc-btn:hover{transform:scale(1.1);box-shadow:0 8px 32px rgba(231,76,60,.7)}';
     CSS += '.lc-btn i{color:#fff;font-size:1.35rem;pointer-events:none}';
     CSS += '.lc-btn .lc-label{color:#fff;font-size:.58rem;font-weight:800;letter-spacing:.12em;line-height:1;pointer-events:none}';
@@ -68,7 +68,7 @@
     CSS += '.lc-send{width:44px;height:44px;border:0;border-radius:50%;background:linear-gradient(135deg,#e74c3c,#ff6b35);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;box-shadow:0 2px 8px rgba(231,76,60,.3)}';
     CSS += '.lc-send:hover:not(:disabled){transform:scale(1.08)}';
     CSS += '.lc-send:disabled{opacity:.55;cursor:not-allowed}';
-    CSS += '@media (max-width:520px){.lc-panel{width:calc(100vw - 16px);left:8px;bottom:18px;height:min(85vh,calc(100vh - 40px))}.lc-btn{bottom:160px;left:16px}}';
+    CSS += '@media (max-width:520px){.lc-panel{width:calc(100vw - 16px);left:8px;bottom:18px;height:min(85vh,calc(100vh - 40px))}.lc-btn{bottom:18px;left:16px}}';
 
     var styleEl = document.createElement('style');
     styleEl.textContent = CSS;
