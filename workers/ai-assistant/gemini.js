@@ -87,3 +87,74 @@ export function tryParseJson(text) {
     }
     return null;
 }
+/* ── Vision: read an image (or PDF page rendered as image) via
+ * Cloudflare Workers AI's LLaVA model and extract structured package
+ * info. Returns { ok, fields, raw } where `fields` is the parsed
+ * JSON conforming to the package schema, or `null` if extraction
+ * couldn't produce valid JSON.
+ *
+ * `imageUrl` should be a publicly fetchable URL (Cloudinary, etc).
+ * The worker fetches the bytes, base64-encodes, and passes them to
+ * the vision model along with a strict JSON-schema prompt.            */
+export async function extractPackageFromImage(env, imageUrl) {
+    if (!env.AI || typeof env.AI.run !== 'function') {
+        throw new Error('Cloudflare AI binding not available — check wrangler.jsonc has the "ai" binding');
+    }
+    if (!imageUrl) throw new Error('imageUrl is required');
+
+    // Fetch the image bytes (Cloudinary URLs are public; PDF pages
+    // should already have been rendered to image upstream).
+    const r = await fetch(imageUrl);
+    if (!r.ok) throw new Error('Could not fetch image: HTTP ' + r.status);
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    if (!bytes || !bytes.byteLength) throw new Error('Empty image');
+    if (bytes.byteLength > 10 * 1024 * 1024) {
+        throw new Error('Image too large (max 10 MB after Cloudinary)');
+    }
+
+    const VISION_MODEL = env.AI_VISION_MODEL || '@cf/llava-hf/llava-1.5-7b-hf';
+
+    const prompt =
+        'You are reading an Andaman Islands travel-package brochure. ' +
+        'Extract the package details and respond with ONLY a single JSON object (no markdown, no fences, no prose) matching this exact shape:\n' +
+        '{\n' +
+        '  "name": "string (the package title, e.g. \\"Luxury Andaman Retreat\\")",\n' +
+        '  "desc": "string (a one-line tagline including duration like \\"6N/7D | Port Blair + Havelock | 5* Resorts\\")",\n' +
+        '  "price": number (the per-person INR price as a plain number, no commas/symbols),\n' +
+        '  "duration": "string (e.g. \\"6N/7D\\" or \\"5 Nights / 6 Days\\")",\n' +
+        '  "category": "one of: Budget, Standard, Luxury, Premium, Honeymoon, Family, Adventure (best guess from price + content)",\n' +
+        '  "rating": number (default 4.5 if not in the brochure),\n' +
+        '  "inclusions": ["array of short strings, e.g. \\"Hotels\\", \\"Ferries\\", \\"Breakfast\\""],\n' +
+        '  "exclusions": ["array of short strings, e.g. \\"Flights\\", \\"GST\\""],\n' +
+        '  "places": ["array of place names visited, e.g. \\"Port Blair\\", \\"Havelock\\""],\n' +
+        '  "itinerary": [\n' +
+        '    { "day": 1, "title": "Arrival in Port Blair", "details": "short description of activities for day 1" }\n' +
+        '  ]\n' +
+        '}\n\n' +
+        'Rules:\n' +
+        '- Return ONLY the JSON object. No code fences. No commentary.\n' +
+        '- If a field is not visible in the brochure, use a sensible default (price 0, rating 4.5, empty arrays).\n' +
+        '- "price" must be a number (e.g. 28999), not a string ("28,999" or "₹28,999").\n' +
+        '- itinerary must have one entry per day visible in the brochure.\n';
+
+    let result;
+    try {
+        result = await env.AI.run(VISION_MODEL, {
+            image: Array.from(bytes),
+            prompt: prompt,
+            max_tokens: 1500
+        });
+    } catch (err) {
+        throw new Error('Vision model error: ' + (err && err.message || err));
+    }
+
+    let text = '';
+    if (typeof result === 'string') text = result;
+    else if (result && typeof result.description === 'string') text = result.description;
+    else if (result && typeof result.response === 'string') text = result.response;
+    else if (result && result.result && typeof result.result.response === 'string') text = result.result.response;
+    else text = JSON.stringify(result || {});
+
+    const parsed = tryParseJson(text);
+    return { ok: !!parsed, fields: parsed, raw: text };
+}

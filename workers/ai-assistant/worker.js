@@ -34,7 +34,7 @@
 import {
     corsHeaders, jsonResponse, requireAdmin, HttpError
 } from './auth.js';
-import { callGemini, tryParseJson }                 from './gemini.js';
+import { callGemini, tryParseJson, extractPackageFromImage } from './gemini.js';
 import { getFirestoreAccessToken, queryFirestore }  from './firestore.js';
 import { sendBrevoEmail }                           from './brevo.js';
 
@@ -60,6 +60,9 @@ export default {
             }
             if (request.method === 'GET' && url.pathname === '/daily-report') {
                 return await handleDailyReport(request, env, url);
+            }
+            if (request.method === 'POST' && url.pathname === '/extract-package') {
+                return await handleExtractPackage(request, env);
             }
         } catch (err) {
             const status = (err && err.status) || 500;
@@ -339,4 +342,85 @@ function formatINR(n) {
 function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * /extract-package — admin uploads a brochure (image/PDF page).
+ * Worker calls Cloudflare Workers AI vision model and extracts
+ * structured package fields (name, price, itinerary, etc).
+ *
+ * Body: { imageUrl: "https://res.cloudinary.com/.../brochure.jpg" }
+ * Response: { ok, fields: {...}, raw }
+ *
+ * The frontend uploads the file to Cloudinary first (existing
+ * unsigned preset), gets back a public URL, and posts it here.
+ * That keeps this worker simple — it just fetches one URL.
+ * ══════════════════════════════════════════════════════════ */
+async function handleExtractPackage(request, env) {
+    await requireAdmin(request, env);
+    const body = await request.json().catch(() => ({}));
+    const imageUrl = String(body.imageUrl || '').trim();
+    if (!imageUrl) throw new HttpError(400, 'imageUrl required');
+    if (!/^https?:\/\//i.test(imageUrl)) throw new HttpError(400, 'imageUrl must be http(s)');
+
+    let result;
+    try {
+        result = await extractPackageFromImage(env, imageUrl);
+    } catch (err) {
+        throw new HttpError(500, err.message || 'extraction failed');
+    }
+
+    if (!result.ok || !result.fields) {
+        return jsonResponse(env, request, {
+            ok: false,
+            error: 'AI could not parse a valid JSON package from the image. Try a sharper photo or single-page brochure.',
+            raw: result.raw
+        }, 422);
+    }
+
+    // Normalise + sanitise the extracted fields before sending back
+    const f = result.fields || {};
+    const safe = {
+        name:        String(f.name || '').slice(0, 120).trim() || 'Untitled Package',
+        desc:        String(f.desc || '').slice(0, 240).trim(),
+        price:       sanitiseNumber(f.price, 0),
+        duration:    String(f.duration || '').slice(0, 60).trim(),
+        category:    sanitiseCategory(f.category),
+        rating:      Math.max(0, Math.min(5, Number(f.rating) || 4.5)),
+        inclusions:  sanitiseStringArray(f.inclusions, 12, 60),
+        exclusions:  sanitiseStringArray(f.exclusions, 12, 60),
+        places:      sanitiseStringArray(f.places, 10, 60),
+        itinerary:   sanitiseItinerary(f.itinerary)
+    };
+
+    return jsonResponse(env, request, { ok: true, fields: safe, raw: result.raw });
+}
+
+function sanitiseNumber(v, fallback) {
+    if (typeof v === 'number' && isFinite(v)) return Math.max(0, Math.round(v));
+    if (typeof v === 'string') {
+        const n = Number(v.replace(/[^\d.]/g, ''));
+        if (isFinite(n) && n > 0) return Math.round(n);
+    }
+    return fallback;
+}
+function sanitiseCategory(v) {
+    const allowed = ['Budget','Standard','Luxury','Premium','Honeymoon','Family','Adventure'];
+    const s = String(v || '').trim();
+    const hit = allowed.find(c => c.toLowerCase() === s.toLowerCase());
+    return hit || '';
+}
+function sanitiseStringArray(arr, maxItems, maxLen) {
+    if (!Array.isArray(arr)) return [];
+    return arr.slice(0, maxItems)
+        .map(x => String(x || '').slice(0, maxLen).trim())
+        .filter(Boolean);
+}
+function sanitiseItinerary(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.slice(0, 14).map((d, i) => ({
+        day:     Number(d && d.day) || (i + 1),
+        title:   String((d && d.title) || '').slice(0, 120).trim(),
+        details: String((d && d.details) || '').slice(0, 600).trim()
+    })).filter(d => d.title || d.details);
 }
