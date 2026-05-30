@@ -31,7 +31,7 @@ var CSS=[
 '.lc-btn::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:rgba(231,76,60,.32);animation:lc-ping 1.8s infinite;z-index:-1}',
 '@keyframes lc-ping{0%{transform:scale(1);opacity:.65}100%{transform:scale(1.45);opacity:0}}',
 '.lc-dot-new{position:absolute;top:-4px;left:-4px;min-width:20px;height:20px;padding:0 6px;background:#2ecc71;border:2px solid #fff;border-radius:999px;display:none;color:#fff;font-size:.7rem;font-weight:800;line-height:16px;text-align:center;box-sizing:border-box;box-shadow:0 2px 5px rgba(0,0,0,.18)}',
-'body.lc-active .chat-widget-btn,body.lc-active .ck-whatsapp-fab,body.lc-active .chat-panel-wrap.open{display:none !important}',
+'body.lc-active .chat-widget-btn,body.lc-active .ck-whatsapp-fab,body.lc-active .chat-panel-wrap.open,body.lc-active .lc-btn{display:none !important}',
 '.lc-panel{position:fixed;bottom:24px;right:24px;z-index:99998;width:368px;max-width:calc(100vw - 32px);height:min(560px,calc(100vh - 60px));background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.22),0 4px 14px rgba(0,0,0,.08);display:flex;flex-direction:column;overflow:hidden;transform-origin:bottom right;transform:scale(.92) translateY(12px);opacity:0;pointer-events:none;transition:transform .26s cubic-bezier(.34,1.5,.64,1),opacity .2s ease}',
 '.lc-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}',
 '.lc-head{background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);padding:.8rem 1rem;color:#fff;display:flex;align-items:center;gap:.65rem;flex-shrink:0}',
