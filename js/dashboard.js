@@ -713,7 +713,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 const suggested = window.Refund.computeRefundAmount ? window.Refund.computeRefundAmount(booking) : 0;
                 const amount = await openRefundDialog(booking, { suggested: suggested, advance: advance });
                 if (amount == null) return;
+                const me = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                const refundedBy = (me && (me.email || me.username)) || 'admin';
+
                 this.disabled = true;
+
+                // ── ₹0 → auto-settle (no actual refund call) ─────
+                // See the table-row Refund handler above for the full
+                // rationale; same flow mirrored here for the preview
+                // pane's Refund button.
+                if (amount === 0) {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Settling…';
+                    try {
+                        const fakeRefund = {
+                            ok: true,
+                            refundId: 'SETTLED-' + Date.now(),
+                            amount: 0,
+                            status: 'settled',
+                            currency: 'INR',
+                            initiatedBy: refundedBy
+                        };
+                        await window.Refund.saveRefundToBooking(booking, fakeRefund);
+                        if (window.Refund.logRefund) {
+                            window.Refund.logRefund(booking, fakeRefund, refundedBy);
+                        }
+                        booking.refundId = fakeRefund.refundId;
+                        booking.refundAmount = 0;
+                        booking.refundStatus = 'settled';
+                        booking.refundedAt = new Date().toISOString();
+                        DB.saveBookings();
+                        refreshAll();
+                        if (window.Toast) {
+                            window.Toast.success('Booking closed out with no refund (auto-settled).');
+                        }
+                    } catch (e) {
+                        if (window.Toast) window.Toast.error('Auto-settle failed: ' + (e && e.message));
+                    }
+                    return;
+                }
+
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refunding…';
                 try {
                     const refund = await window.Refund.processRefund(booking, { amount: amount, reason: 'Manual refund from admin preview' });
@@ -1121,6 +1159,50 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const origLabel = btn.innerHTML;
                 btn.disabled = true;
+
+                // ── ₹0 → auto-settle (no actual refund call) ──────
+                // Admin chose to close out the booking without sending
+                // any money back. Skip the Razorpay round-trip entirely
+                // and just mark the booking as settled in Firestore +
+                // localStorage so it stops appearing in the "Refund
+                // Pending" filter / yellow-row UI.
+                if (amount === 0) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Settling…';
+                    try {
+                        const settledAt = new Date().toISOString();
+                        // Mirror the same shape saveRefundToBooking writes,
+                        // but with a synthetic refundId and amount = 0 so
+                        // the dashboard treats it as "closed out".
+                        const fakeRefund = {
+                            ok: true,
+                            refundId: 'SETTLED-' + Date.now(),
+                            amount: 0,
+                            status: 'settled',
+                            currency: 'INR',
+                            initiatedBy: refundedBy
+                        };
+                        await window.Refund.saveRefundToBooking(booking, fakeRefund);
+                        window.Refund.logRefund(booking, fakeRefund, refundedBy);
+                        booking.refundId = fakeRefund.refundId;
+                        booking.refundAmount = 0;
+                        booking.refundStatus = 'settled';
+                        booking.refundedAt = settledAt;
+                        DB.saveBookings();
+                        refreshAll();
+                        if (window.Toast) {
+                            window.Toast.success(
+                                'Booking closed out with no refund (auto-settled).'
+                            );
+                        }
+                    } catch (e) {
+                        if (window.Toast) window.Toast.error('Auto-settle failed: ' + (e && e.message));
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = origLabel;
+                    }
+                    return;
+                }
+
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refunding…';
                 try {
                     const refund = await window.Refund.processRefund(booking, {
@@ -3050,13 +3132,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="rd-amount-input-wrap">
                     <span class="rd-rupee">₹</span>
                     <input type="number" id="refundDialogAmount"
-                           min="1" max="${advance}" step="1"
+                           min="0" max="${advance}" step="1"
                            value="${promptDefault}"
                            inputmode="numeric"
                            autocomplete="off">
                 </div>
                 <small id="refundDialogHint" style="color:#5a6877;font-size:.78rem;margin-top:.3rem;display:block;">
                     Refund goes to the original Razorpay payment method.
+                    Enter <strong>0</strong> to close out the booking with no refund (auto-settle).
                 </small>
             </label>
             <div id="refundDialogError" class="rd-error" style="display:none;"></div>
@@ -3180,12 +3263,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const cancelBtn = modal.querySelector('.ic-cancel');
 
             // Update button label as the admin types so they can see the
-            // exact amount they're about to refund.
+            // exact amount they're about to refund. Special-case 0 →
+            // "Mark settled (no refund)" so the admin knows clicking will
+            // simply close out the booking without sending money back.
             function syncSendBtn() {
                 const n = Number(input.value);
-                const safe = (isFinite(n) && n > 0) ? n : 0;
-                sendBtn.innerHTML = '<i class="fas fa-undo-alt"></i> Refund ' +
-                    (safe > 0 ? formatCurrency(safe) : '');
+                const safe = (isFinite(n) && n >= 0) ? n : 0;
+                if (safe === 0) {
+                    sendBtn.innerHTML = '<i class="fas fa-check-circle"></i> Mark settled (no refund)';
+                } else {
+                    sendBtn.innerHTML = '<i class="fas fa-undo-alt"></i> Refund ' + formatCurrency(safe);
+                }
             }
 
             function showError(msg) {
@@ -3209,13 +3297,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 clearError();
                 const raw = String(input.value || '').trim();
                 if (!raw) {
-                    showError('Please enter a refund amount.');
+                    showError('Please enter a refund amount (0 to settle without refund).');
                     input.focus();
                     return;
                 }
                 const n = Number(raw.replace(/[^0-9.]/g, ''));
-                if (!isFinite(n) || n <= 0) {
-                    showError('Refund amount must be a positive number.');
+                if (!isFinite(n) || n < 0) {
+                    showError('Refund amount cannot be negative. Enter 0 to close out the booking with no refund.');
                     input.focus();
                     return;
                 }
@@ -3225,7 +3313,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     input.focus();
                     return;
                 }
-                // All good — resolve with the validated amount.
+                // All good — resolve with the validated amount (0 = auto-settle / no refund).
                 close(Math.round(n));
             }
 
@@ -3253,9 +3341,12 @@ document.addEventListener('DOMContentLoaded', function () {
             inputRef.oninput = function () {
                 clearError();
                 const n = Number(inputRef.value);
-                const safe = (isFinite(n) && n > 0) ? n : 0;
-                sendBtnRef.innerHTML = '<i class="fas fa-undo-alt"></i> Refund ' +
-                    (safe > 0 ? formatCurrency(safe) : '');
+                const safe = (isFinite(n) && n >= 0) ? n : 0;
+                if (safe === 0) {
+                    sendBtnRef.innerHTML = '<i class="fas fa-check-circle"></i> Mark settled (no refund)';
+                } else {
+                    sendBtnRef.innerHTML = '<i class="fas fa-undo-alt"></i> Refund ' + formatCurrency(safe);
+                }
             };
             inputRef.oninput();   // initial paint of button label
             document.addEventListener('keydown', onKey);
