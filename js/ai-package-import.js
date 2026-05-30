@@ -63,8 +63,8 @@
         btn.id = 'aiPkgImportBtn';
         btn.className = 'btn-add-package';
         btn.style.background = 'linear-gradient(135deg,#8e44ad,#3498db)';
-        btn.title = 'Upload a brochure image — AI extracts the package';
-        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> AI Import (PDF/Image)';
+        btn.title = 'Upload a brochure photo or screenshot — AI extracts the package';
+        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> AI Import (Image)';
         btn.addEventListener('click', openFilePicker);
         // Insert before the publish button so it sits next to "Add Package"
         var publishBtn = document.getElementById('publishBtn');
@@ -72,11 +72,14 @@
         else hdr.appendChild(btn);
     }
 
-    /* ── File picker (one-shot input) ── */
+    /* ── File picker (one-shot input) ──
+     * Accepts images only — the AI vision model (LLaVA) is image-only,
+     * and most Cloudinary unsigned presets reject PDFs anyway. If the
+     * admin has a PDF, we tell them how to get a working image quickly. */
     function openFilePicker() {
         var inp = document.createElement('input');
         inp.type = 'file';
-        inp.accept = 'image/*,application/pdf';
+        inp.accept = 'image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif';
         inp.style.display = 'none';
         document.body.appendChild(inp);
         inp.addEventListener('change', function () {
@@ -94,6 +97,12 @@
         }
         if (file.size > 8 * 1024 * 1024) {
             toast('File too large (max 8 MB).', 'error');
+            return;
+        }
+        // Image-only — both LLaVA (the vision model) and the Cloudinary
+        // preset are image-restricted. Help the admin convert PDFs.
+        if (!/^image\//.test(file.type)) {
+            toast('Please upload an IMAGE (JPG / PNG / WebP). PDFs aren\'t supported — open the PDF, take a screenshot of the brochure page, and upload that screenshot instead.', 'error');
             return;
         }
         showProgressModal('Uploading brochure to Cloudinary…');
