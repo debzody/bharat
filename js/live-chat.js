@@ -88,6 +88,72 @@ btn.title='Live chat with our team';
 btn.innerHTML=ICN.chat+'<span class="lc-label">LIVE</span><span class="lc-dot-new" id="lcDotNew"></span>';
 document.body.appendChild(btn);
 
+/* Draggable floating button — position persists in localStorage */
+(function(){
+  var KEY='lcBtnPos';
+  var dragging=false,startX=0,startY=0,startL=0,startT=0,moved=false;
+  function applyPos(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(!raw)return;
+      var p=JSON.parse(raw);
+      if(p&&typeof p.left==='number'&&typeof p.top==='number'){
+        var maxL=Math.max(8,window.innerWidth-66);
+        var maxT=Math.max(8,window.innerHeight-66);
+        var L=Math.min(Math.max(8,p.left),maxL);
+        var T=Math.min(Math.max(8,p.top),maxT);
+        btn.style.left=L+'px';btn.style.top=T+'px';btn.style.right='auto';btn.style.bottom='auto';
+      }
+    }catch(_){}
+  }
+  applyPos();
+  window.addEventListener('resize',applyPos);
+  function pt(e){var t=e.touches&&e.touches[0]||e;return{x:t.clientX,y:t.clientY};}
+  function down(e){
+    if(e.button!==undefined&&e.button!==0)return;
+    dragging=true;moved=false;
+    var p=pt(e);startX=p.x;startY=p.y;
+    var r=btn.getBoundingClientRect();
+    startL=r.left;startT=r.top;
+    btn.style.left=startL+'px';btn.style.top=startT+'px';btn.style.right='auto';btn.style.bottom='auto';
+    btn.style.transition='none';btn.style.cursor='grabbing';
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+  }
+  function move(e){
+    if(!dragging)return;
+    if(e.cancelable)e.preventDefault();
+    var p=pt(e);
+    var dx=p.x-startX,dy=p.y-startY;
+    if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;
+    var maxL=Math.max(8,window.innerWidth-66);
+    var maxT=Math.max(8,window.innerHeight-66);
+    var L=Math.min(Math.max(8,startL+dx),maxL);
+    var T=Math.min(Math.max(8,startT+dy),maxT);
+    btn.style.left=L+'px';btn.style.top=T+'px';
+  }
+  function up(){
+    if(!dragging)return;
+    dragging=false;
+    btn.style.transition='';btn.style.cursor='';
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    if(moved){
+      try{
+        var L=parseInt(btn.style.left,10),T=parseInt(btn.style.top,10);
+        localStorage.setItem(KEY,JSON.stringify({left:L,top:T}));
+      }catch(_){}
+      // Suppress the click that follows drag-release
+      var sup=function(e){e.stopPropagation();e.preventDefault();btn.removeEventListener('click',sup,true);};
+      btn.addEventListener('click',sup,true);
+      setTimeout(function(){btn.removeEventListener('click',sup,true);},50);
+    }
+  }
+  btn.addEventListener('mousedown',down);
+  btn.addEventListener('touchstart',down,{passive:true});
+})();
+
+
 /* Online check — Mon-Sat 9 AM - 9 PM IST */
 function isOnlineNow(){
   var n=new Date();
