@@ -468,7 +468,10 @@
         //              WhatsApp Cloud API token is set) DMs the admin's
         //              phone so they can chat from WhatsApp directly.
         //   'none'   — no chat bubble at all
-        chatProvider:             'brevo',
+        // Default = 'custom' so admins see the new Firestore-backed
+        // widget out of the box; flip to 'brevo' in Settings to fall
+        // back to the third-party widget.
+        chatProvider:             'custom',
 
         // ── WhatsApp Cloud API bridge (admin-only) ───────────
         // When the chat provider is 'custom' AND whatsappBridgeEnabled
