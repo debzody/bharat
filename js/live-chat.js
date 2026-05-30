@@ -34,15 +34,15 @@
 
     /* CSS — uses only single quotes and concat to avoid template literal issues */
     var CSS = '';
-    CSS += '.lc-btn{position:fixed;bottom:28px;left:28px;z-index:99999;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 6px 24px rgba(231,76,60,.55);transition:transform .2s,box-shadow .2s}';
+    CSS += '.lc-btn{position:fixed;bottom:28px;right:28px;z-index:99999;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 6px 24px rgba(231,76,60,.55);transition:transform .2s,box-shadow .2s}';
     CSS += '.lc-btn:hover{transform:scale(1.1);box-shadow:0 8px 32px rgba(231,76,60,.7)}';
     CSS += '.lc-btn i{color:#fff;font-size:1.35rem;pointer-events:none}';
     CSS += '.lc-btn .lc-label{color:#fff;font-size:.58rem;font-weight:800;letter-spacing:.12em;line-height:1;pointer-events:none}';
     CSS += '.lc-btn::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:rgba(231,76,60,.35);animation:lc-ping 1.6s cubic-bezier(0,0,.2,1) infinite;z-index:-1}';
     CSS += '@keyframes lc-ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.5);opacity:0}}';
-    CSS += '.lc-dot-new{position:absolute;top:2px;right:2px;width:14px;height:14px;background:#2ecc71;border:2px solid #fff;border-radius:50%;display:none}';
+    CSS += '.lc-dot-new{position:absolute;top:2px;left:2px;width:14px;height:14px;background:#2ecc71;border:2px solid #fff;border-radius:50%;display:none}';
     CSS += 'body.lc-active .chat-widget-btn,body.lc-active .ck-whatsapp-fab,body.lc-active .chat-panel-wrap.open{display:none !important}';
-    CSS += '.lc-panel{position:fixed;bottom:28px;left:28px;z-index:99998;width:420px;max-width:calc(100vw - 32px);height:min(640px,calc(100vh - 80px));background:#fff;border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;transform-origin:bottom left;transform:scale(.88) translateY(16px);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.34,1.5,.64,1),opacity .22s ease}';
+    CSS += '.lc-panel{position:fixed;bottom:28px;right:28px;z-index:99998;width:420px;max-width:calc(100vw - 32px);height:min(640px,calc(100vh - 80px));background:#fff;border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;transform-origin:bottom right;transform:scale(.88) translateY(16px);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.34,1.5,.64,1),opacity .22s ease}';
     CSS += '.lc-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}';
     CSS += '.lc-head{background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);padding:1.05rem 1.2rem;color:#fff;display:flex;align-items:center;gap:.7rem;flex-shrink:0}';
     CSS += '.lc-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}';
@@ -68,7 +68,7 @@
     CSS += '.lc-send{width:44px;height:44px;border:0;border-radius:50%;background:linear-gradient(135deg,#e74c3c,#ff6b35);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;box-shadow:0 2px 8px rgba(231,76,60,.3)}';
     CSS += '.lc-send:hover:not(:disabled){transform:scale(1.08)}';
     CSS += '.lc-send:disabled{opacity:.55;cursor:not-allowed}';
-    CSS += '@media (max-width:520px){.lc-panel{width:calc(100vw - 16px);left:8px;bottom:18px;height:min(85vh,calc(100vh - 40px))}.lc-btn{bottom:18px;left:16px}}';
+    CSS += '@media (max-width:520px){.lc-panel{width:calc(100vw - 16px);right:8px;bottom:18px;height:min(85vh,calc(100vh - 40px))}.lc-btn{bottom:18px;right:16px}}';
 
     var styleEl = document.createElement('style');
     styleEl.textContent = CSS;
