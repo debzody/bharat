@@ -24,7 +24,7 @@ var ICN={
 };
 
 var CSS=[
-'.lc-btn{position:fixed;bottom:24px;right:24px;z-index:99999;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 6px 22px rgba(231,76,60,.5);transition:transform .2s}',
+'.lc-btn{position:fixed;bottom:24px;right:24px;z-index:99999;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#e74c3c 0%,#ff6b35 100%);border:0;cursor:grab;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 6px 22px rgba(231,76,60,.5);transition:transform .2s;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}',
 '.lc-btn:hover{transform:scale(1.08);box-shadow:0 8px 30px rgba(231,76,60,.65)}',
 '.lc-btn svg{width:22px;height:22px;color:#fff;pointer-events:none}',
 '.lc-btn .lc-label{color:#fff;font-size:.55rem;font-weight:800;letter-spacing:.12em;line-height:1;pointer-events:none;margin-top:1px}',
@@ -150,7 +150,8 @@ document.body.appendChild(btn);
     }
   }
   btn.addEventListener('mousedown',down);
-  btn.addEventListener('touchstart',down,{passive:true});
+  btn.addEventListener('touchstart',down,{passive:false});
+  btn.addEventListener('dragstart',function(e){e.preventDefault();});
 })();
 
 
