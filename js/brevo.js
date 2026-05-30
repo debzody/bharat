@@ -31,6 +31,31 @@
     // (e.g. a future shared header partial).
     if (window.BrevoConversationsID) return;
 
+    // ── chatProvider gate ──────────────────────────────────
+    // The admin can pick between three chat experiences in
+    // /dashboard → Settings → Chat Widget:
+    //   'brevo'  → load this Brevo Conversations widget (default)
+    //   'custom' → js/chat.js renders a Firestore-backed widget instead
+    //   'none'   → no chat at all
+    // We read the cached settings synchronously (populated on a previous
+    // page-load) so first-paint isn't gated on a Firestore round-trip.
+    // When no cache is available, default to 'brevo' so existing visitors
+    // don't lose chat during migration.
+    function loadCachedProvider() {
+        try {
+            var raw = localStorage.getItem('siteSettings');
+            if (!raw) return 'brevo';
+            var s = JSON.parse(raw) || {};
+            return (s.chatProvider || 'brevo').toLowerCase();
+        } catch (_) { return 'brevo'; }
+    }
+    var provider = loadCachedProvider();
+    if (provider !== 'brevo') {
+        // The other providers (custom widget / none) are handled by
+        // js/chat.js which performs the same gate on the opposite side.
+        return;
+    }
+
     window.BrevoConversationsID = '6a15404f94b63fe74c038079';
     window.BrevoConversations = window.BrevoConversations || function () {
         (window.BrevoConversations.q = window.BrevoConversations.q || []).push(arguments);
@@ -39,4 +64,16 @@
     s.async = true;
     s.src   = 'https://conversations-widget.brevo.com/brevo-conversations.js';
     (document.head || document.documentElement).appendChild(s);
+
+    // After Firestore settings finish loading, double-check the choice
+    // — if the admin flipped the toggle on another device, hide the
+    // widget without forcing a reload.
+    if (window.SettingsStore && typeof window.SettingsStore.load === 'function') {
+        window.SettingsStore.load().then(function (s) {
+            var p = (s && s.chatProvider || 'brevo').toLowerCase();
+            if (p !== 'brevo') {
+                try { window.BrevoConversations && window.BrevoConversations('hide'); } catch (_) {}
+            }
+        }).catch(function () {});
+    }
 })();

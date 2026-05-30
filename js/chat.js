@@ -1,6 +1,36 @@
-// ── AI Chat Widget for Bharat Transport & Tourism ─────────────────
+// ── Chat Widget for Bharat Transport & Tourism ───────────────────
+// One file, two flavours — driven by the admin-toggleable chatProvider
+// in /settings/site:
+//   * 'brevo'  → this file no-ops (js/brevo.js renders Brevo's widget).
+//   * 'custom' → render our own Firestore-backed live chat: every
+//                message lands in /chats/{sessionId}/messages so an
+//                admin can read & reply from the dashboard. The local
+//                rule-based bot still answers as a "first responder"
+//                while the human catches up. When the WhatsApp Cloud
+//                API bridge worker is configured, each new customer
+//                message also DMs the admin's WhatsApp.
+//   * 'none'   → no chat bubble at all.
+//
+// The provider is read from the cached SettingsStore so first-paint
+// is instant; the cache is filled on a previous page-load.
 (function () {
     'use strict';
+
+    // ── chatProvider gate (must mirror js/brevo.js) ─────────
+    function loadCachedProvider() {
+        try {
+            var raw = localStorage.getItem('siteSettings');
+            if (!raw) return 'brevo';
+            var s = JSON.parse(raw) || {};
+            return (s.chatProvider || 'brevo').toLowerCase();
+        } catch (_) { return 'brevo'; }
+    }
+    var CHAT_PROVIDER = loadCachedProvider();
+    if (CHAT_PROVIDER === 'brevo' || CHAT_PROVIDER === 'none') {
+        // Brevo widget handled by js/brevo.js; 'none' renders nothing.
+        return;
+    }
+    // CHAT_PROVIDER === 'custom' — render our own widget.
 
     // ── Client-side fallback (works even without Netlify) ──────
     function clientFallback(msg) {
@@ -317,6 +347,152 @@
     let isOpen = false, isBusy = false, opened = false;
     let history = [];
 
+    /* ── Firestore-backed live chat session ────────────────────
+       When CHAT_PROVIDER === 'custom' we persist every customer
+       message to /chats/{sessionId}/messages (sub-collection) so the
+       admin can read & reply in real time from the dashboard. The
+       sessionId is generated once per browser and kept in localStorage
+       so the conversation survives page-refreshes. The /chats/{sessionId}
+       parent doc carries summary fields (lastMessage, unreadByAdmin,
+       customerName/email) for the admin's "Live Chats" list view. */
+    var SESSION_KEY = 'liveChatSessionId';
+    var sessionId   = (function () {
+        try {
+            var s = localStorage.getItem(SESSION_KEY);
+            if (s && s.length > 8) return s;
+        } catch (_) {}
+        var n = (Date.now().toString(36) + '-' +
+                 Math.random().toString(36).slice(2, 10));
+        try { localStorage.setItem(SESSION_KEY, n); } catch (_) {}
+        return n;
+    })();
+    var fbState = { ready: false, fb: null, unsubMsgs: null, msgIds: new Set() };
+    var bridgeNotified = false;
+
+    /* Initialise Firestore lazily — we don't want to block widget
+       render on the SDK import. The first call awaits __firebaseReady
+       (already in flight via dataStore.js) and wires the messages
+       listener so admin replies stream into the bubble live. */
+    async function ensureFirebase() {
+        if (fbState.ready) return fbState.fb;
+        if (!window.__firebaseReady) return null;
+        try {
+            var fb = await window.__firebaseReady;
+            fbState.fb = fb;
+            fbState.ready = true;
+            subscribeToReplies();
+            return fb;
+        } catch (err) {
+            console.warn('[chat] firebase init failed:', err);
+            return null;
+        }
+    }
+
+    function subscribeToReplies() {
+        if (!fbState.fb || fbState.unsubMsgs) return;
+        var fb = fbState.fb;
+        try {
+            var msgsRef = fb.firestore.query(
+                fb.firestore.collection(fb.db, 'chats', sessionId, 'messages'),
+                fb.firestore.orderBy('createdAt', 'asc')
+            );
+            fbState.unsubMsgs = fb.firestore.onSnapshot(msgsRef, function (snap) {
+                snap.docChanges().forEach(function (change) {
+                    if (change.type !== 'added') return;
+                    var d  = change.doc.data() || {};
+                    var id = change.doc.id;
+                    if (fbState.msgIds.has(id)) return;
+                    fbState.msgIds.add(id);
+                    // Skip our own user messages (already rendered locally)
+                    // and the bot's first auto-reply (also rendered locally
+                    // by clientFallback). Only render NEW messages whose
+                    // role is 'admin' / 'agent'.
+                    if (d.role === 'admin' || d.role === 'agent' || d.role === 'whatsapp') {
+                        addBot('👤 **' + (d.senderName || 'Andaman Voyages Team') + ':** ' + (d.text || ''));
+                        if (!isOpen) {
+                            dot.style.display = 'block';
+                        }
+                    }
+                });
+            }, function (err) {
+                console.warn('[chat] messages snapshot failed:', err);
+            });
+        } catch (err) {
+            console.warn('[chat] subscribeToReplies failed:', err);
+        }
+    }
+
+    /* Persist a message (customer OR bot reply) to the session.
+       Also bumps the parent /chats/{sessionId} doc with lastMessage so
+       the admin's Live Chats list can sort by recency. Best-effort —
+       any Firestore error logs and silently degrades to local-only chat. */
+    async function persistMessage(role, text, extraFields) {
+        var fb = await ensureFirebase();
+        if (!fb) return;
+        try {
+            var col = fb.firestore.collection(fb.db, 'chats', sessionId, 'messages');
+            await fb.firestore.addDoc(col, Object.assign({
+                role:      role,                 // 'user' | 'bot' | 'admin' | 'whatsapp'
+                text:      String(text || ''),
+                createdAt: fb.firestore.serverTimestamp()
+            }, extraFields || {}));
+
+            // Parent session doc — upsert summary
+            var parent = fb.firestore.doc(fb.db, 'chats', sessionId);
+            var patch = {
+                lastMessage:    String(text || '').slice(0, 280),
+                lastMessageAt:  fb.firestore.serverTimestamp(),
+                lastMessageBy:  role,
+                userAgent:      String(navigator.userAgent || '').slice(0, 200),
+                page:           location.pathname + location.search
+            };
+            if (role === 'user') {
+                patch.unreadByAdmin = true;
+            } else if (role === 'admin' || role === 'agent') {
+                patch.unreadByCustomer = true;
+            }
+            // Customer profile metadata — only on first user message
+            try {
+                var u = (window.UsersStore && window.UsersStore.getCurrentUser && window.UsersStore.getCurrentUser()) || null;
+                if (u) {
+                    patch.customerEmail = u.email || '';
+                    patch.customerName  = u.fullName || u.username || '';
+                    patch.customerUid   = u.uid || u.id || '';
+                }
+            } catch (_) {}
+            // Stamp createdAt only if it doesn't exist yet (best-effort —
+            // we use serverTimestamp inside an arrayUnion-like merge so
+            // a setDoc with merge:true is idempotent).
+            patch.createdAtFallback = patch.createdAtFallback || (new Date().toISOString());
+            await fb.firestore.setDoc(parent, patch, { merge: true });
+        } catch (err) {
+            console.warn('[chat] persistMessage failed:', err);
+        }
+    }
+
+    /* Optional: ping the WhatsApp bridge worker. The actual outbound
+       send is owned by the worker (it has the Meta access token); we
+       just notify it that a new customer message is in /chats. The
+       worker reads the message from Firestore so we don't have to ship
+       the full content over the network. */
+    async function notifyWhatsAppBridge(text) {
+        try {
+            var s = (window.SettingsStore && window.SettingsStore.cached && window.SettingsStore.cached()) || {};
+            if (!s.whatsappBridgeEnabled) return;
+            if (!s.whatsappBridgeWorkerUrl) return;
+            var url = String(s.whatsappBridgeWorkerUrl).replace(/\/+$/, '') + '/notify';
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: sessionId,
+                    preview:   String(text || '').slice(0, 500)
+                })
+            }).catch(function () {});
+            bridgeNotified = true;
+        } catch (_) {}
+    }
+
     const QUICK_Q = [
         '💰 Package prices', '🏖️ Best beaches', '🤿 Scuba diving',
         '💑 Honeymoon', '📅 Best time to visit', '📞 Contact us'
@@ -378,6 +554,9 @@
             opened = true;
             addBot('👋 Hi! I\'m your **Andaman AI Guide** from Bharat Transport & Tourism.\n\nAsk me anything about our packages, beaches, activities or pricing! 🌊');
             renderQuick();
+            // Eagerly init Firebase so admin replies already wire up by
+            // the time the customer sends their first message.
+            ensureFirebase();
         }
         setTimeout(() => input.focus(), 250);
     }
@@ -400,15 +579,27 @@
         showTyping();
         history.push({ role: 'user', text });
 
-        // No server-side chat endpoint on GitHub Pages — use the
-        // built-in keyword/regex client fallback for every message.
-        // (Previously this called a Netlify Function, which we removed
-        // when migrating off Netlify.)
+        // 1) Persist the customer message to Firestore so the admin's
+        //    Live Chats panel (and the AI bot) can react. Best-effort —
+        //    if Firestore is unreachable, the bot still answers locally.
+        persistMessage('user', text).catch(function () {});
+
+        // 2) Ping the WhatsApp bridge worker (if configured) so the
+        //    admin gets a WhatsApp DM. Fire-and-forget.
+        notifyWhatsAppBridge(text);
+
+        // 3) Local rule-based bot — runs immediately so the customer
+        //    isn't left waiting while the human catches up.
         await new Promise(function (r) { setTimeout(r, 250); });   // tiny "thinking" pause
         removeTyping();
         const reply = clientFallback(text);
         addBot(reply);
         history.push({ role: 'bot', text: reply });
+        // Persist the bot's auto-reply too so the admin sees the full
+        // transcript when they open the conversation. Tagged role='bot'
+        // so subscribeToReplies skips re-rendering it back into the
+        // bubble (we already rendered it above with addBot).
+        persistMessage('bot', reply).catch(function () {});
 
         isBusy = false;
         sendBtn.disabled = false;
