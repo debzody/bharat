@@ -17,7 +17,18 @@
 
     if (window.__dashRole !== 'admin') return; // hard-gate to admins
 
-    var CLOUDINARY = { cloud: 'dnvsxgnmu', preset: 'andaman_unsigned', folder: 'package-brochures' };
+    /* Pulls credentials from the SAME window.CLOUDINARY_CONFIG that
+     * js/gallery.js uses (set in js/firebase-config.js). Falls back to
+     * empty so the upload step surfaces a clear error if it's missing
+     * instead of POST-ing to a wrong cloud. */
+    function cloudinaryCfg() {
+        var c = window.CLOUDINARY_CONFIG || {};
+        return {
+            cloud:  String(c.cloudName || c.cloud || '').trim(),
+            preset: String(c.uploadPreset || c.preset || '').trim(),
+            folder: 'package-brochures'
+        };
+    }
 
     function workerUrl() {
         var u = String(window.AI_ASSISTANT_WORKER_URL || '').trim();
@@ -109,12 +120,15 @@
 
     function uploadToCloudinary(file) {
         return new Promise(function (resolve, reject) {
+            var cfg = cloudinaryCfg();
+            if (!cfg.cloud)  return reject(new Error('Cloudinary cloud name not configured (window.CLOUDINARY_CONFIG.cloudName)'));
+            if (!cfg.preset) return reject(new Error('Cloudinary upload preset not configured (window.CLOUDINARY_CONFIG.uploadPreset)'));
             var fd = new FormData();
             fd.append('file', file);
-            fd.append('upload_preset', CLOUDINARY.preset);
-            fd.append('folder', CLOUDINARY.folder);
+            fd.append('upload_preset', cfg.preset);
+            fd.append('folder', cfg.folder);
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUDINARY.cloud + '/auto/upload');
+            xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + cfg.cloud + '/auto/upload');
             xhr.upload.onprogress = function (e) {
                 if (e.lengthComputable) updateProgress('Uploading… ' + Math.round(e.loaded / e.total * 100) + '%');
             };
