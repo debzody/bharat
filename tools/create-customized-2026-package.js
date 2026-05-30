@@ -74,50 +74,51 @@
         itinerary: [
             {
                 day: 1,
+                date: '14/2/26',
                 title: 'Arrival in Port Blair — Cellular Jail & Light & Sound Show',
-                details: 'Arrival at Port Blair, transfer to hotel. After lunch, the tour starts with a visit to the historic Cellular Jail, where the heroic saga of the Indian freedom struggle is brought alive. Followed by the Light & Sound Show at the jail. Afterwards, proceed to Marina Park before returning to the hotel. Overnight stay at Port Blair.'
+                details: 'Arrival at Port Blair, transfer to hotel. After lunch, the tour will start with a visit to the historic CELLULAR JAIL, where the heroic saga of the Indian freedom struggle is brought alive. Then visit the LIGHT AND SOUND SHOW at Cellular Jail, afterwards proceed to MARINA PARK and then back to respective hotel. Overnight stay at Port Blair.'
             },
             {
                 day: 2,
+                date: '15/2/26',
                 title: 'Ross Island & North Bay Island',
-                details: 'After breakfast, proceed to Ross Island — the former residential and administrative island of the British during their rule of South-East Asia, nicknamed the \u201CParis of the East.\u201D Afternoon, visit North Bay Island, a popular destination known for its coral reefs, snorkelling and water activities. Overnight stay at Port Blair.'
+                details: 'In the morning after breakfast, proceed to ROSS ISLAND \u2014 the former residential and administrative island of the British during their rule of South-East Asia, nicknamed the \u201CParis of the East.\u201D Afternoon visit to NORTH BAY ISLAND, located in the Andaman & Nicobar Islands, a popular destination known for its coral reefs. Overnight stay at Port Blair.'
             },
             {
                 day: 3,
-                title: 'Departure to Havelock Island — Radhanagar Beach',
-                details: 'Morning departure by inter-island cruise to Havelock Island — a major tourist destination with rich marine life, white sand beaches and dense evergreen forests, about 57 km north-east of Port Blair. Visit Radhanagar Beach (No. 7), recipient of the World Tourism Organization\u2019s \u201CA\u201D rating. Night stay at Havelock Island.'
+                date: '16/2/26',
+                title: 'Departure to Havelock Island \u2014 Radhanagar Beach',
+                details: 'In the morning, departure by inter-island cruise to HAVELOCK ISLAND \u2014 a major tourist destination owing to its rich marine life, white sand beaches and dense evergreen forests, at a distance of about 57 km north-east of the capital city, Port Blair. Attractions of Havelock Island are RADHANAGAR BEACH (No. 7), recipient of an \u201CA\u201D rating from the World Tourism Organization (WTO). Night stay at Havelock Island.'
             },
             {
                 day: 4,
-                title: 'Havelock — Beaches & Optional Activities',
-                details: 'Full day at Havelock Island. Explore the beaches, swim, optional scuba diving / snorkelling at additional cost, and enjoy the sunset. Overnight stay at Havelock Island.'
+                date: '17/2/26',
+                title: 'Departure to Neil Island \u2014 Bharatpur & Laxmanpur Beaches',
+                details: 'After breakfast, departure to NEIL ISLAND \u2014 about 30 km to the north-eastern part of Port Blair. Neil Island is famous for its marine life and popularly known as the \u201Cvegetable bowl of Andaman.\u201D After arrival, visit BHARATPUR BEACH (famous for coral watching and swimming), then LAXMANPUR BEACH I & II, and visit the live coral and natural rock formation. Afternoon visit to sunset point. Night stay near SITAPUR BEACH at Neil Island.'
             },
             {
                 day: 5,
-                title: 'Departure to Neil Island — Bharatpur & Laxmanpur Beach',
-                details: 'After breakfast, depart to Neil Island (about 30 km north-east of Port Blair). Neil Island is famous for its marine life and is popularly called the \u201Cvegetable bowl of Andaman.\u201D Visit Bharatpur Beach (famous for coral watching and swimming), then Laxmanpur Beach I & II, the live coral reef and the natural rock formation. Afternoon visit the sunset point. Night stay near Sitapur Beach at Neil Island.'
+                date: '18/2/26',
+                title: 'Neil Island \u2014 Day at Leisure / More Beaches',
+                details: 'A second day on NEIL ISLAND. Explore Sitapur Beach at sunrise, revisit Bharatpur Beach for snorkelling, swim at Laxmanpur Beach, and admire the famous Howrah Bridge natural rock formation. Catch the sunset at the western beach before returning to the hotel. Night stay at Neil Island.'
             },
             {
                 day: 6,
-                title: 'Back to Port Blair — Corbyn\u2019s Cove, Netaji Flag Point & Ramakrishna Mission',
-                details: 'After breakfast, return to Port Blair. Afternoon visit Corbyn\u2019s Cove Beach (10 km from the city centre, beautiful blue water and coconut palms; water sports available). Then visit the 1943 Netaji Flag Point — where Netaji Subhash Chandra Bose hoisted the Tricolor on 30 December 1943, declaring Andaman a free territory from British rule. Continue to Ramakrishna Mission. Night stay at Port Blair.'
+                date: '19/2/26',
+                title: 'Back to Port Blair \u2014 Corbyn\u2019s Cove, Netaji Flag Point & Ramakrishna Mission',
+                details: 'After breakfast, back to PORT BLAIR. Afternoon visit to CORBYN\u2019S COVE BEACH (the beach is just 10 km from the city centre, a prominent sightseeing place in Andaman; with pleasant blue sea water and lush green coconut palms, the beach allows visitors to relax alongside and enjoy several water sports available on the shore). Then visit the 1943 NETAJI FLAG POINT (on 30 December 1943, Netaji Subhash Chandra Bose visited Andaman and hoisted the Tricolor for the first time on free Indian soil, much before India attained Independence \u2014 declaring the island a free territory from British rule. The place where he hoisted the flag stands today as a great memorial). Then visit RAMAKRISHNA MISSION. Night stay at Port Blair.'
             },
             {
                 day: 7,
-                title: 'Baratang Island via Jarawa Reserve Forest — Limestone Caves & Mangroves',
-                details: 'Early morning, proceed to Baratang Island through the Jarawa Reserve Forest. Explore the Limestone Cave (own cost), mangrove creeks, and natural wonders. About 100 km from Port Blair, Baratang is known for its geological and natural beauty. Evening, return to Port Blair. Night stay at Port Blair.'
+                date: '20/2/26',
+                title: 'Baratang Island via Jarawa Reserve Forest \u2014 Limestone Caves & Mangroves',
+                details: 'Early morning, proceed to BARATANG ISLAND through the JARAWA RESERVE FOREST \u2014 Massive island, Jarawa forest, Limestone Cave (OWN COST) and mangrove creeks. It has everything that will set your holiday mood on. Situated at a distance of 100 km from Port Blair and known for its geological and natural wonders. Evening, return to Port Blair. Night stay at Port Blair.'
             },
             {
                 day: 8,
-                title: 'Port Blair Sightseeing — Museums & Aquarium',
-                details: 'After breakfast, full-day Port Blair sightseeing covering Chatham Saw Mill (one of the oldest and largest saw mills in Asia, currently closed for visitors but viewable from outside), the Anthropological Museum (illustrating the Negrito tribes of Andaman), Fisheries Aquarium (marine life endemic to the islands and the Indo-Pacific) and Samudrika Naval Museum (collection of shells, corals and species). Night stay at Port Blair.'
-            },
-            {
-                day: 9,
-                title: 'Departure — Airport Drop',
-                details: 'After breakfast, transfer to Port Blair airport for your onward journey. Tour ends with sweet memories of Andaman.'
-            }
-        ],
+                date: '21/2/26',
+                title: 'Port Blair Sightseeing \u2014 Saw Mill, Museums & Aquarium',
+                details: 'After breakfast, full-day \u201CPORT BLAIR SIGHTSEEING\u201D which covers CHATHAM SAW MILL \u2014 one of the oldest and largest Saw Mills in Asia (closed for visitors but viewable from outside); ANTHROPOLOGICAL MUSEUM \u2014 illustrates the Negrito tribes of the Andaman; FISHERIES AQUARIUM \u2014 exhibits species of marine life endemic to the islands and found in the Indo-Pacific and Bay of Bengal; SAMUDRIKA NAVAL MUSEUM \u2014 a good collection of shells, corals and species. Night stay at Port
 
         // ── Extra metadata captured from the brochure ──────────────────
         bookingPolicy: {
