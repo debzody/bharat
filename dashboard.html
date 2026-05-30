@@ -1334,6 +1334,95 @@
                 </div>
             </div>
 
+            <!-- ── Chat Widget (admin-toggleable) ─────────────────
+                 Choose between three chat experiences:
+                   • Brevo Conversations (third-party, default)
+                   • Custom live-chat (Firestore-backed, integrates
+                     with the dashboard's "Live Chats" tab AND can
+                     forward each message to your WhatsApp via the
+                     WhatsApp Cloud API bridge worker).
+                   • None — no chat bubble at all.
+                 Read by js/brevo.js + js/chat.js on every public page.
+                 Flipping this saves to /settings/site immediately and
+                 every NEW visitor sees the new widget; visitors with the
+                 old widget already in their tab won't lose it until they
+                 reload (we hide the Brevo widget on the next settings
+                 load to soften the transition).
+            -->
+            <div class="settings-card" style="margin-top:1.5rem;background:#f5f7ff;border-left:3px solid #7d3c98;">
+                <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:.5rem;">
+                    <div class="settings-label-block" style="margin-bottom:.5rem;">
+                        <h3><i class="fas fa-comments" style="color:#7d3c98;"></i> Chat Widget</h3>
+                        <p>Decide which chat bubble appears on the public site. Switch any time &mdash; visitors see the new widget on their next page load.</p>
+                    </div>
+
+                    <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.86rem;font-weight:600;color:#3a4a55;">
+                        Provider
+                        <select id="chatProviderSelect" style="padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:inherit;font-size:.92rem;">
+                            <option value="brevo">Brevo Conversations &mdash; third-party (default)</option>
+                            <option value="custom">Custom live-chat &mdash; Firestore + dashboard reply + optional WhatsApp</option>
+                            <option value="none">None &mdash; hide the chat bubble</option>
+                        </select>
+                    </label>
+
+                    <!-- WhatsApp bridge sub-section (only relevant for 'custom') -->
+                    <div id="chatWhatsappBlock" style="margin-top:.85rem;background:#fff;border:1px solid #e3e8ef;border-radius:10px;padding:1rem;">
+                        <div class="settings-row">
+                            <div class="settings-label-block">
+                                <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;">
+                                    <i class="fab fa-whatsapp" style="color:#25d366;"></i>
+                                    Forward chats to WhatsApp
+                                </h4>
+                                <p style="font-size:.86rem;color:#666;">
+                                    When enabled, every customer message lands in your WhatsApp via Meta's
+                                    <strong>WhatsApp Cloud API</strong>. Reply back from WhatsApp and your message returns
+                                    to the customer's chat in real-time. <em>Setup: see <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">whatsapp_setup.md</code> in the repo.</em>
+                                </p>
+                            </div>
+                            <label class="toggle-switch" title="Forward customer messages to your WhatsApp">
+                                <input type="checkbox" id="whatsappBridgeToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row" style="margin-top:.6rem;flex-direction:column;align-items:stretch;gap:.3rem;">
+                            <label for="whatsappBridgeWorkerUrl" style="font-size:.82rem;font-weight:600;color:#666;">
+                                WhatsApp bridge Worker URL
+                                <small style="color:#aaa;text-transform:none;font-weight:400;">(after deploying <code>workers/whatsapp-bridge</code>)</small>
+                            </label>
+                            <input type="text" id="whatsappBridgeWorkerUrl"
+                                   placeholder="https://whatsapp-bridge.<account>.workers.dev"
+                                   spellcheck="false"
+                                   style="width:100%;padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:'SF Mono',Menlo,monospace;font-size:.88rem;">
+                            <label for="whatsappBridgeAdminPhone" style="font-size:.82rem;font-weight:600;color:#666;margin-top:.5rem;">
+                                Your WhatsApp number <small style="color:#aaa;text-transform:none;font-weight:400;">(E.164, no '+', e.g. 918880195191)</small>
+                            </label>
+                            <input type="text" id="whatsappBridgeAdminPhone"
+                                   placeholder="918880195191"
+                                   spellcheck="false"
+                                   style="width:100%;padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:'SF Mono',Menlo,monospace;font-size:.88rem;">
+                            <label for="whatsappBridgePhoneNumberId" style="font-size:.82rem;font-weight:600;color:#666;margin-top:.5rem;">
+                                Meta WhatsApp Phone Number ID <small style="color:#aaa;text-transform:none;font-weight:400;">(numeric, from Meta Developer console)</small>
+                            </label>
+                            <input type="text" id="whatsappBridgePhoneNumberId"
+                                   placeholder="100000000000000"
+                                   spellcheck="false"
+                                   style="width:100%;padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:'SF Mono',Menlo,monospace;font-size:.88rem;">
+                            <small style="color:#888;line-height:1.5;margin-top:.4rem;">
+                                The Meta Access Token + App Secret are <strong>not</strong> stored here &mdash; they live as Cloudflare Worker secrets on the bridge worker. See <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">whatsapp_setup.md</code>.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions" style="margin-top:1.2rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+                        <button class="btn-save-packages" id="saveChatWidgetBtn">
+                            <i class="fas fa-save"></i> Save Chat Widget
+                        </button>
+                        <span id="chatWidgetStatus" style="color:#666;font-size:.9rem;"></span>
+                    </div>
+                </div>
+            </div>
+
             <!-- ── Manage Gallery Dropdowns (admin-only) ──────────
                  The Category / Place / Package fields on the gallery
                  upload form are now locked to dropdowns so staff can
@@ -2041,7 +2130,7 @@
          and HALTS every script that comes after — including dashboard.js,
          which is why the Refund button + Razorpay-mode toggle previously
          failed to render. Do NOT add it again. -->
-    <script src="js/dataStore.js?v=28"></script>
+    <script src="js/dataStore.js?v=29"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/booking-emails.js?v=1"></script>
     <script src="js/refund.js?v=2"></script>
@@ -3286,6 +3375,98 @@
                 renderManager();
             }).catch(function () {});
         }
+    })();
+    </script>
+
+    <!-- ── Chat Widget settings wiring ─────────────────────────
+         Wires the Settings → Chat Widget card. Pulls the current
+         provider + WhatsApp bridge config from /settings/site,
+         lets the admin pick a different provider, and saves the
+         choice back via SettingsStore.save(). The provider is read
+         on every public page-load by js/brevo.js + js/chat.js so the
+         change takes effect instantly for any new visitor. -->
+    <script>
+    (function () {
+        var providerSel       = document.getElementById('chatProviderSelect');
+        var waBlock           = document.getElementById('chatWhatsappBlock');
+        var waToggle          = document.getElementById('whatsappBridgeToggle');
+        var waUrl             = document.getElementById('whatsappBridgeWorkerUrl');
+        var waPhone           = document.getElementById('whatsappBridgeAdminPhone');
+        var waPhoneNumberId   = document.getElementById('whatsappBridgePhoneNumberId');
+        var saveBtn           = document.getElementById('saveChatWidgetBtn');
+        var statusEl          = document.getElementById('chatWidgetStatus');
+
+        if (!providerSel || !saveBtn) return; // Not on this page
+
+        function setStatus(msg, isError) {
+            if (!statusEl) return;
+            statusEl.textContent = msg || '';
+            statusEl.style.color = isError ? '#c0392b' : '#0a5a68';
+        }
+
+        // The WhatsApp block is only relevant when provider === 'custom'.
+        function refreshVisibility() {
+            if (waBlock) {
+                waBlock.style.display = (providerSel.value === 'custom') ? '' : 'none';
+            }
+        }
+        providerSel.addEventListener('change', refreshVisibility);
+        refreshVisibility();
+
+        // Hydrate fields from SettingsStore
+        function hydrate() {
+            if (!window.SettingsStore || !window.SettingsStore.load) return;
+            window.SettingsStore.load().then(function (s) {
+                if (!s) return;
+                if (s.chatProvider) providerSel.value = s.chatProvider;
+                if (waToggle)        waToggle.checked     = !!s.whatsappBridgeEnabled;
+                if (waUrl)           waUrl.value          = s.whatsappBridgeWorkerUrl || '';
+                if (waPhone)         waPhone.value        = s.whatsappBridgeAdminPhone || '';
+                if (waPhoneNumberId) waPhoneNumberId.value = s.whatsappBridgePhoneNumberId || '';
+                refreshVisibility();
+            }).catch(function () {});
+        }
+        // Defer until Firebase is ready so SettingsStore can read.
+        if (window.__firebaseReady) {
+            window.__firebaseReady.then(hydrate).catch(function () {});
+        } else {
+            setTimeout(hydrate, 800);
+        }
+
+        saveBtn.addEventListener('click', async function () {
+            if (!window.SettingsStore || !window.SettingsStore.save) {
+                setStatus('SettingsStore not available.', true);
+                return;
+            }
+            saveBtn.disabled = true;
+            var orig = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+            setStatus('Saving…');
+            try {
+                var patch = {
+                    chatProvider:                providerSel.value || 'brevo',
+                    whatsappBridgeEnabled:       !!(waToggle && waToggle.checked),
+                    whatsappBridgeWorkerUrl:     (waUrl && waUrl.value || '').trim(),
+                    whatsappBridgeAdminPhone:    (waPhone && waPhone.value || '').replace(/\D/g, ''),
+                    whatsappBridgePhoneNumberId: (waPhoneNumberId && waPhoneNumberId.value || '').replace(/\D/g, '')
+                };
+                // Validate: if WhatsApp bridge is enabled, the URL + phone fields must be filled.
+                if (patch.chatProvider === 'custom' && patch.whatsappBridgeEnabled) {
+                    if (!patch.whatsappBridgeWorkerUrl) throw new Error('Worker URL is required when WhatsApp bridge is enabled.');
+                    if (!patch.whatsappBridgeAdminPhone) throw new Error('Admin WhatsApp phone is required when bridge is enabled.');
+                    if (!patch.whatsappBridgePhoneNumberId) throw new Error('Meta Phone Number ID is required when bridge is enabled.');
+                }
+                await window.SettingsStore.save(patch);
+                setStatus('✓ Chat widget settings saved. New visitors see the change immediately.');
+                if (window.Toast) window.Toast.success('Chat widget updated');
+            } catch (err) {
+                console.error('[chat-widget-save] failed:', err);
+                setStatus('❌ ' + (err && err.message || 'Save failed'), true);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = orig;
+            }
+        });
     })();
     </script>
 

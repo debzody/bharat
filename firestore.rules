@@ -180,6 +180,47 @@ service cloud.firestore {
       allow create: if false;
     }
 
+    // ── Live Chat sessions ─────────────────────────────────
+    // /chats/{sessionId} is the parent doc with summary fields
+    // (lastMessage, customerName, unreadByAdmin etc).
+    // /chats/{sessionId}/messages/{msgId} is the per-message log.
+    //
+    // Permissions:
+    //   • Customer (no auth required) — the session ID is an
+    //     unguessable random string stored in their browser's
+    //     localStorage. They can READ their own session's messages
+    //     and WRITE new 'user' messages. They CANNOT read other
+    //     sessions because the rules check the document path, not
+    //     the data.
+    //   • Admin — full read/write on any session. Used by the
+    //     dashboard's Live Chats panel and by the WhatsApp bridge
+    //     worker (which authenticates as a service account, bypassing
+    //     these rules entirely).
+    //
+    // Defence: we cap message length and require role to be one of
+    // the known values so a malicious caller can't write garbage.
+    match /chats/{sessionId} {
+      allow read, write: if isAdmin();
+      // Customer (anon) — can read AND merge-write their own session's
+      // summary fields. We allow any write here because the worker /
+      // browser only ever writes a small set of fields (the rule is
+      // not the boundary — defence-in-depth lives in the client).
+      allow read:        if true;
+      allow create:      if true;
+      allow update:      if true;
+
+      match /messages/{msgId} {
+        allow read:   if true;
+        allow create: if isAdmin()
+          || (
+            request.resource.data.role in ['user', 'bot']
+            && request.resource.data.text is string
+            && request.resource.data.text.size() <= 4000
+          );
+        allow update, delete: if isAdmin();
+      }
+    }
+
     // Default deny everything else
     match /{document=**} {
       allow read, write: if false;

@@ -458,6 +458,33 @@
         googleReviewsEnabled:     true,   // pulls live Google reviews on the homepage testimonials section
         landingPagesEnabled:      true,   // /lp/honeymoon and /lp/family ad-landing pages
 
+        // ── Chat widget provider (admin-toggleable) ──────────
+        // Controls which chat experience is rendered on the public
+        // site:
+        //   'brevo'  — load Brevo Conversations widget (third-party)
+        //   'custom' — load our own widget (js/chat.js) which persists
+        //              every message to /chats in Firestore so the admin
+        //              can read & reply from the dashboard, and (when a
+        //              WhatsApp Cloud API token is set) DMs the admin's
+        //              phone so they can chat from WhatsApp directly.
+        //   'none'   — no chat bubble at all
+        chatProvider:             'brevo',
+
+        // ── WhatsApp Cloud API bridge (admin-only) ───────────
+        // When the chat provider is 'custom' AND whatsappBridgeEnabled
+        // is true, every new customer chat message is forwarded to the
+        // admin's WhatsApp via Meta's Cloud API. Admin replies on
+        // WhatsApp arrive at the worker's webhook and land back in the
+        // customer's open chat session in real-time.
+        //
+        // The Meta Access Token + App Secret are NEVER stored in this
+        // doc — they live as Cloudflare Worker secrets on the
+        // whatsapp-bridge Worker. Only the public bits go here.
+        whatsappBridgeEnabled:    false,
+        whatsappBridgeWorkerUrl:  '',     // e.g. https://whatsapp-bridge.<acc>.workers.dev
+        whatsappBridgeAdminPhone: '',     // E.164 without '+', e.g. 918880195191
+        whatsappBridgePhoneNumberId: '',  // Meta WhatsApp Phone Number ID (numeric)
+
         // ── Gallery upload-form dropdown options (admin-managed) ──
         // The staff-facing upload form on /dashboard locks Category /
         // Place / Package to a fixed dropdown so they can ONLY pick from
