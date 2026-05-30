@@ -180,6 +180,9 @@
             <a href="#" class="topnav-item sidebar-link" data-section="inbox">
                 <i class="fas fa-inbox"></i><span>Inbox</span>
             </a>
+            <a href="#" class="topnav-item sidebar-link" data-section="chats">
+                <i class="fas fa-comments"></i><span>Live Chats</span>
+            </a>
             <a href="#" class="topnav-item sidebar-link" data-section="analytics">
                 <i class="fas fa-chart-area"></i><span>Analytics</span>
             </a>
@@ -672,6 +675,25 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- ── Live Chats Section (admin reply UI for the LIVE chat widget) ──
+             Renders a two-pane Slack-style inbox of live chat sessions. The
+             actual UI is built by js/dashboard-chats.js inside #lcAdminRoot.
+             js/live-chat.js (loaded on every public page) writes customer
+             messages to /chats/{sessionId}/messages, and this section reads
+             from the same Firestore path + writes admin replies back. -->
+        <section class="dashboard-section" id="section-chats">
+            <div class="section-header">
+                <h2><i class="fas fa-comments" style="color:#e74c3c;"></i> Live Chats</h2>
+                <p style="color:#666;font-size:0.92rem;margin-top:.4rem;line-height:1.6;">
+                    Real-time conversations from the LIVE chat bubble on every public page.
+                    Click a session to read the thread; replies show in the visitor's bubble within ~1 second.
+                    Chats also forward to WhatsApp when the bridge is enabled in
+                    <strong>Settings → Chat Widget</strong>.
+                </p>
+            </div>
+            <div id="lcAdminRoot"></div>
         </section>
 
         <!-- Analytics Section -->
@@ -2140,6 +2162,7 @@
     <script src="js/inbox.js?v=8"></script>
     <script src="js/inbox-receiver.js?v=9"></script>
     <script src="js/inbox-autoreply.js?v=2"></script>
+    <script src="js/dashboard-chats.js?v=1"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());
