@@ -63,8 +63,8 @@
         btn.id = 'aiPkgImportBtn';
         btn.className = 'btn-add-package';
         btn.style.background = 'linear-gradient(135deg,#8e44ad,#3498db)';
-        btn.title = 'Upload a brochure photo or screenshot — AI extracts the package';
-        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> AI Import (Image)';
+        btn.title = 'Upload a PDF brochure or image — AI extracts the package';
+        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> AI Import (PDF/Image)';
         btn.addEventListener('click', openFilePicker);
         // Insert before the publish button so it sits next to "Add Package"
         var publishBtn = document.getElementById('publishBtn');
@@ -73,13 +73,14 @@
     }
 
     /* ── File picker (one-shot input) ──
-     * Accepts images only — the AI vision model (LLaVA) is image-only,
-     * and most Cloudinary unsigned presets reject PDFs anyway. If the
-     * admin has a PDF, we tell them how to get a working image quickly. */
+     * Accepts images AND PDFs. PDFs are auto-converted client-side
+     * to an image of page 1 via PDF.js (loaded on demand from CDN),
+     * so the rest of the pipeline (LLaVA + image-only Cloudinary
+     * preset) doesn't need to change. */
     function openFilePicker() {
         var inp = document.createElement('input');
         inp.type = 'file';
-        inp.accept = 'image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif';
+        inp.accept = 'image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,application/pdf';
         inp.style.display = 'none';
         document.body.appendChild(inp);
         inp.addEventListener('change', function () {
@@ -95,20 +96,37 @@
             toast('AI worker URL not configured (window.AI_ASSISTANT_WORKER_URL).', 'error');
             return;
         }
-        if (file.size > 8 * 1024 * 1024) {
-            toast('File too large (max 8 MB).', 'error');
+        if (file.size > 16 * 1024 * 1024) {
+            toast('File too large (max 16 MB).', 'error');
             return;
         }
-        // Image-only — both LLaVA (the vision model) and the Cloudinary
-        // preset are image-restricted. Help the admin convert PDFs.
-        if (!/^image\//.test(file.type)) {
-            toast('Please upload an IMAGE (JPG / PNG / WebP). PDFs aren\'t supported — open the PDF, take a screenshot of the brochure page, and upload that screenshot instead.', 'error');
+        var isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name || '');
+        var isImage = /^image\//.test(file.type);
+        if (!isPdf && !isImage) {
+            toast('Please upload a PDF or an image (JPG / PNG / WebP).', 'error');
             return;
         }
+
+        var imageBlob = file;
+        var displayFile = file;
+
+        if (isPdf) {
+            showProgressModal('Loading PDF reader…');
+            try {
+                imageBlob = await pdfPageToImageBlob(file);
+                // Wrap blob in a File so file-name / size are nice in the preview
+                displayFile = new File([imageBlob], (file.name.replace(/\.pdf$/i, '') || 'brochure') + '-page1.png', { type: 'image/png' });
+            } catch (err) {
+                closeProgressModal();
+                toast('PDF rendering failed: ' + (err && err.message || err), 'error');
+                return;
+            }
+        }
+
         showProgressModal('Uploading brochure to Cloudinary…');
         var url;
         try {
-            url = await uploadToCloudinary(file);
+            url = await uploadToCloudinary(displayFile);
         } catch (err) {
             closeProgressModal();
             toast('Upload failed: ' + (err && err.message || err), 'error');
@@ -124,7 +142,56 @@
             return;
         }
         closeProgressModal();
-        showPreviewModal(fields, url, file);
+        showPreviewModal(fields, url, displayFile);
+    }
+
+    /* ── PDF → PNG (client-side via PDF.js, loaded on demand) ──
+     * Renders page 1 of the PDF at 1.6× scale and returns a PNG Blob.
+     * PDF.js is fetched from cdnjs the first time only; subsequent
+     * uploads in the same session reuse the cached library.        */
+    var pdfjsLoaded = null;
+    function loadPdfJs() {
+        if (pdfjsLoaded) return pdfjsLoaded;
+        pdfjsLoaded = new Promise(function (resolve, reject) {
+            if (window.pdfjsLib) { resolve(window.pdfjsLib); return; }
+            var s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            s.onload = function () {
+                if (!window.pdfjsLib) { reject(new Error('PDF.js failed to expose pdfjsLib')); return; }
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                resolve(window.pdfjsLib);
+            };
+            s.onerror = function () { reject(new Error('Could not load PDF.js from CDN.')); };
+            document.head.appendChild(s);
+        });
+        return pdfjsLoaded;
+    }
+
+    async function pdfPageToImageBlob(pdfFile) {
+        var pdfjsLib = await loadPdfJs();
+        updateProgress('Reading PDF…');
+        var buf = await pdfFile.arrayBuffer();
+        var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        if (!pdf || !pdf.numPages) throw new Error('PDF has no pages.');
+        // Render page 1 at 1.6× scale — usually high enough for OCR but
+        // keeps the file size well under 8 MB even for A3 pages.
+        updateProgress('Rendering page 1 of ' + pdf.numPages + '…');
+        var page = await pdf.getPage(1);
+        var viewport = page.getViewport({ scale: 1.6 });
+        var canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        var ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        // Convert to PNG blob
+        var blob = await new Promise(function (res) { canvas.toBlob(res, 'image/png', 0.92); });
+        if (!blob) throw new Error('Could not convert PDF page to PNG.');
+        if (pdf.numPages > 1) {
+            // Friendly notice — admin can re-upload later pages individually if needed
+            console.log('[ai-pkg] PDF has ' + pdf.numPages + ' pages; only page 1 was sent to AI.');
+        }
+        return blob;
     }
 
     function uploadToCloudinary(file) {
