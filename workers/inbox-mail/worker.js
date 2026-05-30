@@ -117,11 +117,8 @@ async function handleSend(request, env) {
     // gets an admin token can't impersonate arbitrary domains. Each
     // sender must also be a verified sender in Brevo, otherwise Brevo
     // will reject the request with `sender_not_authorized`.
-    const allowedSenders = (env.ALLOWED_SENDERS || env.FROM_EMAIL || 'booking@andamanvoyages.in')
-        .split(',')
-        .map(s => s.trim().toLowerCase())
-        .filter(Boolean);
-    const defaultFromEmail = (env.FROM_EMAIL || allowedSenders[0] || 'booking@andamanvoyages.in').toLowerCase();
+    const allowedSenders = resolveAllowedSenders(env);
+    const defaultFromEmail = pickDefaultFrom(env, allowedSenders);
     let fromEmail;
     if (fromReq) {
         if (!isValidEmail(fromReq))            return jsonResponse(env, request, { error: 'Invalid `from` address' }, 400);
@@ -181,6 +178,37 @@ function isValidEmail(s) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
 }
 
+// ── Hard-coded list of OUR five official mailboxes ─────────────
+// This is the LAST line of defence. Even if ALLOWED_SENDERS env is
+// empty/missing/misconfigured, the worker can never send FROM an
+// address outside this list. Update here ONLY if a new official
+// mailbox is added in Cloudflare Email Routing AND verified in Brevo.
+const OFFICIAL_SENDERS = [
+    'info@andamanvoyages.in',
+    'booking@andamanvoyages.in',
+    'cancellation@andamanvoyages.in',
+    'enquiries@andamanvoyages.in',
+    'noreply@andamanvoyages.in'
+];
+
+function resolveAllowedSenders(env) {
+    // 1. Start with whatever the env says
+    const fromEnv = (env.ALLOWED_SENDERS || env.FROM_EMAIL || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    // 2. Intersect with OFFICIAL_SENDERS — env can NEVER widen the
+    //    whitelist beyond our 5 mailboxes, only narrow it.
+    const intersected = fromEnv.filter(a => OFFICIAL_SENDERS.includes(a));
+    // 3. If env was empty or contained only invalid addresses, fall
+    //    back to all 5 official mailboxes.
+    return intersected.length ? intersected : OFFICIAL_SENDERS.slice();
+}
+
+function pickDefaultFrom(env, allowedSenders) {
+    const want = (env.FROM_EMAIL || '').trim().toLowerCase();
+    if (want && allowedSenders.includes(want)) return want;
+    return allowedSenders[0];
+}
+
 /* ── /internal/send — server-to-server send for trusted Workers ──
  * Authenticates with the shared `INTERNAL_SEND_TOKEN` secret instead
  * of a Firebase ID token. Used by the email-router Worker to post
@@ -222,9 +250,8 @@ async function handleInternalSend(request, env) {
     if (!html && !text)                   return jsonResponse(env, request, { error: 'Body required (html or text)' }, 400);
     if (!env.BREVO_API_KEY)               return jsonResponse(env, request, { error: 'BREVO_API_KEY secret not configured' }, 500);
 
-    const allowedSenders = (env.ALLOWED_SENDERS || env.FROM_EMAIL || 'booking@andamanvoyages.in')
-        .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-    const defaultFromEmail = (env.FROM_EMAIL || allowedSenders[0] || 'booking@andamanvoyages.in').toLowerCase();
+    const allowedSenders = resolveAllowedSenders(env);
+    const defaultFromEmail = pickDefaultFrom(env, allowedSenders);
     let fromEmail;
     if (fromReq) {
         if (!isValidEmail(fromReq))            return jsonResponse(env, request, { error: 'Invalid `from` address' }, 400);

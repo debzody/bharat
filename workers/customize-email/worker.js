@@ -41,6 +41,34 @@ const DEFAULT_FROM_NAME  = 'Andaman Voyages Enquiries';
 // Cloudflare's send_email binding refuses any other recipient.
 const DEFAULT_TO_EMAIL   = 'debjyoti.office@gmail.com';
 
+// ── Whitelist of OUR official sender mailboxes ─────────────────
+// Every outgoing email MUST come FROM one of these addresses. If
+// FROM_EMAIL is misconfigured to anything else, we silently fall
+// back to enquiries@ rather than impersonating an unrelated address.
+//
+// Override in wrangler.jsonc with:
+//   "ALLOWED_SENDERS": "info@andamanvoyages.in,booking@andamanvoyages.in,..."
+const OFFICIAL_SENDERS = [
+    'info@andamanvoyages.in',
+    'booking@andamanvoyages.in',
+    'cancellation@andamanvoyages.in',
+    'enquiries@andamanvoyages.in',
+    'noreply@andamanvoyages.in'
+];
+
+function pickSender(env) {
+    const allowed = (env.ALLOWED_SENDERS || OFFICIAL_SENDERS.join(','))
+        .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const want = (env.FROM_EMAIL || DEFAULT_FROM_EMAIL).trim().toLowerCase();
+    if (allowed.includes(want)) return want;
+    // Fall back to the first allowed sender; never impersonate
+    // an outside address even if env is misconfigured.
+    console.warn(
+        'customize-email: FROM_EMAIL "' + want + '" not in ALLOWED_SENDERS — falling back to ' + allowed[0]
+    );
+    return allowed[0] || DEFAULT_FROM_EMAIL;
+}
+
 export default {
     async fetch(request, env, ctx) {
         const origin = request.headers.get('Origin') || '';
@@ -78,7 +106,7 @@ export default {
 
         // Build + send the email
         try {
-            const fromEmail = (env.FROM_EMAIL || DEFAULT_FROM_EMAIL).trim();
+            const fromEmail = pickSender(env);
             const fromName  = (env.FROM_NAME  || DEFAULT_FROM_NAME).trim();
             const toEmail   = (env.TO_EMAIL   || DEFAULT_TO_EMAIL).trim();
 

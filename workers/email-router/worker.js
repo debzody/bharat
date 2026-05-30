@@ -29,7 +29,22 @@
 
 import { sha256Hex, streamToString } from './lib.js';
 import { parseRfc822 } from './mime.js';
-import { getFirestoreAccessToken, firestoreCreateIfMissing, firestoreGetDoc } from './firestore.js';
+import { getFirestoreAccessToken, firestoreCreateIfMissing, firestoreGetDoc, firestoreAddDoc } from './firestore.js';
+
+// ── Hard-coded list of OUR five official mailboxes ─────────────
+// Every outgoing auto-reply MUST come FROM one of these. Even if
+// AUTO_REPLY_FROM_EMAIL env or the user-editable Firestore doc
+// (/settings/inboxAutoReply.defaultFrom) names something else, we
+// override it to noreply@ rather than impersonate an outside address.
+// The downstream inbox-mail/worker.js enforces the same list as a
+// final defence in depth.
+const OFFICIAL_SENDERS = [
+    'info@andamanvoyages.in',
+    'booking@andamanvoyages.in',
+    'cancellation@andamanvoyages.in',
+    'enquiries@andamanvoyages.in',
+    'noreply@andamanvoyages.in'
+];
 
 export default {
     /* HTTP handler — health-check + /mirror endpoint.
@@ -342,12 +357,24 @@ async function sendAutoReply(message, parsed, env) {
 
     // From-mailbox: prefer the user-chosen "defaultFrom" (when not 'mailbox'),
     // else the env default, else fall back to info@.
+    //
+    // Defence-in-depth: even though inbox-mail/worker.js will reject any
+    // non-whitelisted From, we filter through OFFICIAL_SENDERS here too so
+    // a misconfigured Firestore /settings/inboxAutoReply doc can't even
+    // attempt to send from an outside address.
     let fromEmail = String(env.AUTO_REPLY_FROM_EMAIL || 'info@andamanvoyages.in');
     if (userCfg && userCfg.defaultFrom && userCfg.defaultFrom !== 'mailbox') {
         fromEmail = String(userCfg.defaultFrom);
     } else if (userCfg && userCfg.defaultFrom === 'mailbox') {
         // Reply from the same mailbox the mail came in on.
         fromEmail = recipient || fromEmail;
+    }
+    fromEmail = String(fromEmail).trim().toLowerCase();
+    if (!OFFICIAL_SENDERS.includes(fromEmail)) {
+        console.warn(
+            'email-router: auto-reply From "' + fromEmail + '" not in OFFICIAL_SENDERS — falling back to noreply@'
+        );
+        fromEmail = 'noreply@andamanvoyages.in';
     }
     const fromName = String(env.AUTO_REPLY_FROM_NAME || 'Andaman Voyages');
 
@@ -392,6 +419,31 @@ async function sendAutoReply(message, parsed, env) {
             return;
         }
         console.log('email-router: auto-replied to', senderAddr, '(template:', templateId + ')');
+
+        // ── Log the auto-reply to /sentEmails ─────────────────
+        // Without this, server-side auto-replies never show up in the
+        // dashboard's "Sent" tab — only browser-initiated sends do.
+        // We mirror the schema js/inbox.js writes so loadSent() picks
+        // it up automatically (sorted by createdAt desc).
+        try {
+            const sendJson = await res.clone().json().catch(() => ({}));
+            const t = await getFirestoreAccessToken(env);
+            await firestoreAddDoc(env, t, 'sentEmails', {
+                from:        fromEmail,
+                to:          senderAddr,
+                subject:     replySubject,
+                bodyText:    textContent || '',
+                sentBy:      'auto-reply',
+                messageId:   String(sendJson.messageId || ''),
+                sentAt:      String(sendJson.sentAt || new Date().toISOString()),
+                autoReply:   true,
+                templateId:  templateId,
+                inReplyToMailId: (parsed && parsed.messageId) || '',
+                createdAt:   new Date()
+            });
+        } catch (logErr) {
+            console.warn('email-router: failed to log auto-reply to /sentEmails:', logErr && logErr.message);
+        }
     } catch (err) {
         console.error('email-router: /internal/send network error:', err && err.message);
     }
