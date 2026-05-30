@@ -107,26 +107,62 @@
             return;
         }
 
-        var imageBlob = file;
-        var displayFile = file;
-
+        // ── PDF: render every page, upload each, run AI on each, merge ──
         if (isPdf) {
             showProgressModal('Loading PDF reader…');
+            var pageBlobs;
             try {
-                imageBlob = await pdfPageToImageBlob(file);
-                // Wrap blob in a File so file-name / size are nice in the preview
-                displayFile = new File([imageBlob], (file.name.replace(/\.pdf$/i, '') || 'brochure') + '-page1.png', { type: 'image/png' });
+                pageBlobs = await pdfAllPagesToBlobs(file);
             } catch (err) {
                 closeProgressModal();
                 toast('PDF rendering failed: ' + (err && err.message || err), 'error');
                 return;
             }
+            var n = pageBlobs.length;
+            if (!n) { closeProgressModal(); toast('PDF had no pages.', 'error'); return; }
+
+            // Upload all pages in parallel (Cloudinary is fast)
+            updateProgress('Uploading ' + n + ' page(s) to Cloudinary…');
+            var urls;
+            try {
+                urls = await Promise.all(pageBlobs.map(function (b, i) {
+                    var nm = (file.name.replace(/\.pdf$/i, '') || 'brochure') + '-p' + (i + 1) + '.png';
+                    var f  = new File([b], nm, { type: 'image/png' });
+                    return uploadToCloudinary(f);
+                }));
+            } catch (err) {
+                closeProgressModal();
+                toast('Upload failed: ' + (err && err.message || err), 'error');
+                return;
+            }
+
+            // Run AI extraction on each page sequentially (the worker rate-limits at ~1/s)
+            var pageFields = [];
+            for (var i = 0; i < urls.length; i++) {
+                updateProgress('Asking AI to read page ' + (i + 1) + ' of ' + n + '…');
+                try {
+                    var f = await callExtract(urls[i]);
+                    pageFields.push(f);
+                } catch (err) {
+                    console.warn('[ai-pkg] page ' + (i + 1) + ' extract failed:', err);
+                    // keep going — partial extraction is still useful
+                }
+            }
+            closeProgressModal();
+            if (!pageFields.length) { toast('AI could not read any page of this PDF.', 'error'); return; }
+
+            var merged = mergeFields(pageFields);
+            // Use page-1 image as the cover; tag the source file nicely
+            var displayFile = new File([pageBlobs[0]], (file.name.replace(/\.pdf$/i, '') || 'brochure') + ' (' + n + ' pg).png', { type: 'image/png' });
+            showPreviewModal(merged, urls[0], displayFile);
+            return;
         }
 
+        // ── Single image path ──
         showProgressModal('Uploading brochure to Cloudinary…');
         var url;
         try {
-            url = await uploadToCloudinary(displayFile);
+            url = await uploadToCloudinary(file);
         } catch (err) {
             closeProgressModal();
             toast('Upload failed: ' + (err && err.message || err), 'error');
@@ -142,7 +178,7 @@
             return;
         }
         closeProgressModal();
-        showPreviewModal(fields, url, displayFile);
+        showPreviewModal(fields, url, file);
     }
 
     /* ── PDF → PNG (client-side via PDF.js, loaded on demand) ──
@@ -168,30 +204,97 @@
         return pdfjsLoaded;
     }
 
-    async function pdfPageToImageBlob(pdfFile) {
+    /* Renders EVERY page of the PDF to a PNG blob and returns the array.
+     * Caps at 10 pages to protect quota / runtime. */
+    async function pdfAllPagesToBlobs(pdfFile) {
         var pdfjsLib = await loadPdfJs();
         updateProgress('Reading PDF…');
         var buf = await pdfFile.arrayBuffer();
         var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
         if (!pdf || !pdf.numPages) throw new Error('PDF has no pages.');
-        // Render page 1 at 1.6× scale — usually high enough for OCR but
-        // keeps the file size well under 8 MB even for A3 pages.
-        updateProgress('Rendering page 1 of ' + pdf.numPages + '…');
-        var page = await pdf.getPage(1);
-        var viewport = page.getViewport({ scale: 1.6 });
-        var canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        var ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-        // Convert to PNG blob
-        var blob = await new Promise(function (res) { canvas.toBlob(res, 'image/png', 0.92); });
-        if (!blob) throw new Error('Could not convert PDF page to PNG.');
-        if (pdf.numPages > 1) {
-            // Friendly notice — admin can re-upload later pages individually if needed
-            console.log('[ai-pkg] PDF has ' + pdf.numPages + ' pages; only page 1 was sent to AI.');
+        var MAX_PAGES = 10;
+        var totalPages = Math.min(pdf.numPages, MAX_PAGES);
+        if (pdf.numPages > MAX_PAGES) {
+            console.warn('[ai-pkg] PDF has ' + pdf.numPages + ' pages; only first ' + MAX_PAGES + ' will be processed.');
         }
-        return blob;
+        var blobs = [];
+        for (var i = 1; i <= totalPages; i++) {
+            updateProgress('Rendering page ' + i + ' of ' + totalPages + '…');
+            var page = await pdf.getPage(i);
+            var viewport = page.getViewport({ scale: 1.6 });
+            var canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            var ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            var blob = await new Promise(function (res) { canvas.toBlob(res, 'image/png', 0.92); });
+            if (!blob) throw new Error('Could not convert page ' + i + ' to PNG.');
+            blobs.push(blob);
+        }
+        return blobs;
+    }
+
+    /* Merges N page-extractions into one package object.
+     * Strategy:
+     *   - name: longest non-empty across pages (most descriptive)
+     *   - desc: first non-empty
+     *   - price: max of all (brochures often quote category-wise prices; we pick highest visible)
+     *   - duration: first non-empty
+     *   - category: first non-empty
+     *   - rating: max
+     *   - inclusions / exclusions / places: union (de-duped, case-insensitive)
+     *   - itinerary: concatenated (re-numbered 1..N) — duplicates by title removed   */
+    function mergeFields(arr) {
+        var merged = {
+            name: '', desc: '', price: 0, duration: '', category: '',
+            rating: 0, inclusions: [], exclusions: [], places: [], itinerary: []
+        };
+        var seenInc = {}, seenExc = {}, seenPlace = {}, seenItin = {};
+        arr.forEach(function (f) {
+            if (!f) return;
+            // name: longest
+            var n = String(f.name || '').trim();
+            if (n && n.length > merged.name.length) merged.name = n;
+            // desc: first non-empty
+            if (!merged.desc && f.desc) merged.desc = String(f.desc).trim();
+            // price: max
+            var p = Number(f.price) || 0;
+            if (p > merged.price) merged.price = p;
+            // duration: first non-empty
+            if (!merged.duration && f.duration) merged.duration = String(f.duration).trim();
+            // category: first non-empty
+            if (!merged.category && f.category) merged.category = String(f.category).trim();
+            // rating: max
+            var r = Number(f.rating) || 0;
+            if (r > merged.rating) merged.rating = r;
+            // arrays — dedupe case-insensitively
+            (f.inclusions || []).forEach(function (x) {
+                var k = String(x || '').trim().toLowerCase();
+                if (k && !seenInc[k]) { seenInc[k] = 1; merged.inclusions.push(String(x).trim()); }
+            });
+            (f.exclusions || []).forEach(function (x) {
+                var k = String(x || '').trim().toLowerCase();
+                if (k && !seenExc[k]) { seenExc[k] = 1; merged.exclusions.push(String(x).trim()); }
+            });
+            (f.places || []).forEach(function (x) {
+                var k = String(x || '').trim().toLowerCase();
+                if (k && !seenPlace[k]) { seenPlace[k] = 1; merged.places.push(String(x).trim()); }
+            });
+            (f.itinerary || []).forEach(function (d) {
+                var key = String((d && d.title) || '').trim().toLowerCase();
+                if (!key || seenItin[key]) return;
+                seenItin[key] = 1;
+                merged.itinerary.push({
+                    day: 0, // re-numbered below
+                    title: String((d && d.title) || '').trim(),
+                    details: String((d && d.details) || '').trim()
+                });
+            });
+        });
+        if (!merged.rating) merged.rating = 4.5;
+        // Re-number days 1..N
+        merged.itinerary.forEach(function (d, i) { d.day = i + 1; });
+        return merged;
     }
 
     function uploadToCloudinary(file) {
