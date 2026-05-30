@@ -1,27 +1,21 @@
-// ── Chat Widget for Bharat Transport & Tourism ───────────────────
-// One file, two flavours — driven by the admin-toggleable chatProvider
-// in /settings/site:
-//   * 'brevo'  → this file no-ops (js/brevo.js renders Brevo's widget).
-//   * 'custom' → render our own Firestore-backed live chat: every
-//                message lands in /chats/{sessionId}/messages so an
-//                admin can read & reply from the dashboard. The local
-//                rule-based bot still answers as a "first responder"
-//                while the human catches up. When the WhatsApp Cloud
-//                API bridge worker is configured, each new customer
-//                message also DMs the admin's WhatsApp.
-//   * 'none'   → no chat bubble at all.
+// ── AI Chat Bot widget (Andaman AI Guide) ───────────────────────
+// This is the legacy, instant-reply bot — keyword/regex based.
+// Customers who want a real human use the LIVE chat bubble (see
+// js/live-chat.js) which sits next to this one and pushes
+// messages into Firestore + WhatsApp.
 //
-// The provider is read from the cached SettingsStore so first-paint
-// is instant; the cache is filled on a previous page-load.
+// The Settings → Chat Widget toggle controls this file:
+//   * 'custom' (default) → render the AI bot bubble (this file)
+//   * 'brevo'            → don't render; brevo.js handles the chat
+//   * 'none'             → don't render; no chat bubble at all
+//
+// IMPORTANT: this file no longer persists to Firestore — that's now
+// the LIVE chat's job. Keeping the AI bot self-contained means it
+// works without any backend and never burns Firestore quota on the
+// thousands of casual price/scuba questions the bot can answer.
 (function () {
     'use strict';
 
-    // ── chatProvider gate (must mirror js/brevo.js) ─────────
-    // Default = 'custom' (matches js/dataStore.js → SETTINGS_DEFAULT)
-    // so brand-new visitors immediately see the new Firestore-backed
-    // widget. Admin can flip it back to 'brevo' from /dashboard →
-    // Settings → Chat Widget; the choice persists in localStorage so
-    // returning visitors get whichever the admin selected.
     function loadCachedProvider() {
         try {
             var raw = localStorage.getItem('siteSettings');
@@ -35,7 +29,6 @@
         // Brevo widget handled by js/brevo.js; 'none' renders nothing.
         return;
     }
-    // CHAT_PROVIDER === 'custom' — render our own widget.
 
     // ── Client-side fallback (works even without Netlify) ──────
     function clientFallback(msg) {
