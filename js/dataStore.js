@@ -1184,6 +1184,71 @@
         return photoURL;
     }
 
+    // ── Preset avatars ─────────────────────────────────────────
+    // Static set of pre-rendered illustration avatars shipped under
+    // /images/avatars/ that customers can pick instead of uploading
+    // their own photo. The default (anonymous silhouette) is what
+    // the app falls back to when photoURL is empty.
+    //
+    // Each entry is just the relative URL — the picker (in account.js)
+    // renders them as a thumbnail grid, and `setProfilePictureFromPreset`
+    // writes the chosen URL straight to /users/{uid}.photoURL (no
+    // Cloudinary upload, no Storage write — they're already hosted on
+    // the same origin as the rest of the site).
+    //
+    // Adding more avatars: drop the PNG into /images/avatars/ and
+    // append a new path here. No backend change required.
+    const PRESET_AVATARS = Object.freeze([
+        'images/avatars/avatar-default.png',  // anonymous silhouette — default
+        'images/avatars/avatar-1.png',
+        'images/avatars/avatar-2.png',
+        'images/avatars/avatar-3.png',
+        'images/avatars/avatar-4.png',
+        'images/avatars/avatar-5.png',
+        'images/avatars/avatar-6.png',
+        'images/avatars/avatar-7.png',
+        'images/avatars/avatar-8.png',
+        'images/avatars/avatar-9.png',
+        'images/avatars/avatar-10.png',
+        'images/avatars/avatar-11.png',
+        'images/avatars/avatar-12.png'
+    ]);
+    const DEFAULT_AVATAR_URL = PRESET_AVATARS[0];
+
+    // Pick one of the static preset avatars. Same end state as
+    // uploadProfilePicture() — writes /users/{uid}.photoURL — but skips
+    // Cloudinary entirely because the asset is already a hosted URL on
+    // our own origin. Kept separate so we can A/B / log differently and
+    // so the upload flow can keep its progress callback signature.
+    //
+    // Validates that the URL is one of the whitelisted presets so a
+    // tampered request can\'t inject an arbitrary URL into the avatar
+    // (defence-in-depth — the Firestore rules already constrain who
+    // can write photoURL, but better to validate client-side too).
+    async function setProfilePictureFromPreset(presetUrl) {
+        if (!presetUrl || typeof presetUrl !== 'string') {
+            throw new Error('A preset avatar URL is required.');
+        }
+        if (PRESET_AVATARS.indexOf(presetUrl) < 0) {
+            throw new Error('Unknown preset avatar.');
+        }
+        const { db, auth, firebaseAuth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not signed in.');
+        await firestore.setDoc(
+            firestore.doc(db, 'users', user.uid),
+            { photoURL: presetUrl, photoUpdatedAt: firestore.serverTimestamp() },
+            { merge: true }
+        );
+        try { await firebaseAuth.updateProfile(user, { photoURL: presetUrl }); } catch (_) {}
+        if (_currentProfile) {
+            _currentProfile.photoURL = presetUrl;
+            cacheProfile(_currentProfile);
+        }
+        fireAuthListeners(_currentProfile);
+        return presetUrl;
+    }
+
     // Clear the user's profile picture so the UI falls back to the
     // initials avatar. Sets photoURL to '' (NOT deleteField — that
     // would force every UI place that reads it to handle `undefined`
@@ -1532,6 +1597,9 @@
         updateProfile:            updateProfile,
         uploadProfilePicture:     uploadProfilePicture,
         removeProfilePicture:     removeProfilePicture,
+        setProfilePictureFromPreset: setProfilePictureFromPreset,
+        PRESET_AVATARS:           PRESET_AVATARS,
+        DEFAULT_AVATAR_URL:       DEFAULT_AVATAR_URL,
         reauthenticate:           reauthenticate,
         changePassword:           changePassword,
         sendPasswordResetEmail:   sendPasswordResetEmail,

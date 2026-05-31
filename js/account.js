@@ -98,18 +98,88 @@
             const avatarEl  = $('profAvatar');
             const removeBtn = $('profAvatarRemoveBtn');
             if (!avatarEl) return;
-            const photo = profile && profile.photoURL;
+            // Resolve the picture: explicit photoURL wins, otherwise we
+            // fall back to the default anonymous-silhouette preset (so a
+            // brand-new account never sees the bare initials when they
+            // could see a friendly placeholder image instead). Still
+            // tracks `hasOwnPhoto` so the "Remove photo" button only
+            // shows when the customer has actively chosen something.
+            const ownPhoto = profile && profile.photoURL;
+            const defAvatar = (window.UsersStore && window.UsersStore.DEFAULT_AVATAR_URL) || '';
+            const photo    = ownPhoto || defAvatar;
+            const hasOwnPhoto = !!ownPhoto;
             if (photo) {
                 // Render as <img> while keeping the same circular box.
                 avatarEl.classList.add('has-photo');
                 avatarEl.innerHTML = '<img src="' + String(photo).replace(/"/g, '&quot;') +
                     '" alt="Profile picture">';
-                if (removeBtn) removeBtn.style.display = '';
+                // "Remove photo" only makes sense when the user actually
+                // chose something — clearing the default returns it to
+                // the default, which is a no-op.
+                if (removeBtn) removeBtn.style.display = hasOwnPhoto ? '' : 'none';
             } else {
                 avatarEl.classList.remove('has-photo');
                 avatarEl.textContent = getInitials(profile);
                 if (removeBtn) removeBtn.style.display = 'none';
             }
+            // Re-render the preset gallery (if mounted) so the active
+            // tile reflects the current selection.
+            renderPresetGallery(ownPhoto || '');
+        }
+
+        // ── Preset-avatar gallery ─────────────────────────────
+        // Renders the row of preset avatar thumbnails (from
+        // UsersStore.PRESET_AVATARS) inside #profAvatarPresets. Each
+        // tile is a button that calls setProfilePictureFromPreset on
+        // click; the currently-selected preset is highlighted with the
+        // .is-active class. We rebuild the DOM each time renderAvatar
+        // runs so the active highlight stays in sync — the preset list
+        // is short (~13 items) so there's no perf concern.
+        function renderPresetGallery(currentPhotoUrl) {
+            const host = $('profAvatarPresets');
+            if (!host) return;
+            const presets = (window.UsersStore && window.UsersStore.PRESET_AVATARS) || [];
+            if (!presets.length) {
+                host.style.display = 'none';
+                return;
+            }
+            host.style.display = '';
+            // Re-render only when the active item or count changed —
+            // cheap shortcut keyed off a data-attribute so we don't
+            // thrash the DOM when renderAvatar fires repeatedly.
+            const sig = String(currentPhotoUrl || '') + '|' + presets.length;
+            if (host.dataset.sig === sig) return;
+            host.dataset.sig = sig;
+
+            const html = presets.map(function (url, i) {
+                const isActive = (currentPhotoUrl === url) ||
+                                 (i === 0 && !currentPhotoUrl);   // default tile if no choice
+                const isDefault = (i === 0);
+                const escUrl = String(url).replace(/"/g, '&quot;');
+                return '<button type="button" class="profile-preset-tile' +
+                       (isActive ? ' is-active' : '') +
+                       (isDefault ? ' is-default' : '') +
+                       '" data-preset-url="' + escUrl + '" ' +
+                       'title="' + (isDefault ? 'Use the default anonymous avatar' : 'Use this avatar') + '">' +
+                       '<img src="' + escUrl + '" alt="Avatar option" draggable="false">' +
+                       (isDefault
+                            ? '<span class="profile-preset-badge">Default</span>'
+                            : '') +
+                       (isActive ? '<span class="profile-preset-check"><i class="fas fa-check"></i></span>' : '') +
+                       '</button>';
+            }).join('');
+            host.innerHTML = html;
+
+            // Wire click handlers — delegated would also work but a tiny
+            // explicit listener per tile is fine for a 13-item list and
+            // makes the disabled-while-uploading state easier to manage.
+            host.querySelectorAll('.profile-preset-tile').forEach(function (tile) {
+                tile.addEventListener('click', function () {
+                    const url = tile.getAttribute('data-preset-url');
+                    if (!url) return;
+                    pickPreset(url, tile);
+                });
+            });
         }
 
         function renderUser(profile) {
@@ -202,13 +272,13 @@
         if (avatarRemove) {
             avatarRemove.addEventListener('click', async () => {
                 if (!window.UsersStore || !window.UsersStore.removeProfilePicture) return;
-                if (!confirm('Remove your profile picture? You\'ll see the default initials avatar instead.')) return;
+                if (!confirm('Remove your profile picture? You\'ll see the default avatar instead.')) return;
                 setUploading(true);
                 setStatus(avatarStatus, '', 'Removing…');
                 try {
                     await window.UsersStore.removeProfilePicture();
                     setStatus(avatarStatus, 'ok', '✓ Photo removed.');
-                    toast.ok('Profile picture removed');
+                    toast.ok('Profile picture removed — using default avatar');
                 } catch (err) {
                     console.error('[avatar-remove] failed:', err);
                     setStatus(avatarStatus, 'err', err.message || 'Remove failed');
@@ -217,6 +287,59 @@
                     setUploading(false);
                 }
             });
+        }
+
+        // ── Preset picker handler ─────────────────────────────
+        // Called from a tile click in renderPresetGallery(). Sets the
+        // chosen URL as the user's photoURL via UsersStore. The
+        // anonymous-default tile (index 0) calls removeProfilePicture
+        // so the customer's account ends up with photoURL='' (and the
+        // global default-avatar fallback kicks in across the site).
+        async function pickPreset(presetUrl, tileEl) {
+            if (!window.UsersStore) return;
+            // Highlight optimistically so the click feels instant; if
+            // the call fails we'll rebuild the gallery from the cached
+            // profile (which still holds the previous selection).
+            const grid = $('profAvatarPresets');
+            if (grid) {
+                grid.querySelectorAll('.profile-preset-tile.is-active')
+                    .forEach(t => t.classList.remove('is-active'));
+                if (tileEl) tileEl.classList.add('is-active');
+            }
+            setUploading(true);
+            setStatus(avatarStatus, '', 'Saving…');
+            try {
+                const isDefault = (window.UsersStore.DEFAULT_AVATAR_URL === presetUrl);
+                if (isDefault) {
+                    // "Use the default" → clear photoURL so the cached
+                    // profile is normalised back to '' (and every other
+                    // page falls back via DEFAULT_AVATAR_URL chain).
+                    if (window.UsersStore.removeProfilePicture) {
+                        await window.UsersStore.removeProfilePicture();
+                    }
+                } else {
+                    if (!window.UsersStore.setProfilePictureFromPreset) {
+                        throw new Error('Preset picker not available.');
+                    }
+                    await window.UsersStore.setProfilePictureFromPreset(presetUrl);
+                }
+                setStatus(avatarStatus, 'ok', '✓ Avatar updated.');
+                toast.ok('Avatar updated');
+                // The auth-change listener will re-render the avatar
+                // and the gallery via renderUser→renderAvatar.
+            } catch (err) {
+                console.error('[avatar-preset] failed:', err);
+                setStatus(avatarStatus, 'err', err.message || 'Save failed');
+                toast.err(err.message || 'Could not save preset avatar');
+                // Restore the gallery from the cached profile so we don't
+                // leave a stale optimistic highlight when something failed.
+                try {
+                    const cu = window.UsersStore.getCurrentUser();
+                    renderPresetGallery((cu && cu.photoURL) || '');
+                } catch (_) {}
+            } finally {
+                setUploading(false);
+            }
         }
 
         // Initial render from cache
