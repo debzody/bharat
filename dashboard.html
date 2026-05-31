@@ -94,10 +94,20 @@
         html[data-dashboard-role="staff"] .sidebar-link[data-section="overview"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="bookings"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="inbox"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="chats"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="analytics"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="customers"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="revenue"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="settings"] {
+            display: none !important;
+        }
+        /* Belt-and-braces: hide the Live Chats section content itself
+           (so a staff user who somehow forces #section-chats — e.g. a
+           hand-edited URL or a stale localStorage value — sees nothing).
+           The activate-section logic in dashboard.js already redirects
+           staff away from this section, but it's safer to also gate on
+           CSS in case the script ordering changes. */
+        html[data-dashboard-role="staff"] #section-chats {
             display: none !important;
         }
         /* Hide admin-only controls in the Packages section.
@@ -2163,7 +2173,7 @@
     <script src="js/inbox.js?v=8"></script>
     <script src="js/inbox-receiver.js?v=9"></script>
     <script src="js/inbox-autoreply.js?v=2"></script>
-    <script src="js/dashboard-chats.js?v=1"></script>
+    <script src="js/dashboard-chats.js?v=2"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());

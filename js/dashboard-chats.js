@@ -239,6 +239,13 @@ function injectStyles(){
 }
 
 function init(){
+  // Staff users have no business in the Live Chats panel — and the
+  // Firestore security rules deny them /chats reads anyway, so wiring
+  // up the onSnapshot listener would just spam the console with
+  // "Missing or insufficient permissions". Hard-bail BEFORE we touch
+  // the DOM or Firestore. The CSS in dashboard.html already hides the
+  // sidebar link + the section, this is defence in depth.
+  if(window.__dashRole==='staff'){return;}
   injectStyles();
   buildShell();
   if(window.__firebaseReady){
