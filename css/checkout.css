@@ -456,3 +456,148 @@ body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; bac
     .policy-modal-foot { padding: .8rem 1.1rem 1.1rem; }
     .policy-modal-foot .btn-pay { width: 100%; }
 }
+
+/* ── Price-Lock UI ────────────────────────────────────────────────
+   Customers can pay ₹500/head NOW to lock today's price for 10 days
+   instead of paying the full booking advance. The fee is non-refundable.
+   The lock button appears below the main "Pay Advance" CTA, separated
+   by an "OR" divider so the two options read as alternatives. When
+   the customer has an active lock, we hide the lock button and show
+   an "active-lock-banner" instead, which surfaces credit + countdown.
+   ─────────────────────────────────────────────────────────────── */
+
+/* "OR" divider between Pay-Advance and Lock-Price buttons. The line
+   sits just behind the centred OR pill, giving a clear visual split. */
+.lock-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.1rem 0 .6rem;
+    color: #94a3b3;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.lock-divider::before,
+.lock-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px dashed #d6dee5;
+}
+.lock-divider span {
+    padding: 0 .85rem;
+    background: #fff;
+    color: #7a8b96;
+}
+
+/* Secondary CTA — softer than the primary teal Pay button. Same
+   shape so they sit naturally in a vertical stack. The amber accent
+   is intentional: signals "wait / hold" rather than "buy now". */
+.btn-lock {
+    width: 100%;
+    background: #fff;
+    color: #b8860b;
+    border: 2px solid #f4c98a;
+    padding: .85rem 1rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .18s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    flex-wrap: wrap;
+    line-height: 1.35;
+}
+.btn-lock:hover:not(:disabled) {
+    background: #fffbf0;
+    border-color: #d68910;
+    color: #8a6308;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(214, 137, 16, .18);
+}
+.btn-lock:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.btn-lock i.fa-stopwatch { color: #d68910; font-size: 1.05rem; }
+.btn-lock small {
+    font-weight: 500;
+    font-size: .78rem;
+    color: #8a6d3b;
+    letter-spacing: .1px;
+}
+
+/* Helper text under the lock button — explains how the deduction
+   works on conversion and why the fee is non-refundable. Same
+   typographic key as the cancellation-policy block below. */
+.lock-help {
+    display: block;
+    margin: .55rem .15rem 1rem;
+    font-size: .78rem;
+    line-height: 1.5;
+    color: #5a6877;
+    background: #fffbf0;
+    border-left: 3px solid #f4c98a;
+    border-radius: 6px;
+    padding: .6rem .8rem;
+}
+.lock-help i.fa-info-circle { color: #d68910; margin-right: .25rem; }
+
+/* Active-lock banner — shown above the advance/balance split when
+   the customer already has a paid, unexpired lock against the cart's
+   package. Uses the same amber palette as the lock button so the
+   relationship is immediately obvious. The "Cancel lock" link sits
+   at the bottom right (small, low-contrast) — destructive but rare. */
+.active-lock-banner {
+    position: relative;
+    background: linear-gradient(135deg, #fff8e7 0%, #fffbf0 100%);
+    border: 1px solid #f4c98a;
+    border-left: 4px solid #d68910;
+    border-radius: 8px;
+    padding: .85rem 1rem .75rem;
+    margin: .9rem 0;
+    color: #5a4413;
+    font-size: .9rem;
+    line-height: 1.55;
+}
+.active-lock-head {
+    font-weight: 700;
+    font-size: .82rem;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    color: #8a6308;
+    margin-bottom: .35rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+.active-lock-head i.fa-stopwatch { color: #d68910; }
+.active-lock-body strong { color: #0a5a68; font-weight: 700; }
+.active-lock-expiry {
+    margin-top: .25rem;
+    font-size: .82rem;
+    color: #6b5320;
+}
+.active-lock-expiry i.fa-clock { color: #d68910; margin-right: .2rem; }
+.active-lock-cancel {
+    display: inline-block;
+    margin-top: .5rem;
+    font-size: .76rem;
+    color: #a04000;
+    text-decoration: underline;
+    opacity: .7;
+}
+.active-lock-cancel:hover { opacity: 1; color: #c0392b; }
+
+@media (max-width: 600px) {
+    .btn-lock { font-size: .92rem; padding: .75rem .8rem; }
+    .btn-lock small { display: block; width: 100%; margin-top: .15rem; }
+    .lock-divider { margin: .9rem 0 .5rem; }
+    .active-lock-banner { padding: .75rem .9rem .65rem; font-size: .85rem; }
+}

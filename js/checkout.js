@@ -146,8 +146,16 @@
         { id: 'seawalk',     name: 'Sea Walk',           price: 2500 }
     ];
 
-    var state = { cart: null, coupon: null, customerDiscount: 0, customerName: '' };
+    var state = { cart: null, coupon: null, customerDiscount: 0, customerName: '', activeLock: null };
     var R = '\u20B9';
+
+    // ── Price-Lock constants ────────────────────────────────────────
+    // ₹500 per head, 10-day validity. The fee is non-refundable; if the
+    // customer converts the lock to a booking within the window, the
+    // fee is deducted from the advance. After 10 days the lock expires
+    // and the fee is forfeited. See LocksStore in js/dataStore.js.
+    var LOCK_PRICE_PER_HEAD = (window.LocksStore && window.LocksStore.PRICE_PER_HEAD) || 500;
+    var LOCK_VALIDITY_MS    = (window.LocksStore && window.LocksStore.VALIDITY_MS)    || (10 * 24 * 60 * 60 * 1000);
 
     // ── Firebase auth ──
     window.__authInstance = null;
@@ -271,9 +279,24 @@
         if (perHead <= 0) return 0;
         // Cap at the actual total — guards against a tiny test cart where
         // headcount × per-head would exceed the trip cost.
-        return Math.min(calcTotal(), Math.max(1, perHead * headCount()));
+        var raw = Math.min(calcTotal(), Math.max(1, perHead * headCount()));
+        // If an active price-lock is in effect, deduct the lock fee
+        // already paid (₹500/head × heads at lock time) from what we
+        // charge now. The lock fee is non-refundable so it always
+        // counts against the advance regardless of headcount changes.
+        if (state.activeLock) {
+            var locked = Number(state.activeLock.totalPaid || 0);
+            if (locked > 0) raw = Math.max(0, raw - locked);
+        }
+        return raw;
     }
     function calcBalance() { return Math.max(0, calcTotal() - calcAdvance()); }
+
+    // Lock fee already paid against the current cart's package — used
+    // by the Razorpay description and the "you save ₹X" banner.
+    function lockCreditApplied() {
+        return state.activeLock ? Number(state.activeLock.totalPaid || 0) : 0;
+    }
 
     // ── HTML builder ──
     function esc(s) {
@@ -436,6 +459,35 @@
             '<div class="row"><span>GST (5%)</span><span>' + R + fmt(gst) + '</span></div>' +
             '<div class="row total"><span>Total Trip Cost</span><span class="val">' + R + fmt(total) + '</span></div>' +
 
+            // ── Active price-lock banner ──
+            // When the customer has a paid, unexpired price-lock against
+            // this package, surface it prominently — show how much credit
+            // they already have, when it expires, and a one-click "Use my
+            // lock" CTA that drives them straight into the discounted
+            // advance flow. Also include a small "Cancel lock" link
+            // (purely bookkeeping; the fee is non-refundable).
+            (state.activeLock
+                ? (function () {
+                      var l = state.activeLock;
+                      var paid = Number(l.totalPaid || 0);
+                      var expMs = Number(l.expiresAtMs || (l.expiresAt && l.expiresAt.toMillis ? l.expiresAt.toMillis() : 0));
+                      var msLeft = Math.max(0, expMs - Date.now());
+                      var daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+                      var expStr = expMs ? new Date(expMs).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+                      return '<div class="active-lock-banner">' +
+                          '<div class="active-lock-head"><i class="fas fa-stopwatch"></i> Price-Lock Active</div>' +
+                          '<div class="active-lock-body">' +
+                              '<div><strong>' + R + fmt(paid) + '</strong> already paid &middot; deducted from your advance.</div>' +
+                              '<div class="active-lock-expiry"><i class="fas fa-clock"></i> Valid until <strong>' + esc(expStr) + '</strong>' +
+                                  (daysLeft > 0 ? ' (' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left)' : ' (expires today)') +
+                              '</div>' +
+                              '<div class="active-lock-ref" style="font-size:.78rem;color:#5a6877;margin-top:.25rem;">Lock ref: ' + esc(l.lockRef || l.id || '') + '</div>' +
+                          '</div>' +
+                          '<a href="#" id="cancelActiveLockLink" class="active-lock-cancel">Cancel lock</a>' +
+                      '</div>';
+                  })()
+                : '') +
+
             // Advance / balance split — flat ₹6K / ₹11K per head, NOT a %.
             // When advance is 0 (admin-issued comp / 100 %-discount coupon) we
             // collapse the "Pay now" line and just promise full settlement
@@ -479,6 +531,28 @@
                         ? '<i class="fas fa-lock"></i> Pay ' + R + fmt(advance) + ' Advance &amp; Confirm'
                         : '<i class="fas fa-check-circle"></i> Confirm Booking &mdash; No Payment Now')) +
             '</button>' +
+
+            // ── Price-Lock alternative ─────────────────────────────
+            // Customers who aren't ready to commit to the full advance
+            // can pay ₹500/head NOW to lock today's price for 10 days.
+            // The fee is non-refundable; if they convert to a booking
+            // within the window, the ₹500/head is deducted from the
+            // advance. After 10 days the lock expires (fee forfeited).
+            // We hide this option for test packages, zero-advance carts,
+            // and when an active lock is already in effect (in which
+            // case the cart already shows the discounted advance).
+            (!isTest && advance > 0 && !state.activeLock
+                ? '<div class="lock-divider"><span>OR</span></div>' +
+                  '<button class="btn-lock" id="lockBtn" type="button" disabled>' +
+                      '<i class="fas fa-stopwatch"></i> Lock this price for 10 days &mdash; ' +
+                      R + fmt(LOCK_PRICE_PER_HEAD * people) +
+                      ' <small>(' + R + fmt(LOCK_PRICE_PER_HEAD) + ' &times; ' + people + ', non-refundable)</small>' +
+                  '</button>' +
+                  '<small class="lock-help"><i class="fas fa-info-circle"></i> Pay ' + R + fmt(LOCK_PRICE_PER_HEAD) + '/head now to freeze today&apos;s price for 10 days. ' +
+                      'Convert to a full booking within 10 days and the lock fee is deducted from the advance. ' +
+                      'After 10 days the lock expires and the fee is forfeited (non-refundable).</small>'
+                : '') +
+
             // Embedded Razorpay container — checkout renders inline here (no popup)
             '<div id="rzp-embed-container" class="rzp-embed-container" style="display:none;"></div>' +
             '<a href="/#packages" style="text-decoration:none;"><button class="btn-secondary" type="button"><i class="fas fa-arrow-left"></i> Continue Browsing</button></a>' +
@@ -553,15 +627,53 @@
         var pay = document.getElementById('payBtn');
         if (pay) pay.addEventListener('click', startPayment);
 
-        // T&C / Cancellation acceptance gate — toggle the Pay button's
-        // enabled state directly off the checkbox, so the user gets
-        // visual feedback the moment they tick it.
+        // Lock-this-price button — second checkout option.
+        var lockBtn = document.getElementById('lockBtn');
+        if (lockBtn) lockBtn.addEventListener('click', startLockPayment);
+
+        // T&C / Cancellation acceptance gate — toggle BOTH the Pay
+        // button's and the Lock-Price button's enabled state directly
+        // off the checkbox, so the user gets visual feedback the moment
+        // they tick it. Both options require the same acceptance.
         var tncBox = document.getElementById('tncAcceptBox');
-        if (tncBox && pay) {
+        if (tncBox) {
             tncBox.addEventListener('change', function () {
-                pay.disabled = !tncBox.checked;
+                if (pay)     pay.disabled     = !tncBox.checked;
+                if (lockBtn) lockBtn.disabled = !tncBox.checked;
             });
         }
+
+        // "Use my lock" — convert active price-lock into the full
+        // booking. Same flow as the regular Pay button, the advance
+        // calculation already knows about state.activeLock.
+        var useLockBtn = document.getElementById('useLockBtn');
+        if (useLockBtn) useLockBtn.addEventListener('click', startPayment);
+
+        // "Cancel lock" — flip the lock to status='cancelled'. The
+        // ₹500/head fee is non-refundable so this is just bookkeeping
+        // (it stops the lock showing up as "active" on the customer's
+        // /bookings page).
+        var cancelLockLink = document.getElementById('cancelActiveLockLink');
+        if (cancelLockLink) cancelLockLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            window.Toast.confirm(
+                'Cancel this price-lock? The ' + R + fmt(state.activeLock.totalPaid || 0) +
+                ' you paid is non-refundable and will be forfeited.',
+                { danger: true, yesLabel: 'Yes, cancel lock' }
+            ).then(function (yes) {
+                if (!yes) return;
+                if (!window.LocksStore || !window.LocksStore.cancelLock) return;
+                window.LocksStore.cancelLock(state.activeLock.lockRef || state.activeLock.id)
+                    .then(function () {
+                        window.Toast.info('Price-lock cancelled. The fee is forfeited.');
+                        state.activeLock = null;
+                        render();
+                    })
+                    .catch(function (err) {
+                        window.Toast.error(err && err.message || 'Could not cancel the lock.');
+                    });
+            });
+        });
 
         // Wire the T&C / Cancellation policy inline-modal links. We
         // intentionally use data-policy attributes (not target="_blank")
@@ -644,7 +756,24 @@
               '<li>Cancel <strong>20 days</strong> before travel → refund = ₹3,000 × 4 = <strong>₹12,000</strong>.</li>',
               '<li>Cancel <strong>5 days</strong> before travel → <strong>no refund</strong>; full ₹24,000 forfeited.</li>',
             '</ul></p>',
-            '<p><strong>Note:</strong> Non-refundable third-party charges (flight tickets, peak-season ferry bookings, hotel pre-payment penalties) are deducted in addition to the slabs above. Approved refunds are processed within 7–10 working days to the original payment method.</p>'
+            '<p><strong>Note:</strong> Non-refundable third-party charges (flight tickets, peak-season ferry bookings, hotel pre-payment penalties) are deducted in addition to the slabs above. Approved refunds are processed within 7–10 working days to the original payment method.</p>',
+
+            // ── Price-Lock terms (separate from booking advance) ──
+            // Customers who pay the ₹500/head price-lock fee are subject
+            // to a different (simpler) refund rule: the fee is always
+            // non-refundable. We surface that here so they don\'t click
+            // "I agree" thinking the standard booking-cancellation slabs
+            // also apply to the lock fee.
+            '<h4 style="margin-top:1.5rem;color:#0a5a68;"><i class="fas fa-stopwatch"></i> Price-Lock Fee — Special Rules</h4>',
+            '<p>If you choose to <strong>lock today\'s price for 10 days</strong> (₹500 per traveller fee) instead of paying the full booking advance:</p>',
+            '<ul>',
+              '<li>The lock fee is <strong>strictly non-refundable</strong>. It buys you 10 days of price protection — that protection has been delivered the moment you pay.</li>',
+              '<li>If you <strong>convert the lock into a confirmed booking within 10 days</strong>, the entire ₹500/head you paid is <strong>deducted from the booking advance</strong>. You only pay the difference.</li>',
+              '<li>If you <strong>do not book within 10 days</strong>, the lock automatically expires and the fee is forfeited. The price you locked is no longer guaranteed.</li>',
+              '<li>You may cancel an active price-lock at any time, but the fee is still <strong>not returned</strong>. Cancellation only stops the lock from showing as "active" in your account.</li>',
+              '<li>Locks are <strong>tied to the package and headcount</strong> at the time of payment. Changing the package or adding travellers may require a fresh lock.</li>',
+            '</ul>',
+            '<p style="background:#fff8e7;color:#8a6d3b;border-left:3px solid #f39c12;padding:.6rem .9rem;border-radius:6px;margin:.8rem 0 0;font-size:.88rem;line-height:1.5;"><strong>In short:</strong> Lock fee is non-refundable. Book within 10 days → it counts toward your advance. Don\'t book within 10 days → fee is lost.</p>'
         ].join('')
     };
 
@@ -944,6 +1073,224 @@
         rzp.open();
     }
 
+    // ── Price-Lock payment flow ──────────────────────────────────────
+    // Pay ₹500 / head NOW to freeze today's package price for 10 days.
+    // Mirrors startPayment() but charges only the lock fee, writes a
+    // /priceLocks/{lockRef} doc instead of /bookings/{bookingRef}, and
+    // shows a "lock confirmed" success screen with countdown CTA.
+    //
+    // The fee is non-refundable. If the customer converts the lock to
+    // a booking within the 10-day window, calcAdvance() automatically
+    // deducts the fee from the advance. After 10 days the lock expires
+    // and the fee is forfeited (status flips to 'expired' on next
+    // listMyLocks() call from /bookings).
+    function startLockPayment() {
+        if (!state.cart) return;
+
+        // Same gates as the regular pay flow — T&C, login, email
+        // verification, traveler details. Customers are committing
+        // real money for a real refund-eligible product.
+        var tncBox = document.getElementById('tncAcceptBox');
+        if (tncBox && !tncBox.checked) {
+            window.Toast.warning('Please accept the Terms & Conditions and Cancellation Policy to continue.', { duration: 5000 });
+            try { tncBox.focus({ preventScroll: false }); tncBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            return;
+        }
+        if (!isLoggedIn()) {
+            try { sessionStorage.setItem('postLoginIntent', JSON.stringify({ type: 'checkout', ts: Date.now() })); } catch (e) {}
+            window.Toast.info('Please log in to lock this price.', { duration: 3000 });
+            setTimeout(function () { window.location.href = '/#login'; }, 700);
+            return;
+        }
+        var u = window.__authInstance && window.__authInstance.currentUser;
+        var ADMIN_EMAILS = (Array.isArray(window.ADMIN_EMAILS) && window.ADMIN_EMAILS.length)
+            ? window.ADMIN_EMAILS.map(function (e) { return String(e).toLowerCase(); })
+            : [];
+        var isAdmin = u && u.email && ADMIN_EMAILS.indexOf(String(u.email).toLowerCase()) >= 0;
+        if (u && !u.emailVerified && !isAdmin) {
+            window.Toast.warning(
+                'Please verify your email before locking a price. Check ' + u.email + ' for the link.',
+                { duration: 8000 }
+            );
+            return;
+        }
+        var errs = validate();
+        if (errs.length) { window.Toast.warning(errs.join('\n')); return; }
+
+        var people  = headCount();
+        var lockFee = LOCK_PRICE_PER_HEAD * people;
+        var lockRef = 'BTL' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(2, 4).toUpperCase();
+        var name    = document.getElementById('travelerName').value.trim();
+        var email   = document.getElementById('travelerEmail').value.trim();
+        var phone   = document.getElementById('travelerPhone').value.trim();
+        var date    = (document.getElementById('travelerDate') || {}).value || '';
+        var notes   = (document.getElementById('travelerNotes') || {}).value || '';
+
+        if (typeof Razorpay === 'undefined') {
+            window.Toast.error('Payment gateway not loaded. Please refresh.');
+            return;
+        }
+
+        var lockBtn = document.getElementById('lockBtn');
+        var lockBtnLabel = '<i class="fas fa-stopwatch"></i> Lock this price for 10 days &mdash; ' +
+            R + fmt(lockFee) + ' <small>(' + R + fmt(LOCK_PRICE_PER_HEAD) + ' &times; ' + people + ', non-refundable)</small>';
+        if (lockBtn) {
+            lockBtn.disabled = true;
+            lockBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening payment...';
+        }
+
+        var embedHost = document.getElementById('rzp-embed-container');
+        if (embedHost) {
+            embedHost.innerHTML = '<div class="rzp-embed-loading"><i class="fas fa-spinner fa-spin"></i> Loading secure payment form…</div>';
+            embedHost.style.display = 'block';
+            try { embedHost.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        }
+
+        var rzpOptions = {
+            key:      RAZORPAY_KEY,
+            amount:   lockFee * 100,
+            currency: 'INR',
+            name:     'Bharat Transport & Tourism',
+            description: 'Price-lock fee (' + R + fmt(LOCK_PRICE_PER_HEAD) + '/head x ' + people +
+                         ') for ' + state.cart.name + ' — 10-day validity (Ref ' + lockRef + ')',
+            image:    'https://andamanvoyages.in/images/logo.png',
+            prefill:  { name: name, email: email, contact: phone },
+            notes: {
+                lock_ref:       lockRef,
+                package:        state.cart.pkgId,
+                adults:         String(state.cart.adults),
+                children:       String(state.cart.children),
+                travel_date:    date,
+                payment_type:   'price_lock',
+                lock_validity:  '10_days',
+                fee_per_head:   String(LOCK_PRICE_PER_HEAD),
+                total_lock_fee: String(lockFee),
+                non_refundable: 'true'
+            },
+            theme: { color: '#0d7a8a' },
+            handler: function (response) {
+                onLockPaymentSuccess(response, lockRef, lockFee, people, name, email, phone, date, notes);
+            },
+            modal: {
+                ondismiss: function () {
+                    if (lockBtn) { lockBtn.disabled = false; lockBtn.innerHTML = lockBtnLabel; }
+                    if (embedHost) { embedHost.style.display = 'none'; embedHost.innerHTML = ''; }
+                    window.Toast.info('Lock payment cancelled.');
+                }
+            }
+        };
+        if (embedHost) rzpOptions.parent_id = 'rzp-embed-container';
+
+        var rzp = new Razorpay(rzpOptions);
+        rzp.on('payment.failed', function (r) {
+            if (lockBtn) { lockBtn.disabled = false; lockBtn.innerHTML = lockBtnLabel; }
+            if (embedHost) { embedHost.style.display = 'none'; embedHost.innerHTML = ''; }
+            window.Toast.error('Lock payment failed: ' + ((r && r.error && r.error.description) || 'Unknown error'), { duration: 8000 });
+        });
+        rzp.open();
+    }
+
+    // Successful price-lock charge → write the lock doc and show
+    // confirmation screen. We deliberately DO NOT clear the cart —
+    // the customer still has 10 days to come back and convert it.
+    function onLockPaymentSuccess(response, lockRef, lockFee, people, name, email, phone, date, notes) {
+        var paymentId = (response && response.razorpay_payment_id) || ('LOCK-' + lockRef);
+        var pkg = state.cart || {};
+
+        var savePromise = Promise.resolve(null);
+        if (window.LocksStore && window.LocksStore.createLock) {
+            savePromise = window.LocksStore.createLock({
+                bookingRef:    lockRef,
+                packageId:     pkg.pkgId,
+                packageName:   pkg.name,
+                packagePrice:  pkg.price,
+                people:        people,
+                pricePerHead:  LOCK_PRICE_PER_HEAD,
+                totalPaid:     lockFee,
+                paymentId:     paymentId,
+                travelerName:  name,
+                travelerEmail: email,
+                travelerPhone: phone
+            }).catch(function (err) {
+                console.warn('[checkout] LocksStore.createLock failed:', err);
+                window.Toast.error('We received your payment but could not save the lock. Please contact support with payment id ' + paymentId + '.', { duration: 12000 });
+                return null;
+            });
+        }
+
+        savePromise.then(function (saved) {
+            // Stash the active lock on state so the next render() picks
+            // it up (and shows the discounted advance immediately).
+            if (saved) {
+                state.activeLock = Object.assign({
+                    id: saved.id || lockRef,
+                    lockRef: lockRef,
+                    expiresAtMs: Date.now() + LOCK_VALIDITY_MS
+                }, saved);
+            } else {
+                // Fallback object so the UI still reflects the paid lock
+                // even if the Firestore write is still pending.
+                state.activeLock = {
+                    id: lockRef,
+                    lockRef: lockRef,
+                    packageId: pkg.pkgId,
+                    packageName: pkg.name,
+                    people: people,
+                    pricePerHead: LOCK_PRICE_PER_HEAD,
+                    totalPaid: lockFee,
+                    paymentId: paymentId,
+                    expiresAtMs: Date.now() + LOCK_VALIDITY_MS,
+                    status: 'active'
+                };
+            }
+            renderLockSuccess(lockRef, paymentId, lockFee, people, email);
+        });
+    }
+
+    // Confirmation screen for a successful price-lock. Mirrors
+    // renderSuccess() but with lock-specific copy + a clear "what
+    // happens next" note.
+    function renderLockSuccess(lockRef, paymentId, lockFee, people, email) {
+        var wrap = document.getElementById('checkoutWrap');
+        if (!wrap) return;
+        var expMs = Date.now() + LOCK_VALIDITY_MS;
+        var expStr = new Date(expMs).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // Step bar — we DON'T move to "Confirmation" because the
+        // booking isn't confirmed yet. Just keep the user on step 3.
+        var steps = document.querySelectorAll('.co-step');
+        steps.forEach(function (st, i) { st.classList.remove('active'); if (i < 3) st.classList.add('done'); });
+        if (steps[2]) { steps[2].classList.add('active'); steps[2].classList.remove('done'); }
+
+        wrap.innerHTML =
+            '<div class="co-card" style="grid-column:1/-1;text-align:center;padding:3rem 1.5rem;">' +
+                '<div style="width:80px;height:80px;border-radius:50%;background:#fff4dd;color:#d68910;display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:1rem;"><i class="fas fa-stopwatch"></i></div>' +
+                '<h2 style="color:#0a5a68;margin:0 0 .5rem;font-size:1.6rem;">Price Locked!</h2>' +
+                '<p style="color:#5a6877;margin:0 0 1.5rem;font-size:1rem;max-width:580px;margin-left:auto;margin-right:auto;">Today\'s price is frozen for 10 days. Come back anytime before <strong>' + esc(expStr) + '</strong> to complete your booking — the ' + R + fmt(lockFee) + ' you just paid will be deducted from the advance. We\'ve emailed your lock receipt to <strong>' + esc(email) + '</strong>.</p>' +
+                '<div style="display:inline-block;background:#f8fafb;padding:1.1rem 1.5rem;border-radius:10px;text-align:left;font-size:.92rem;color:#2c3e50;border:1px dashed #cfd9df;">' +
+                    '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">Lock Reference:</span> <strong>' + esc(lockRef) + '</strong></div>' +
+                    '<div style="margin-bottom:.45rem;"><span style="color:#7f8c8d;">Payment ID:</span> <strong>' + esc(paymentId) + '</strong></div>' +
+                    '<hr style="border:none;border-top:1px dashed #cfd9df;margin:.6rem 0;">' +
+                    '<div style="margin-bottom:.4rem;"><span style="color:#7f8c8d;">Lock Fee Paid:</span> <strong>' + R + fmt(lockFee) + '</strong> <small style="color:#7a8b96;">(' + R + fmt(LOCK_PRICE_PER_HEAD) + ' × ' + people + ' travellers)</small></div>' +
+                    '<div style="margin-bottom:.4rem;color:#0a5a68;"><span><i class="fas fa-clock"></i> Valid Until:</span> <strong>' + esc(expStr) + '</strong> <small style="color:#7a8b96;">(10 days)</small></div>' +
+                '</div>' +
+
+                '<div style="background:#fff8e7;color:#8a6d3b;border-left:3px solid #f39c12;padding:.75rem 1rem;border-radius:6px;margin:1.25rem auto 0;max-width:560px;text-align:left;font-size:.9rem;line-height:1.55;">' +
+                    '<i class="fas fa-info-circle"></i> <strong>Important:</strong> The ' + R + fmt(lockFee) + ' lock fee is <strong>non-refundable</strong>. ' +
+                    'If you complete your booking within 10 days, this amount is deducted from the advance. ' +
+                    'After 10 days the lock expires and the fee is forfeited.' +
+                '</div>' +
+
+                '<div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">' +
+                    '<a href="/checkout" style="background:#0d7a8a;color:#fff;padding:.7rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;"><i class="fas fa-credit-card"></i> Complete Booking Now</a>' +
+                    '<a href="/bookings" style="background:#ecf0f1;color:#2c3e50;padding:.7rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;"><i class="fas fa-suitcase-rolling"></i> View My Locks</a>' +
+                '</div>' +
+                '<p style="color:#7f8c8d;font-size:.85rem;margin-top:1.5rem;">Need help? Call <a href="tel:+918880195191" style="color:#0d7a8a;font-weight:600;">+91 88801 95191</a> &middot; Quote lock ref <strong>' + esc(lockRef) + '</strong></p>' +
+            '</div>';
+
+        window.Toast.success('Price locked for 10 days! Lock ref: ' + lockRef, { duration: 8000 });
+    }
+
     function onPaymentSuccess(response, ref, total, advance, balance, name, email, phone, date, notes) {
         // Distinguish a zero-advance booking (synthetic FREE-* payment id —
         // no real Razorpay charge happened) so the dashboard reports show
@@ -1007,6 +1354,27 @@
                 window.BookingEmails.sendBookingConfirmation(booking);
             }
         } catch (e) { /* never block UX on email */ }
+
+        // If this booking consumed an active price-lock, flip it to
+        // status='used' so it stops appearing on /bookings as "active"
+        // and the audit trail shows which booking consumed it. We do
+        // this AFTER the booking record is safely written so a failed
+        // markLockUsed call never orphans the booking. Errors here are
+        // logged but never surfaced — the lock metadata is secondary
+        // to the actual booking.
+        if (state.activeLock) {
+            var lockToConsume = state.activeLock.lockRef || state.activeLock.id;
+            if (lockToConsume && window.LocksStore && window.LocksStore.markLockUsed) {
+                try {
+                    window.LocksStore.markLockUsed(lockToConsume, ref).catch(function (err) {
+                        console.warn('[checkout] markLockUsed failed (booking still confirmed):', err);
+                    });
+                } catch (err) {
+                    console.warn('[checkout] markLockUsed threw (booking still confirmed):', err);
+                }
+            }
+            state.activeLock = null;
+        }
 
         saved.then(function () {
             renderSuccess(ref, response.razorpay_payment_id, total, advance, balance, email);
@@ -1074,6 +1442,33 @@
     // which are obsolete under the new policy. We keep an empty stub so the
     // existing init code below can still call it without breaking.
     function resolveAdvanceRate() { return Promise.resolve(); }
+
+    // On page load (and after auth state changes), check whether the
+    // logged-in user has an active price-lock against the cart's package.
+    // If yes, stash it on state.activeLock so calcAdvance() / summaryCard()
+    // immediately reflect the credit. Falls back silently on any error —
+    // the customer can always pay the full advance instead.
+    function resolveActiveLock() {
+        return new Promise(function (resolve) {
+            try {
+                if (!state.cart || !state.cart.pkgId) { state.activeLock = null; return resolve(); }
+                if (!window.LocksStore || !window.LocksStore.getActiveLock) {
+                    state.activeLock = null;
+                    return resolve();
+                }
+                window.LocksStore.getActiveLock(state.cart.pkgId).then(function (lock) {
+                    state.activeLock = lock || null;
+                    resolve();
+                }).catch(function () {
+                    state.activeLock = null;
+                    resolve();
+                });
+            } catch (_) {
+                state.activeLock = null;
+                resolve();
+            }
+        });
+    }
 
     // Pull the logged-in customer's admin-configured discount % (if any)
     // from their Firestore user doc and stash it on `state` so calcDiscount()
@@ -1152,13 +1547,16 @@
         // Resolve the logged-in customer's admin-set discount % (if any)
         // and any legacy advance-rate override, then re-render so the
         // order summary shows the discount line and the lower total.
-        Promise.all([resolveAdvanceRate(), resolveCustomerDiscount()]).then(function () { render(); });
+        Promise.all([resolveAdvanceRate(), resolveCustomerDiscount(), resolveActiveLock()]).then(function () { render(); });
         if (window.__firebaseReady && window.__firebaseReady.then) {
             window.__firebaseReady.then(function (fb) {
                 if (fb.firebaseAuth && fb.firebaseAuth.onAuthStateChanged) {
                     fb.firebaseAuth.onAuthStateChanged(fb.auth, function () {
-                        // Re-fetch user-specific override + discount and re-render
-                        Promise.all([resolveAdvanceRate(), resolveCustomerDiscount()])
+                        // Re-fetch user-specific override + discount + active
+                        // price-lock for this package, then re-render. The
+                        // active-lock query is per-user, so we have to wait
+                        // until auth resolves before we can ask Firestore.
+                        Promise.all([resolveAdvanceRate(), resolveCustomerDiscount(), resolveActiveLock()])
                             .then(function () { render(); });
                     });
                 }

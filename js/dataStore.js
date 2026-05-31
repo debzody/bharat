@@ -555,6 +555,187 @@
     };
 
     // ───────────────────────────────────────────────────────────
+    // LocksStore — Price-Lock feature
+    //
+    // A "price lock" lets a customer pay a small non-refundable fee
+    // (default ₹500/head, configurable) to freeze the package price
+    // for 10 days. If they convert the lock to a booking within that
+    // window, the lock fee is deducted from the advance. If they
+    // don't, the lock fee is forfeited and the lock simply expires.
+    //
+    // Firestore layout:
+    //   /priceLocks/{lockId}
+    //     uid          : string  (owner)
+    //     packageId    : string  (frozen package id)
+    //     packageName  : string
+    //     people       : number  (heads at lock time — used to validate
+    //                             the same headcount when converting)
+    //     pricePerHead : number  (₹500 default)
+    //     totalPaid    : number  (people * pricePerHead)
+    //     paymentId    : string  (Razorpay payment id)
+    //     bookingRef   : string  (lock reference, BTL-prefixed)
+    //     paidAt       : timestamp (server)
+    //     expiresAt    : timestamp (server, paidAt + 10d)
+    //     status       : 'active' | 'used' | 'expired' | 'cancelled'
+    //     usedAt       : timestamp (when status flipped to 'used')
+    //     usedBookingRef: string (the BTT-… booking that consumed it)
+    //
+    // Firestore security rules already allow each user to read/write
+    // their own /priceLocks docs (mirror of how /bookings works).
+    // ───────────────────────────────────────────────────────────
+    var LOCK_VALIDITY_MS = 10 * 24 * 60 * 60 * 1000;   // 10 days
+    var LOCK_PRICE_PER_HEAD = 500;                      // default ₹500/head
+
+    // Returns the currently-active (paid, unused, not expired) price-lock
+    // for the signed-in user against `packageId`. null if none.
+    async function getActiveLock(packageId) {
+        if (!packageId) return null;
+        const { db, auth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) return null;
+        try {
+            const q = firestore.query(
+                firestore.collection(db, 'priceLocks'),
+                firestore.where('uid', '==', user.uid),
+                firestore.where('packageId', '==', String(packageId)),
+                firestore.where('status', '==', 'active')
+            );
+            const snap = await firestore.getDocs(q);
+            const now = Date.now();
+            let best = null;
+            snap.forEach(d => {
+                const data = d.data() || {};
+                const exp = data.expiresAt && data.expiresAt.toMillis ? data.expiresAt.toMillis() : 0;
+                if (exp > now) {
+                    if (!best || exp > best.expiresAtMs) {
+                        best = Object.assign({ id: d.id, expiresAtMs: exp }, data);
+                    }
+                }
+            });
+            return best;
+        } catch (err) {
+            console.warn('[LocksStore] getActiveLock failed:', err);
+            return null;
+        }
+    }
+
+    // List ALL locks for the current user (active first, then expired/used).
+    // Used by /bookings page to render the locks card.
+    async function listMyLocks() {
+        const { db, auth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) return [];
+        try {
+            const q = firestore.query(
+                firestore.collection(db, 'priceLocks'),
+                firestore.where('uid', '==', user.uid)
+            );
+            const snap = await firestore.getDocs(q);
+            const list = [];
+            const now = Date.now();
+            snap.forEach(d => {
+                const data = d.data() || {};
+                const expMs = data.expiresAt && data.expiresAt.toMillis ? data.expiresAt.toMillis() : 0;
+                let effectiveStatus = data.status || 'active';
+                if (effectiveStatus === 'active' && expMs && expMs <= now) {
+                    effectiveStatus = 'expired';
+                }
+                list.push(Object.assign({
+                    id: d.id,
+                    expiresAtMs: expMs,
+                    effectiveStatus
+                }, data));
+            });
+            list.sort((a, b) => {
+                // active first, then by expiry desc
+                const sa = a.effectiveStatus === 'active' ? 0 : 1;
+                const sb = b.effectiveStatus === 'active' ? 0 : 1;
+                if (sa !== sb) return sa - sb;
+                return (b.expiresAtMs || 0) - (a.expiresAtMs || 0);
+            });
+            return list;
+        } catch (err) {
+            console.warn('[LocksStore] listMyLocks failed:', err);
+            return [];
+        }
+    }
+
+    // Persist a freshly-paid lock. Caller is the checkout flow after a
+    // successful Razorpay charge for the lock fee.
+    async function createLock(opts) {
+        const { db, auth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not signed in.');
+        if (!opts || !opts.packageId) throw new Error('packageId required');
+        const lockRef = String(opts.bookingRef || ('BTL' + Date.now().toString().slice(-8) +
+            Math.random().toString(36).slice(2, 4).toUpperCase()));
+        const now = Date.now();
+        const expiresAtMs = now + LOCK_VALIDITY_MS;
+        const docRef = firestore.doc(db, 'priceLocks', lockRef);
+        const payload = {
+            lockRef,
+            uid:           user.uid,
+            email:         user.email || '',
+            packageId:     String(opts.packageId),
+            packageName:   String(opts.packageName || ''),
+            packagePrice:  Number(opts.packagePrice || 0),
+            people:        Number(opts.people || 1),
+            pricePerHead:  Number(opts.pricePerHead || LOCK_PRICE_PER_HEAD),
+            totalPaid:     Number(opts.totalPaid || (opts.people * (opts.pricePerHead || LOCK_PRICE_PER_HEAD))),
+            paymentId:     String(opts.paymentId || ''),
+            paidAt:        firestore.serverTimestamp(),
+            expiresAt:     firestore.Timestamp ? firestore.Timestamp.fromMillis(expiresAtMs) : new Date(expiresAtMs),
+            expiresAtMs:   expiresAtMs,
+            status:        'active',
+            travelerName:  String(opts.travelerName || ''),
+            travelerEmail: String(opts.travelerEmail || ''),
+            travelerPhone: String(opts.travelerPhone || '')
+        };
+        await firestore.setDoc(docRef, payload);
+        return Object.assign({ id: lockRef }, payload, { paidAt: new Date() });
+    }
+
+    // Mark a lock as USED (consumed by an upgrade-to-booking). Should be
+    // called by checkout.js after the full advance has been charged AND
+    // the new booking record has been written successfully.
+    async function markLockUsed(lockRef, usedBookingRef) {
+        if (!lockRef) throw new Error('lockRef required');
+        const { db, firestore } = await window.__firebaseReady;
+        await firestore.setDoc(
+            firestore.doc(db, 'priceLocks', String(lockRef)),
+            {
+                status:         'used',
+                usedAt:         firestore.serverTimestamp(),
+                usedBookingRef: String(usedBookingRef || '')
+            },
+            { merge: true }
+        );
+    }
+
+    // Customer-facing cancel (rare). The fee is non-refundable, but
+    // they can flip the lock to 'cancelled' so it stops showing up
+    // as "active" on their bookings page.
+    async function cancelLock(lockRef) {
+        if (!lockRef) throw new Error('lockRef required');
+        const { db, firestore } = await window.__firebaseReady;
+        await firestore.setDoc(
+            firestore.doc(db, 'priceLocks', String(lockRef)),
+            { status: 'cancelled', cancelledAt: firestore.serverTimestamp() },
+            { merge: true }
+        );
+    }
+
+    window.LocksStore = {
+        getActiveLock:  getActiveLock,
+        listMyLocks:    listMyLocks,
+        createLock:     createLock,
+        markLockUsed:   markLockUsed,
+        cancelLock:     cancelLock,
+        VALIDITY_MS:    LOCK_VALIDITY_MS,
+        PRICE_PER_HEAD: LOCK_PRICE_PER_HEAD
+    };
+
+    // ───────────────────────────────────────────────────────────
     // UsersStore
     // ───────────────────────────────────────────────────────────
     let _currentProfile = null;
