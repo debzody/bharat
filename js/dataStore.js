@@ -1280,6 +1280,39 @@
         return url;
     }
 
+    // ── Cloudinary transformation helper ──────────────────────
+    // Cloudinary URLs look like:
+    //   https://res.cloudinary.com/<cloud>/image/upload/<public_id>.<fmt>
+    // …or with a version segment:
+    //   https://res.cloudinary.com/<cloud>/image/upload/v1234/<public_id>.<fmt>
+    //
+    // We can inject transformation flags between `/upload/` and the
+    // version/public_id to get Cloudinary to deliver an optimized,
+    // resized variant — e.g. `w_120,h_120,c_fill,f_auto,q_auto` returns
+    // a 120×120 px center-cropped image in the best modern format
+    // (AVIF/WebP for browsers that support it, JPEG fallback otherwise),
+    // typically ~5-15 KB instead of the 1-6 MB original.
+    //
+    // This is critical for performance: the topbar avatar appears on
+    // every page, and serving a 4 MB original instead of an 8 KB
+    // thumbnail makes pages feel slow + burns Cloudinary bandwidth.
+    //
+    // Returns the original URL unchanged for non-Cloudinary or
+    // already-transformed URLs (we detect "/upload/<flags>/" with at
+    // least one comma-separated flag and skip).
+    function cdnAvatarUrl(url, sizePx) {
+        if (!url || typeof url !== 'string') return url;
+        if (!/^https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(url)) return url;
+        // Already has transformation flags? Skip (avoid double-applying).
+        if (/\/upload\/[^/]*[a-z]_[^,/]+(?:,[^/]+)*\//.test(url)) return url;
+        const px = Math.max(48, Math.min(2048, Math.round(sizePx || 120)));
+        const flags = 'w_' + px + ',h_' + px + ',c_fill,g_face,f_auto,q_auto';
+        return url.replace(/\/upload\//, '/upload/' + flags + '/');
+    }
+    // Expose globally so user-menu / account / bookings can call it
+    // without importing UsersStore.
+    window.cdnAvatarUrl = cdnAvatarUrl;
+
     // ── Preset avatars ─────────────────────────────────────────
     // Static set of pre-rendered illustration avatars shipped under
     // /images/avatars/ that customers can pick instead of uploading
