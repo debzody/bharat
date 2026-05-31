@@ -106,7 +106,17 @@
             // shows when the customer has actively chosen something.
             const ownPhoto = profile && profile.photoURL;
             const defAvatar = (window.UsersStore && window.UsersStore.DEFAULT_AVATAR_URL) || '';
-            const photo    = ownPhoto || defAvatar;
+            const rawPhoto = ownPhoto || defAvatar;
+            // Always serve a small optimised thumbnail when the source
+            // is a Cloudinary asset — the avatar tile is rendered at
+            // ~140px and the originals can be 1-6 MB, which makes the
+            // profile page feel "stuck on the old picture" after an
+            // upload (the new img element is in the DOM, but the
+            // browser is still downloading megabytes). cdnAvatarUrl()
+            // is a no-op for non-Cloudinary URLs (preset PNGs, etc.).
+            const photo = (rawPhoto && typeof window.cdnAvatarUrl === 'function')
+                ? window.cdnAvatarUrl(rawPhoto, 280)   // 2x for retina
+                : rawPhoto;
             const hasOwnPhoto = !!ownPhoto;
             if (photo) {
                 // Render as <img> while keeping the same circular box.
@@ -125,6 +135,8 @@
                     avatarEl.textContent = '';
                     img = document.createElement('img');
                     img.alt = 'Profile picture';
+                    img.decoding = 'async';
+                    img.referrerPolicy = 'no-referrer';
                     avatarEl.appendChild(img);
                 }
                 if (img.dataset.profLastSrc !== photo) {
@@ -172,11 +184,18 @@
             host.dataset.sig = sig;
 
             host.innerHTML = recent.map(function (url) {
+                // Tile is rendered tiny (~64-80px). Serve a small
+                // Cloudinary thumbnail (no-op for non-Cloudinary URLs)
+                // so the recent strip doesn't drag in 1-6 MB originals.
+                const thumb = (typeof window.cdnAvatarUrl === 'function')
+                    ? window.cdnAvatarUrl(url, 160)
+                    : url;
                 const escUrl = String(url).replace(/"/g, '&quot;');
+                const escThumb = String(thumb).replace(/"/g, '&quot;');
                 return '<button type="button" class="profile-preset-tile profile-preset-tile-recent" ' +
                        'data-recent-url="' + escUrl + '" ' +
                        'title="Use this photo again">' +
-                       '<img src="' + escUrl + '" alt="Previously uploaded photo" draggable="false">' +
+                       '<img src="' + escThumb + '" alt="Previously uploaded photo" draggable="false" decoding="async" loading="lazy">' +
                        '<span class="profile-preset-badge profile-preset-badge-recent">Recent</span>' +
                        '</button>';
             }).join('');
@@ -224,7 +243,7 @@
                        (isDefault ? ' is-default' : '') +
                        '" data-preset-url="' + escUrl + '" ' +
                        'title="' + (isDefault ? 'Use the default anonymous avatar' : 'Use this avatar') + '">' +
-                       '<img src="' + escUrl + '" alt="Avatar option" draggable="false">' +
+                       '<img src="' + escUrl + '" alt="Avatar option" draggable="false" decoding="async" loading="lazy">' +
                        (isDefault
                             ? '<span class="profile-preset-badge">Default</span>'
                             : '') +
@@ -314,13 +333,23 @@
                 setUploading(true);
                 setStatus(avatarStatus, '', 'Uploading…');
                 try {
-                    await window.UsersStore.uploadProfilePicture(file, (pct) => {
+                    const newUrl = await window.UsersStore.uploadProfilePicture(file, (pct) => {
                         setStatus(avatarStatus, '', 'Uploading… ' + pct.toFixed(0) + '%');
                     });
+                    // Force an immediate re-render with the freshly cached
+                    // profile so the new picture appears the moment the
+                    // upload completes — without relying on the
+                    // onAuthStateChanged callback to fire (which can be
+                    // delayed and, more importantly, races the
+                    // firebaseAuth.updateProfile call inside
+                    // uploadProfilePicture and could re-render with stale
+                    // Firestore data).
+                    try {
+                        const cu = window.UsersStore.getCurrentUser();
+                        if (cu) renderUser(cu);
+                    } catch (_) {}
                     setStatus(avatarStatus, 'ok', '✓ Photo updated.');
                     toast.ok('Profile picture updated');
-                    // The auth-change listener below will call renderUser()
-                    // with the new photoURL, so we don't need to render here.
                 } catch (err) {
                     console.error('[avatar-upload] failed:', err);
                     setStatus(avatarStatus, 'err', err.message || 'Upload failed');
