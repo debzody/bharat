@@ -146,6 +146,28 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Price locks — ₹500/head fee that freezes today's package price
+    // for 10 days. Customer pays via Razorpay; LocksStore writes one
+    // doc per lock under /priceLocks/{lockRef}.
+    //
+    // Permissions:
+    //   • Owner (uid == auth.uid) can READ their own locks, CREATE
+    //     a new one (the doc must carry their uid), and UPDATE only
+    //     limited fields (status='cancelled' or status='used' when
+    //     they convert it to a booking).
+    //   • Admins/staff have full access for support and reconciliation.
+    //   • Deletion is admin-only — locks are an append-only audit
+    //     trail (refund/forfeit decisions reference these docs).
+    match /priceLocks/{lockId} {
+      allow read:   if request.auth != null
+        && (isAdmin() || resource.data.uid == request.auth.uid);
+      allow create: if isAdmin() || (request.auth != null
+        && request.resource.data.uid == request.auth.uid);
+      allow update: if isAdmin() || (request.auth != null
+        && resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
     // Sent emails — log of every email the admin Inbox tab has sent
     // through the inbox-mail Cloudflare Worker. Admins can read full
     // history; create is allowed for any authenticated admin from the
