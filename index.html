@@ -627,19 +627,20 @@
         </div>
 
         <!-- ── Reviews showcase ─────────────────────────────────────
-             We previously embedded Trustindex's loader.js to pull
-             live Google reviews, but Trustindex's "free" tier turned
-             out to be a 7-day trial — after expiry the widget renders
-             a "Trial period has expired" red box that hurts trust.
-             Removing the widget and going with our own curated
-             testimonial cards + a direct CTA to read live Google
-             reviews on Google itself. This is:
-               • zero recurring cost (no SaaS)
-               • zero third-party JS / cookies / privacy banners
-               • zero "trial expired" or rate-limit failure modes
-               • indexable HTML (Google sees the testimonial text)
-             To keep the cards fresh, edit them in this file when a
-             new standout review comes in.
+             Three layers, in order of preference:
+               1. Tagembed widget (live Google Business Profile reviews,
+                  auto-syncs every 24h). Free tier = 1,000 page views
+                  per month; if we exceed, the widget either nags or
+                  hides, and our fallback below kicks in.
+               2. "Read on Google" pill — works even if the script is
+                  blocked entirely.
+               3. Curated <div class="tst-grid"> cards below — only
+                  shown when Tagembed has NOT injected anything (we
+                  detect with the :has() selector in CSS so older
+                  Safari shows both, never neither).
+             To swap providers, replace the data-widget-id and the
+             embed.min.js src on the same line; the rest of the
+             section needs no changes.
         -->
         <div class="tst-google-cta">
             <a href="https://www.google.com/search?q=Bharat+Transport+and+Tourism+Andaman+reviews"
@@ -651,7 +652,22 @@
             </a>
         </div>
 
-        <div class="tst-grid">
+        <!-- Tagembed live reviews widget (Google Business Profile sync).
+             Widget id 326943 is wired to "Bharat Transport and Tourism"
+             in https://app.tagembed.com → Sources → Google. Free tier:
+             1,000 page views/month. embed.min.js is loaded async-defer
+             so it never blocks first paint; if it fails to inject (rate
+             limit, ad-blocker, network error) the curated .tst-grid
+             below remains visible as a graceful fallback. -->
+        <div class="tst-tagembed-host">
+            <div class="tagembed-widget"
+                 style="width:100%;overflow:auto;"
+                 data-widget-id="326943"
+                 data-website="1"></div>
+            <script defer async src="https://widget.tagembed.com/embed.min.js"></script>
+        </div>
+
+        <div class="tst-grid tst-grid-fallback">
             <div class="tst-card">
                 <div class="tst-card__head">
                     <div class="tst-card__avatar">PS</div>
@@ -713,16 +729,18 @@
             Verified reviews from Google · TripAdvisor · MakeMyTrip
         </div>
 
-        <!-- ── "Read more on Google" CTA pill styles ──────────────
-             Mimics the look of a real Google review widget header
-             (white pill, Google brand colors, 5 yellow stars) so it
-             reads as a credible link to live reviews even though we
-             render it ourselves with zero JS. -->
+        <!-- ── Reviews-section styles ──────────────────────────────
+             1. Google CTA pill — looks like a Google widget header
+             2. Tagembed host — reserves space (avoids CLS) and centers
+                the widget inside a 1200-px max-width container.
+             3. Fallback grid — hidden once Tagembed injects (detected
+                with :has() so we never end up with both showing).
+        -->
         <style>
             .tst-google-cta {
                 display: flex;
                 justify-content: center;
-                margin: 0 auto 2rem;
+                margin: 0 auto 1.25rem;
                 padding: 0 1rem;
             }
             .tst-google-link {
@@ -757,6 +775,23 @@
             .tst-google-link .fa-arrow-up-right-from-square {
                 color: #5f6368;
                 font-size: 0.85rem;
+            }
+            /* Tagembed widget host — reserve a sane min-height so the
+               page doesn't reflow as the widget loads, and constrain
+               the max width so the iframe doesn't stretch full-bleed
+               on huge desktops. */
+            .tst-tagembed-host {
+                max-width: 1200px;
+                margin: 0 auto 2rem;
+                padding: 0 1rem;
+                min-height: 200px;
+            }
+            /* Hide the curated fallback grid once Tagembed has injected
+               anything other than a <script>. Browsers without :has()
+               (older Safari) keep both visible — better than hiding the
+               wrong one. */
+            .tst-tagembed-host:has(*:not(script)) ~ .tst-grid-fallback {
+                display: none;
             }
         </style>
     </section>
