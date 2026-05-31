@@ -233,28 +233,41 @@
                 if (!el) return;
                 if (photo) {
                     el.classList.add('um-has-photo');
-                    el.textContent = '';
-                    // Reuse a single <img> to avoid layout thrash on repeat calls
+                    // Reuse a single <img> to avoid layout thrash on repeat
+                    // calls.
+                    //
+                    // ⚠️ DO NOT call `el.textContent = ''` here — that
+                    // detaches every child including any existing <img>,
+                    // which forces us to create a fresh <img> every call,
+                    // which forces the browser to re-fetch the avatar PNG
+                    // (the original 2,500-request bug). Instead, look up
+                    // an existing <img>: if one is there, just update its
+                    // src (or skip if URL unchanged); if not, sweep any
+                    // stray text node (the initials placeholder) and add
+                    // a new <img>.
                     let img = el.querySelector('img');
                     if (!img) {
+                        // First-paint or transitioned from initials view —
+                        // sweep any leftover text nodes (`?` placeholder /
+                        // initials), then add the <img>.
+                        while (el.firstChild) el.removeChild(el.firstChild);
                         img = document.createElement('img');
                         img.alt = 'Profile picture';
                         img.draggable = false;
                         el.appendChild(img);
                     }
                     // Compare against the URL we LAST set — never against
-                    // img.src (which is the resolved absolute form).
+                    // img.src (which is the resolved absolute form, so
+                    // a relative path would always look "different").
                     if (img.dataset.umLastSrc !== photo) {
                         img.src = photo;
                         img.dataset.umLastSrc = photo;
                     }
                 } else {
                     el.classList.remove('um-has-photo');
+                    // Switching from photo back to initials — wipe everything
+                    // (including any cached <img>) before laying down the text.
                     el.textContent = initials;
-                    // Drop any leftover <img> so the next call doesn't
-                    // see a stale dataset.umLastSrc and skip reload.
-                    const stale = el.querySelector('img');
-                    if (stale) stale.remove();
                 }
             };
             wrap.querySelectorAll('.um-initials').forEach(renderAvatarNode);
