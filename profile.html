@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" href="images/logo-white.png">
     <link rel="stylesheet" href="css/style.css?v=56">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/account.css?v=3">
+    <link rel="stylesheet" href="css/account.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -98,6 +98,27 @@
                                     JPG / PNG / WEBP — max 6 MB. Square images look best.
                                     Leave blank to use the default anonymous avatar.
                                 </small>
+
+                                <!-- ── Recent uploads (max 2) ──
+                                     The two most-recent uploads we
+                                     remembered for this user (kept in
+                                     /users/{uid}.uploadedAvatars by
+                                     UsersStore.uploadProfilePicture)
+                                     so they can switch back to a photo
+                                     they used previously without
+                                     re-uploading. Hidden entirely when
+                                     the customer has no past uploads.
+                                     Tiles rendered by
+                                     js/account.js → renderRecentUploads().  -->
+                                <div id="profAvatarRecentWrap" class="account-avatar-presets-wrap" style="display:none;">
+                                    <div class="account-avatar-presets-head">
+                                        <i class="fas fa-clock-rotate-left"></i>
+                                        <span>Your recent uploads</span>
+                                    </div>
+                                    <div id="profAvatarRecent" class="account-avatar-presets" aria-label="Recently uploaded photos">
+                                        <!-- Tiles injected by js/account.js -->
+                                    </div>
+                                </div>
 
                                 <!-- ── Preset avatar gallery ──
                                      Customers can pick one of the
@@ -224,10 +245,10 @@
         </section>
     </main>
 
-    <script src="js/dataStore.js?v=31"></script>
+    <script src="js/dataStore.js?v=32"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/script.js?v=30"></script>
-    <script src="js/account.js?v=2"></script>
+    <script src="js/account.js?v=3"></script>
     <script src="js/user-menu.js?v=12"></script>
     <script src="js/conversion-kit.js?v=1"></script>
     <script src="js/brevo.js?v=3" async></script>

@@ -433,3 +433,22 @@ html.theme-dark .theme-card.active{border-color:var(--teal);box-shadow:0 0 0 3px
     .profile-preset-tile { width: 52px; height: 52px; }
     .profile-preset-check { width: 18px; height: 18px; font-size: .58rem; }
 }
+
+/* ── Recent uploads — variant of preset tile ─────────────────────
+   Uses the same .profile-preset-tile geometry as the preset gallery
+   but tinted differently so customers immediately see "this is one
+   of MY past photos, not one of the site's stock avatars". The
+   "Recent" badge is amber instead of dark navy, and the tile gets
+   a soft amber ring on hover. */
+.profile-preset-tile-recent {
+    border-color: #f4c98a;
+    background: #fffbf0;
+}
+.profile-preset-tile-recent:hover {
+    border-color: #d68910;
+    box-shadow: 0 4px 14px rgba(214, 137, 16, .22);
+}
+.profile-preset-badge-recent {
+    background: #d68910 !important;
+    color: #fff !important;
+}

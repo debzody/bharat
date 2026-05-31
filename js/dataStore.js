@@ -772,7 +772,13 @@
             // photoURL is the Cloudinary-hosted profile picture URL set
             // by uploadProfilePicture() / cleared by removeProfilePicture().
             // Empty string means "use the default initials avatar".
-            photoURL: (extra && extra.photoURL) || authUser.photoURL || ''
+            photoURL: (extra && extra.photoURL) || authUser.photoURL || '',
+            // Recent-upload history (max 2). Used by the profile picker
+            // to let the user quickly switch back to a previously
+            // uploaded photo without re-uploading. See uploadProfilePicture().
+            uploadedAvatars: (extra && Array.isArray(extra.uploadedAvatars))
+                ? extra.uploadedAvatars.slice(0, 2)
+                : []
         };
     }
 
@@ -1166,22 +1172,112 @@
 
         const photoURL = result.secure_url;
 
-        // 2) Write to Firestore + Auth user
+        // 2) Maintain a small ring buffer of the user's last few uploads
+        //    so they can quickly switch back to a previously-used photo
+        //    without re-uploading. Max 2 entries (newest first); we trim
+        //    older ones automatically. The currently-active photoURL is
+        //    NOT stored here (that's already on the profile root), and
+        //    any entry that matches the new URL is de-duplicated to keep
+        //    the list tidy.
+        const prevUploads = (_currentProfile && Array.isArray(_currentProfile.uploadedAvatars))
+            ? _currentProfile.uploadedAvatars.slice() : [];
+        // Push the previously-active photoURL onto the history (so we
+        // can roll back to it later) — but ONLY if it was a real upload
+        // (a Cloudinary URL), not a preset path. Also de-dup.
+        const prevActive = (_currentProfile && _currentProfile.photoURL) || '';
+        const isCloudinary = (u) => /^https?:\/\/res\.cloudinary\.com\//i.test(String(u || ''));
+        let history = prevUploads.filter((u) => u !== photoURL);
+        if (prevActive && isCloudinary(prevActive) && prevActive !== photoURL && !history.includes(prevActive)) {
+            history.unshift(prevActive);
+        }
+        // Trim to MAX_UPLOADED_AVATARS most-recent. Keeping it small
+        // keeps Firestore writes light and the picker UI uncluttered.
+        const MAX_UPLOADED_AVATARS = 2;
+        if (history.length > MAX_UPLOADED_AVATARS) history = history.slice(0, MAX_UPLOADED_AVATARS);
+
+        // 3) Write to Firestore + Auth user
         await firestore.setDoc(
             firestore.doc(db, 'users', user.uid),
-            { photoURL, photoUpdatedAt: firestore.serverTimestamp() },
+            {
+                photoURL,
+                uploadedAvatars: history,
+                photoUpdatedAt: firestore.serverTimestamp()
+            },
             { merge: true }
         );
         try { await firebaseAuth.updateProfile(user, { photoURL }); } catch (_) {}
 
-        // 3) Update cache
+        // 4) Update cache
         if (_currentProfile) {
             _currentProfile.photoURL = photoURL;
+            _currentProfile.uploadedAvatars = history;
             cacheProfile(_currentProfile);
         }
         // Notify listeners so the topbar avatar refreshes everywhere
         fireAuthListeners(_currentProfile);
         return photoURL;
+    }
+
+    // ── Recent uploads ────────────────────────────────────────
+    // Returns the user's last N (default 2) Cloudinary-uploaded avatar
+    // URLs, newest first. The currently-active photoURL is excluded so
+    // the picker doesn't show "switch to the one you're already on".
+    function getRecentAvatarUploads() {
+        const cu = _currentProfile;
+        if (!cu) return [];
+        const list = Array.isArray(cu.uploadedAvatars) ? cu.uploadedAvatars.slice() : [];
+        const active = String(cu.photoURL || '');
+        return list.filter((u) => u && u !== active);
+    }
+
+    // Switch the active avatar to a previously-uploaded one (from the
+    // recent-uploads history). Same end state as uploadProfilePicture()
+    // — writes /users/{uid}.photoURL and refreshes listeners — but
+    // skips the Cloudinary upload because the asset is already hosted.
+    // Validates that the URL is in the user's own history so a tampered
+    // call cannot inject an arbitrary URL into the profile.
+    async function useRecentUpload(url) {
+        if (!url || typeof url !== 'string') {
+            throw new Error('A previously-uploaded avatar URL is required.');
+        }
+        const history = (_currentProfile && Array.isArray(_currentProfile.uploadedAvatars))
+            ? _currentProfile.uploadedAvatars : [];
+        if (history.indexOf(url) < 0) {
+            throw new Error('That avatar is not in your recent uploads.');
+        }
+        const { db, auth, firebaseAuth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not signed in.');
+
+        // Promote the chosen URL to "active" and re-shuffle history so
+        // the previously-active photo (if it's a Cloudinary upload)
+        // takes the top slot of history.
+        const prevActive = (_currentProfile && _currentProfile.photoURL) || '';
+        const isCloudinary = (u) => /^https?:\/\/res\.cloudinary\.com\//i.test(String(u || ''));
+        let nextHistory = history.filter((u) => u !== url);
+        if (prevActive && isCloudinary(prevActive) && prevActive !== url && !nextHistory.includes(prevActive)) {
+            nextHistory.unshift(prevActive);
+        }
+        const MAX_UPLOADED_AVATARS = 2;
+        if (nextHistory.length > MAX_UPLOADED_AVATARS) nextHistory = nextHistory.slice(0, MAX_UPLOADED_AVATARS);
+
+        await firestore.setDoc(
+            firestore.doc(db, 'users', user.uid),
+            {
+                photoURL: url,
+                uploadedAvatars: nextHistory,
+                photoUpdatedAt: firestore.serverTimestamp()
+            },
+            { merge: true }
+        );
+        try { await firebaseAuth.updateProfile(user, { photoURL: url }); } catch (_) {}
+        if (_currentProfile) {
+            _currentProfile.photoURL = url;
+            _currentProfile.uploadedAvatars = nextHistory;
+            cacheProfile(_currentProfile);
+        }
+        fireAuthListeners(_currentProfile);
+        return url;
     }
 
     // ── Preset avatars ─────────────────────────────────────────
@@ -1600,6 +1696,8 @@
         setProfilePictureFromPreset: setProfilePictureFromPreset,
         PRESET_AVATARS:           PRESET_AVATARS,
         DEFAULT_AVATAR_URL:       DEFAULT_AVATAR_URL,
+        getRecentAvatarUploads:   getRecentAvatarUploads,
+        useRecentUpload:          useRecentUpload,
         reauthenticate:           reauthenticate,
         changePassword:           changePassword,
         sendPasswordResetEmail:   sendPasswordResetEmail,
