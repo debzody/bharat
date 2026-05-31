@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" href="images/logo-white.png">
     <link rel="stylesheet" href="css/style.css?v=55">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/account.css?v=2">
+    <link rel="stylesheet" href="css/account.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -98,6 +98,27 @@
                                     JPG / PNG / WEBP — max 6 MB. Square images look best.
                                     Leave blank to use the default anonymous avatar.
                                 </small>
+
+                                <!-- ── Preset avatar gallery ──
+                                     Customers can pick one of the
+                                     pre-rendered avatars instead of
+                                     uploading their own photo. The
+                                     first tile (index 0) is the
+                                     anonymous-silhouette default and
+                                     gets a "Default" badge. Tiles are
+                                     rendered by js/account.js using the
+                                     UsersStore.PRESET_AVATARS list, so
+                                     adding a new avatar is a one-line
+                                     change in dataStore.js. -->
+                                <div class="account-avatar-presets-wrap">
+                                    <div class="account-avatar-presets-head">
+                                        <i class="fas fa-palette"></i>
+                                        <span>Or pick one of our avatars</span>
+                                    </div>
+                                    <div id="profAvatarPresets" class="account-avatar-presets" aria-label="Pre-set avatar options">
+                                        <!-- Tiles injected by js/account.js → renderPresetGallery() -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

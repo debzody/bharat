@@ -296,3 +296,140 @@ html.theme-dark .theme-card.active{border-color:var(--teal);box-shadow:0 0 0 3px
     .account-meta{justify-content:center}
     .setting-toggle-row{flex-direction:column;align-items:flex-start}
 }
+
+/* ── Preset avatar gallery ────────────────────────────────────────
+   Renders inside the account-summary card (right column on desktop,
+   beneath the "Change/Remove photo" links + caption). Each tile is
+   a circular thumbnail of a static avatar shipped under
+   /images/avatars/. The currently-selected avatar is highlighted
+   with a teal ring + a checkmark badge; the first tile (anonymous
+   silhouette) gets a tiny "Default" badge so customers know which
+   one is the fallback the rest of the site uses when their photoURL
+   is empty.
+   ─────────────────────────────────────────────────────────────── */
+
+.account-avatar-presets-wrap {
+    margin-top: .9rem;
+    padding-top: .85rem;
+    border-top: 1px dashed #d6dee5;
+}
+.account-avatar-presets-head {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #5a6877;
+    margin-bottom: .55rem;
+}
+.account-avatar-presets-head i {
+    color: #0d7a8a;
+    font-size: .9rem;
+}
+
+/* Grid of circular avatar thumbnails. Wraps onto multiple rows when
+   the column is narrow (e.g. mobile); on desktop ~7 fit per row. */
+.account-avatar-presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+    gap: .55rem;
+    align-items: start;
+}
+
+/* Each tile is a button so it's keyboard-accessible. The img inside
+   fills the circle; we use object-fit:cover to crop edge cases like
+   non-square assets gracefully. */
+.profile-preset-tile {
+    position: relative;
+    appearance: none;
+    border: 2px solid transparent;
+    background: #f4f7fa;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.profile-preset-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+}
+.profile-preset-tile:hover {
+    transform: translateY(-2px) scale(1.04);
+    border-color: #b6dde2;
+    box-shadow: 0 4px 14px rgba(13, 122, 138, .18);
+}
+.profile-preset-tile:focus-visible {
+    outline: none;
+    border-color: #0d7a8a;
+    box-shadow: 0 0 0 3px rgba(13, 122, 138, .25);
+}
+.profile-preset-tile:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Active = currently chosen avatar. Distinct teal ring + check icon
+   so the customer sees at a glance which one is "their" avatar. */
+.profile-preset-tile.is-active {
+    border-color: #0d7a8a;
+    box-shadow: 0 0 0 3px rgba(13, 122, 138, .18);
+}
+.profile-preset-check {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0d7a8a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .65rem;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+/* Default-avatar tile gets a small "Default" pill badge so customers
+   always know which one is the site fallback. */
+.profile-preset-tile.is-default .profile-preset-badge {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c3e50;
+    color: #fff;
+    font-size: .58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    line-height: 1.5;
+    white-space: nowrap;
+    pointer-events: none;
+}
+/* When the default tile is also the active one, lift the badge so it
+   doesn't collide with the check icon. */
+.profile-preset-tile.is-default.is-active .profile-preset-badge {
+    bottom: -10px;
+}
+
+@media (max-width: 600px) {
+    .account-avatar-presets {
+        grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+        gap: .45rem;
+    }
+    .profile-preset-tile { width: 52px; height: 52px; }
+    .profile-preset-check { width: 18px; height: 18px; font-size: .58rem; }
+}

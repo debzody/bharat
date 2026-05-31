@@ -193,7 +193,24 @@
         function refreshMenu() {
             const u = readCurrentUser();
             const initials = getInitials(u);
-            const photo    = (u && u.photoURL) ? String(u.photoURL) : '';
+            // Resolve the avatar URL, with a sensible fallback chain:
+            //   1. Customer's chosen photoURL (Cloudinary upload OR preset
+            //      from /images/avatars/).
+            //   2. The default anonymous-silhouette preset shipped under
+            //      /images/avatars/avatar-default.png — same image the
+            //      profile-page picker offers as the "Use default" tile.
+            //   3. (Only if the user is NOT signed in) fall back to the
+            //      old initials avatar — there's no profile to point at.
+            // The DEFAULT_AVATAR_URL constant comes from UsersStore so we
+            // don't hard-code the path in two places. Wrapped in a try
+            // so we degrade gracefully if dataStore.js hasn't loaded yet.
+            let photo = (u && u.photoURL) ? String(u.photoURL) : '';
+            if (!photo && u) {
+                try {
+                    const def = window.UsersStore && window.UsersStore.DEFAULT_AVATAR_URL;
+                    if (def) photo = String(def);
+                } catch (_) {}
+            }
             // Render avatar — photo if available, else initials.
             // Both the topbar button (wrap) and dropdown header (drop)
             // share the same .um-initials node, so we reuse it.
