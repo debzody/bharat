@@ -193,9 +193,31 @@
         function refreshMenu() {
             const u = readCurrentUser();
             const initials = getInitials(u);
-            // Initials live in BOTH wrap (avatar btn) and drop (header avatar)
-            wrap.querySelectorAll('.um-initials').forEach(e => e.textContent = initials);
-            drop.querySelectorAll('.um-initials').forEach(e => e.textContent = initials);
+            const photo    = (u && u.photoURL) ? String(u.photoURL) : '';
+            // Render avatar — photo if available, else initials.
+            // Both the topbar button (wrap) and dropdown header (drop)
+            // share the same .um-initials node, so we reuse it.
+            const renderAvatarNode = (el) => {
+                if (!el) return;
+                if (photo) {
+                    el.classList.add('um-has-photo');
+                    el.textContent = '';
+                    // Reuse a single <img> to avoid layout thrash on repeat calls
+                    let img = el.querySelector('img');
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.alt = 'Profile picture';
+                        img.draggable = false;
+                        el.appendChild(img);
+                    }
+                    if (img.src !== photo) img.src = photo;
+                } else {
+                    el.classList.remove('um-has-photo');
+                    el.textContent = initials;
+                }
+            };
+            wrap.querySelectorAll('.um-initials').forEach(renderAvatarNode);
+            drop.querySelectorAll('.um-initials').forEach(renderAvatarNode);
             // The remaining elements (name/email + show/hide flags) are all
             // inside the dropdown which now lives on <body>, NOT inside wrap.
             const nameEl  = drop.querySelector('.um-name');

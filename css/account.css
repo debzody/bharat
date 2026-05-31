@@ -83,6 +83,90 @@ html.theme-dark .theme-card.active{border-color:var(--teal);box-shadow:0 0 0 3px
     font-size:.7rem;font-weight:700;letter-spacing:.4px;
 }
 
+/* ── Profile picture uploader ────────────────────────────────
+   Wraps the .account-avatar so we can layer a hover overlay +
+   loading spinner on top of the same circular box used for the
+   initials/photo fallback. The existing .account-avatar rules
+   above still apply; we just turn the element into a button so
+   it's clickable, and swap the text-content for an <img> when
+   the user has uploaded a picture. */
+.account-summary{align-items:flex-start} /* let the text column grow tall */
+.account-summary-text{flex:1;min-width:0}
+.account-avatar-wrap{
+    position:relative;flex-shrink:0;
+    width:96px;height:96px; /* a touch bigger now that it's the focal point */
+}
+.account-avatar.account-avatar-btn{
+    width:96px;height:96px;font-size:2rem;
+    border:0;cursor:pointer;padding:0;overflow:hidden;
+    transition:transform .15s,box-shadow .15s,filter .15s;
+}
+.account-avatar.account-avatar-btn:hover{
+    transform:scale(1.04);
+    box-shadow:0 6px 20px rgba(13,122,138,.4);
+    filter:brightness(1.05);
+}
+.account-avatar.account-avatar-btn:focus-visible{
+    outline:3px solid #0d7a8a;outline-offset:3px;
+}
+.account-avatar.has-photo{
+    background:#eef3f5; /* fallback while <img> loads */
+}
+.account-avatar img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    border-radius:50%;
+}
+/* Camera-icon overlay on hover (only when there's a photo, since the
+   initials avatar already screams "click me" via its hover scale). */
+.account-avatar.account-avatar-btn::after{
+    content:"\f030"; /* fa-camera (free solid uses 6.x weight 900) */
+    font-family:"Font Awesome 6 Free";
+    font-weight:900;
+    position:absolute;inset:0;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;background:rgba(13,44,58,.55);
+    font-size:1.4rem;
+    opacity:0;transition:opacity .15s;
+    pointer-events:none;
+}
+.account-avatar.account-avatar-btn:hover::after,
+.account-avatar.account-avatar-btn:focus-visible::after{
+    opacity:1;
+}
+/* Spinner overlay during uploads */
+.account-avatar-spinner{
+    position:absolute;inset:0;border-radius:50%;
+    display:none;align-items:center;justify-content:center;
+    background:rgba(15,32,39,.65);color:#fff;font-size:1.5rem;
+    pointer-events:none;
+}
+.account-avatar-wrap.is-uploading .account-avatar-spinner{display:flex}
+.account-avatar-wrap.is-uploading .account-avatar-btn{filter:blur(.5px) brightness(.7)}
+
+.account-avatar-actions{
+    margin-top:.65rem;
+    display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .85rem;
+}
+.btn-link.btn-link-danger{color:#c0392b}
+.btn-link.btn-link-danger:hover{color:#922b21}
+
+@media (max-width:600px){
+    .account-summary{flex-direction:column;align-items:center;text-align:center;gap:.65rem}
+    .account-summary-text{width:100%}
+    .account-meta{justify-content:center}
+    .account-avatar-actions{justify-content:center}
+}
+
+/* ── Topbar avatar (user-menu.js) photo support ───────────
+   When the user uploads a profile picture, user-menu.js
+   adds the .um-has-photo class to the avatar element and
+   inserts an <img> child. We make the <img> fill the
+   circular box so it replaces the initials cleanly. */
+.um-has-photo{padding:0 !important;overflow:hidden;background:#eef3f5}
+.um-has-photo img{
+    width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
+}
+
 /* Forms */
 .account-form{display:flex;flex-direction:column;gap:.85rem}
 .account-row{
