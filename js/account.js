@@ -94,6 +94,24 @@
         const notSignedIn = $('acctNotSignedIn');
         const signedIn    = $('acctSignedIn');
 
+        function renderAvatar(profile) {
+            const avatarEl  = $('profAvatar');
+            const removeBtn = $('profAvatarRemoveBtn');
+            if (!avatarEl) return;
+            const photo = profile && profile.photoURL;
+            if (photo) {
+                // Render as <img> while keeping the same circular box.
+                avatarEl.classList.add('has-photo');
+                avatarEl.innerHTML = '<img src="' + String(photo).replace(/"/g, '&quot;') +
+                    '" alt="Profile picture">';
+                if (removeBtn) removeBtn.style.display = '';
+            } else {
+                avatarEl.classList.remove('has-photo');
+                avatarEl.textContent = getInitials(profile);
+                if (removeBtn) removeBtn.style.display = 'none';
+            }
+        }
+
         function renderUser(profile) {
             if (!profile) {
                 notSignedIn.style.display = '';
@@ -103,7 +121,7 @@
             notSignedIn.style.display = 'none';
             signedIn.style.display    = '';
 
-            $('profAvatar').textContent  = getInitials(profile);
+            renderAvatar(profile);
             $('profName').textContent    = profile.fullName || profile.username || 'Account';
             $('profEmail').textContent   = profile.email || '—';
             $('profUsername').textContent= profile.username || '—';
@@ -119,6 +137,86 @@
             $('fldState').value    = profile.state    || '';
             $('fldZip').value      = profile.zip      || '';
             $('fldCountry').value  = profile.country  || '';
+        }
+
+        // ── Avatar upload / remove wiring ─────────────────────
+        // The avatar is a clickable button. Clicking it, OR the
+        // "Change photo" link, opens the hidden file input. Selecting
+        // a file calls UsersStore.uploadProfilePicture(), which uploads
+        // to Cloudinary and writes the resulting URL to Firestore.
+        // The cached profile updates synchronously, so the topbar
+        // avatar (rendered by user-menu.js) refreshes automatically
+        // via the auth-change listener.
+        const avatarBtn    = $('profAvatar');
+        const avatarInput  = $('profAvatarInput');
+        const avatarChange = $('profAvatarChangeBtn');
+        const avatarRemove = $('profAvatarRemoveBtn');
+        const avatarStatus = $('profAvatarStatus');
+        const avatarSpin   = $('profAvatarSpinner');
+        const avatarWrap   = avatarBtn ? avatarBtn.closest('.account-avatar-wrap') : null;
+
+        function setUploading(on) {
+            if (avatarWrap) avatarWrap.classList.toggle('is-uploading', !!on);
+            if (avatarBtn)  avatarBtn.disabled  = !!on;
+            if (avatarChange) avatarChange.disabled = !!on;
+            if (avatarRemove) avatarRemove.disabled = !!on;
+        }
+
+        function pickFile() {
+            if (!avatarInput) return;
+            avatarInput.value = '';
+            avatarInput.click();
+        }
+        if (avatarBtn)    avatarBtn.addEventListener('click', pickFile);
+        if (avatarChange) avatarChange.addEventListener('click', pickFile);
+
+        if (avatarInput) {
+            avatarInput.addEventListener('change', async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                if (!window.UsersStore || !window.UsersStore.uploadProfilePicture) {
+                    setStatus(avatarStatus, 'err', 'Profile picture upload not available.');
+                    return;
+                }
+                setUploading(true);
+                setStatus(avatarStatus, '', 'Uploading…');
+                try {
+                    await window.UsersStore.uploadProfilePicture(file, (pct) => {
+                        setStatus(avatarStatus, '', 'Uploading… ' + pct.toFixed(0) + '%');
+                    });
+                    setStatus(avatarStatus, 'ok', '✓ Photo updated.');
+                    toast.ok('Profile picture updated');
+                    // The auth-change listener below will call renderUser()
+                    // with the new photoURL, so we don't need to render here.
+                } catch (err) {
+                    console.error('[avatar-upload] failed:', err);
+                    setStatus(avatarStatus, 'err', err.message || 'Upload failed');
+                    toast.err(err.message || 'Could not upload picture');
+                } finally {
+                    setUploading(false);
+                    avatarInput.value = '';
+                }
+            });
+        }
+
+        if (avatarRemove) {
+            avatarRemove.addEventListener('click', async () => {
+                if (!window.UsersStore || !window.UsersStore.removeProfilePicture) return;
+                if (!confirm('Remove your profile picture? You\'ll see the default initials avatar instead.')) return;
+                setUploading(true);
+                setStatus(avatarStatus, '', 'Removing…');
+                try {
+                    await window.UsersStore.removeProfilePicture();
+                    setStatus(avatarStatus, 'ok', '✓ Photo removed.');
+                    toast.ok('Profile picture removed');
+                } catch (err) {
+                    console.error('[avatar-remove] failed:', err);
+                    setStatus(avatarStatus, 'err', err.message || 'Remove failed');
+                    toast.err(err.message || 'Could not remove picture');
+                } finally {
+                    setUploading(false);
+                }
+            });
         }
 
         // Initial render from cache

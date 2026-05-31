@@ -587,7 +587,11 @@
             username: (extra && extra.username) || authUser.displayName || (authUser.email || '').split('@')[0],
             fullName: (extra && extra.fullName) || authUser.displayName || '',
             phone:    (extra && extra.phone) || '',
-            role:     isAdmin ? 'admin' : ((extra && extra.role) || 'user')
+            role:     isAdmin ? 'admin' : ((extra && extra.role) || 'user'),
+            // photoURL is the Cloudinary-hosted profile picture URL set
+            // by uploadProfilePicture() / cleared by removeProfilePicture().
+            // Empty string means "use the default initials avatar".
+            photoURL: (extra && extra.photoURL) || authUser.photoURL || ''
         };
     }
 
@@ -898,6 +902,7 @@
         if (typeof updates.state    === 'string') allowed.state    = updates.state;
         if (typeof updates.zip      === 'string') allowed.zip      = updates.zip;
         if (typeof updates.country  === 'string') allowed.country  = updates.country;
+        if (typeof updates.photoURL === 'string') allowed.photoURL = updates.photoURL;
         if (!Object.keys(allowed).length) return _currentProfile;
         await firestore.setDoc(firestore.doc(db, 'users', user.uid), allowed, { merge: true });
         if (_currentProfile) {
@@ -905,6 +910,120 @@
             cacheProfile(_currentProfile);
         }
         return _currentProfile;
+    }
+
+    // ── Profile picture upload (Cloudinary + Firestore) ────────────
+    // Uploads `file` (a File or Blob) to Cloudinary using the existing
+    // unsigned preset (window.CLOUDINARY_CONFIG, set in firebase-config.js)
+    // — same preset used by the gallery — but stores it under a
+    // user-scoped folder so admin tooling can find / clean these up
+    // separately from package gallery photos.
+    //
+    // On success, the resulting secure_url is written to
+    //   users/{uid}.photoURL
+    // and to the cached profile (so window.UsersStore.getCurrentUser()
+    // immediately reflects the new picture without a Firestore round-trip).
+    //
+    // The Auth user's photoURL is also updated via firebaseAuth.updateProfile()
+    // so any third-party SDK that reads cred.user.photoURL gets the right
+    // value too.
+    //
+    // The uploader purposely does NOT delete the previous Cloudinary
+    // asset — Cloudinary's free tier billing is by total bytes, not
+    // file count, and unsigned-preset deletes need a signed call which
+    // would expose the API secret in the browser. Old pictures simply
+    // become unreferenced; admin can purge them in bulk via the
+    // Cloudinary dashboard if storage ever balloons.
+    async function uploadProfilePicture(file, onProgress) {
+        if (!file) throw new Error('No file selected.');
+        if (!/^image\//i.test(file.type)) throw new Error('Please choose an image file.');
+        if (file.size > 6 * 1024 * 1024) throw new Error('Image is too large (max 6 MB).');
+
+        const cfg = window.CLOUDINARY_CONFIG || {};
+        if (!cfg.cloudName || !cfg.uploadPreset) {
+            throw new Error('Cloudinary not configured. Ask admin to set window.CLOUDINARY_CONFIG.');
+        }
+
+        const { db, auth, firebaseAuth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not signed in.');
+
+        // 1) Upload to Cloudinary unsigned endpoint
+        const url = 'https://api.cloudinary.com/v1_1/' + encodeURIComponent(cfg.cloudName) + '/image/upload';
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', cfg.uploadPreset);
+        // Tag the asset with the user's uid so admin can clean up later
+        fd.append('folder', 'profile-pictures');
+        fd.append('public_id', 'avatar_' + user.uid + '_' + Date.now());
+        fd.append('tags', 'profile-picture,uid_' + user.uid);
+
+        // Use XMLHttpRequest so we can report progress (fetch() can't yet)
+        const result = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.upload.onprogress = (evt) => {
+                if (typeof onProgress === 'function' && evt.lengthComputable) {
+                    onProgress((evt.loaded / evt.total) * 100);
+                }
+            };
+            xhr.onload = () => {
+                try {
+                    const json = JSON.parse(xhr.responseText || '{}');
+                    if (xhr.status >= 200 && xhr.status < 300 && json.secure_url) {
+                        resolve(json);
+                    } else {
+                        reject(new Error('Cloudinary error: ' + (json.error && json.error.message || xhr.statusText)));
+                    }
+                } catch (e) {
+                    reject(new Error('Bad Cloudinary response: ' + e.message));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload.'));
+            xhr.send(fd);
+        });
+
+        const photoURL = result.secure_url;
+
+        // 2) Write to Firestore + Auth user
+        await firestore.setDoc(
+            firestore.doc(db, 'users', user.uid),
+            { photoURL, photoUpdatedAt: firestore.serverTimestamp() },
+            { merge: true }
+        );
+        try { await firebaseAuth.updateProfile(user, { photoURL }); } catch (_) {}
+
+        // 3) Update cache
+        if (_currentProfile) {
+            _currentProfile.photoURL = photoURL;
+            cacheProfile(_currentProfile);
+        }
+        // Notify listeners so the topbar avatar refreshes everywhere
+        fireAuthListeners(_currentProfile);
+        return photoURL;
+    }
+
+    // Clear the user's profile picture so the UI falls back to the
+    // initials avatar. Sets photoURL to '' (NOT deleteField — that
+    // would force every UI place that reads it to handle `undefined`
+    // separately). The Cloudinary asset itself is left in place; see
+    // uploadProfilePicture() for the rationale.
+    async function removeProfilePicture() {
+        const { db, auth, firebaseAuth, firestore } = await window.__firebaseReady;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not signed in.');
+        await firestore.setDoc(
+            firestore.doc(db, 'users', user.uid),
+            { photoURL: '', photoUpdatedAt: firestore.serverTimestamp() },
+            { merge: true }
+        );
+        try { await firebaseAuth.updateProfile(user, { photoURL: '' }); } catch (_) {}
+        if (_currentProfile) {
+            _currentProfile.photoURL = '';
+            cacheProfile(_currentProfile);
+        }
+        fireAuthListeners(_currentProfile);
+        return true;
     }
 
     // Re-authenticate the current user with their current password.
@@ -1230,6 +1349,8 @@
         isStaff:                  isStaff,
         canAccessDashboard:       canAccessDashboard,
         updateProfile:            updateProfile,
+        uploadProfilePicture:     uploadProfilePicture,
+        removeProfilePicture:     removeProfilePicture,
         reauthenticate:           reauthenticate,
         changePassword:           changePassword,
         sendPasswordResetEmail:   sendPasswordResetEmail,

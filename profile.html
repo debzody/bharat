@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" href="images/logo-white.png">
     <link rel="stylesheet" href="css/style.css?v=54">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/account.css?v=1">
+    <link rel="stylesheet" href="css/account.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -60,17 +60,44 @@
 
                 <div id="acctSignedIn" style="display:none;">
 
-                    <!-- Account summary -->
+                    <!-- Account summary + profile picture -->
                     <div class="account-card">
                         <div class="account-summary">
-                            <div class="account-avatar" id="profAvatar">?</div>
-                            <div>
+                            <!-- The avatar is now a clickable upload zone.
+                                 Clicking it OR the Change photo button below
+                                 opens the file picker. While an upload is in
+                                 flight, an opaque overlay with a spinner
+                                 covers the avatar (.is-uploading class). -->
+                            <div class="account-avatar-wrap">
+                                <button type="button" class="account-avatar account-avatar-btn"
+                                        id="profAvatar"
+                                        title="Click to change your profile picture"
+                                        aria-label="Change profile picture">?</button>
+                                <input type="file" id="profAvatarInput" accept="image/*" style="display:none;">
+                                <span class="account-avatar-spinner" id="profAvatarSpinner" aria-hidden="true">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </span>
+                            </div>
+                            <div class="account-summary-text">
                                 <div class="account-name" id="profName">—</div>
                                 <div class="account-meta">
                                     <span><i class="fas fa-envelope"></i> <span id="profEmail">—</span></span>
                                     <span><i class="fas fa-id-badge"></i> <span id="profUsername">—</span></span>
                                     <span class="account-role-badge" id="profRoleBadge" style="display:none;">ADMIN</span>
                                 </div>
+                                <div class="account-avatar-actions">
+                                    <button type="button" class="btn-link" id="profAvatarChangeBtn">
+                                        <i class="fas fa-camera"></i> Change photo
+                                    </button>
+                                    <button type="button" class="btn-link btn-link-danger" id="profAvatarRemoveBtn" style="display:none;">
+                                        <i class="fas fa-trash-alt"></i> Remove photo
+                                    </button>
+                                    <span id="profAvatarStatus" class="account-status"></span>
+                                </div>
+                                <small class="account-card-sub" style="display:block;margin-top:.4rem;">
+                                    JPG / PNG / WEBP — max 6 MB. Square images look best.
+                                    Leave blank to use the default anonymous avatar.
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -176,11 +203,11 @@
         </section>
     </main>
 
-    <script src="js/dataStore.js?v=25"></script>
+    <script src="js/dataStore.js?v=31"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/script.js?v=30"></script>
-    <script src="js/account.js?v=1"></script>
-    <script src="js/user-menu.js?v=11"></script>
+    <script src="js/account.js?v=2"></script>
+    <script src="js/user-menu.js?v=12"></script>
     <script src="js/conversion-kit.js?v=1"></script>
     <script src="js/brevo.js?v=3" async></script>
     <script src="js/live-chat.js?v=8"></script>
