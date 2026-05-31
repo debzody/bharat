@@ -27,9 +27,17 @@ export async function sendBrevoEmail(env, opts) {
     if (!fromEmail) throw new Error('Brevo: from email not configured');
     if (!opts.to)   throw new Error('Brevo: to email is required');
 
+    // Brevo's /v3/smtp/email rejects `name: ''` with
+    // {"code":"missing_parameter","message":"name is missing in to"}
+    // — when no display name is provided we must omit the field entirely.
+    const toEntry = { email: opts.to };
+    if (opts.toName && String(opts.toName).trim()) {
+        toEntry.name = String(opts.toName).trim();
+    }
+
     const body = {
         sender:   { email: fromEmail, name: fromName },
-        to:       [{ email: opts.to, name: opts.toName || '' }],
+        to:       [toEntry],
         subject:  String(opts.subject || '(no subject)'),
         htmlContent: String(opts.html || ''),
         textContent: String(opts.text || stripHtml(opts.html || ''))
