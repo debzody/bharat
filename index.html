@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- ── Firebase auth-action redirect ─────────────────────────────
+         When a user clicks the "Reset password" or "Verify email"
+         link in a Firebase email, the link points at our domain
+         root with ?mode=resetPassword&oobCode=… (or mode=verifyEmail).
+         We don't render a reset form on the homepage, so detect
+         those params and redirect to /auth-action.html which DOES
+         have the form. Must run BEFORE any other script (analytics,
+         ads, history rewrite) so we never paint the homepage first. -->
+    <script>(function(){try{var qs=location.search||'';if(/[?&]mode=(resetPassword|verifyEmail|recoverEmail|signIn)\b/i.test(qs)&&/[?&]oobCode=/i.test(qs)){location.replace('/auth-action.html'+qs+location.hash);}}catch(e){}})();</script>
+
     <!-- Hide .html and /index from the URL bar without re-loading the page -->
     <script>(function(){try{var p=location.pathname;if(/\/index(\.html)?$/i.test(p)){history.replaceState(null,'',p.replace(/\/index(\.html)?$/i,'/')+location.search+location.hash);}else if(/\.html$/i.test(p)){history.replaceState(null,'',p.replace(/\.html$/i,'')+location.search+location.hash);}}catch(e){}})();</script>
 
