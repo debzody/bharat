@@ -110,9 +110,27 @@
             const hasOwnPhoto = !!ownPhoto;
             if (photo) {
                 // Render as <img> while keeping the same circular box.
+                // Reuse the existing <img> when the URL hasn't changed
+                // — same trick as user-menu.js's renderAvatarNode. We
+                // ABSOLUTELY DO NOT want to re-set innerHTML on every
+                // renderUser() call: that drops & re-creates the <img>
+                // node, which forces the browser to refetch the image
+                // even though the URL is identical (the cache hits but
+                // the network request is still made). Keying off a
+                // dataset attribute bypasses the absolute-vs-relative
+                // src comparison gotcha that bit us in user-menu.js.
                 avatarEl.classList.add('has-photo');
-                avatarEl.innerHTML = '<img src="' + String(photo).replace(/"/g, '&quot;') +
-                    '" alt="Profile picture">';
+                let img = avatarEl.querySelector('img');
+                if (!img) {
+                    avatarEl.textContent = '';
+                    img = document.createElement('img');
+                    img.alt = 'Profile picture';
+                    avatarEl.appendChild(img);
+                }
+                if (img.dataset.profLastSrc !== photo) {
+                    img.src = photo;
+                    img.dataset.profLastSrc = photo;
+                }
                 // "Remove photo" only makes sense when the user actually
                 // chose something — clearing the default returns it to
                 // the default, which is a no-op.

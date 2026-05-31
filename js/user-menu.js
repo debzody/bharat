@@ -214,6 +214,21 @@
             // Render avatar — photo if available, else initials.
             // Both the topbar button (wrap) and dropdown header (drop)
             // share the same .um-initials node, so we reuse it.
+            //
+            // ⚠️ CRITICAL: comparing img.src to `photo` doesn't work
+            // naively. The browser RESOLVES img.src to an absolute URL
+            // ("https://andamanvoyages.in/images/avatars/avatar-5.png")
+            // but the photoURL we get from the profile is often relative
+            // ("images/avatars/avatar-5.png"). A direct `!==` compare is
+            // therefore ALWAYS true → the <img> reassigns its src on
+            // every refreshMenu() tick → the browser refetches the
+            // image. Combined with the 1-second poll for 30s + 5–10
+            // auth-change firings on page load, we observed ~2,500
+            // requests for the same avatar PNG (229 MB transfer).
+            //
+            // Fix: stash the resolved URL we LAST set on the img in a
+            // data-attribute (cheap string compare against the same
+            // representation we set, never against the absolute form).
             const renderAvatarNode = (el) => {
                 if (!el) return;
                 if (photo) {
@@ -227,10 +242,19 @@
                         img.draggable = false;
                         el.appendChild(img);
                     }
-                    if (img.src !== photo) img.src = photo;
+                    // Compare against the URL we LAST set — never against
+                    // img.src (which is the resolved absolute form).
+                    if (img.dataset.umLastSrc !== photo) {
+                        img.src = photo;
+                        img.dataset.umLastSrc = photo;
+                    }
                 } else {
                     el.classList.remove('um-has-photo');
                     el.textContent = initials;
+                    // Drop any leftover <img> so the next call doesn't
+                    // see a stale dataset.umLastSrc and skip reload.
+                    const stale = el.querySelector('img');
+                    if (stale) stale.remove();
                 }
             };
             wrap.querySelectorAll('.um-initials').forEach(renderAvatarNode);
