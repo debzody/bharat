@@ -211,6 +211,14 @@
                     if (def) photo = String(def);
                 } catch (_) {}
             }
+            // If the photo is a Cloudinary URL, swap it for a 96×96
+            // thumbnail variant (~5-10 KB instead of the 1-6 MB original).
+            // The topbar avatar is rendered at 38-44 px, so 96px gives us
+            // 2× retina without bloating bandwidth. Local /images/avatars
+            // PNGs and other URLs pass through unchanged.
+            if (photo && typeof window.cdnAvatarUrl === 'function') {
+                photo = window.cdnAvatarUrl(photo, 96);
+            }
             // Render avatar — photo if available, else initials.
             // Both the topbar button (wrap) and dropdown header (drop)
             // share the same .um-initials node, so we reuse it.
