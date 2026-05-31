@@ -546,10 +546,27 @@ footer{
    .um-header .um-avatar) absolutely, then make the <img> fill
    the span with object-fit: cover so non-square photos crop
    to a perfect circle instead of stretching. */
-.user-menu-btn{overflow:hidden}
+.user-menu-btn{overflow:hidden;position:relative}
 .um-header .um-avatar{overflow:hidden;position:relative}
 
-.um-has-photo{
+/* ── .um-has-photo (image avatar) ───────────────────────────
+   The .um-initials node renders the avatar in two distinct
+   contexts:
+     1. The topbar BUTTON  (.user-menu-btn .um-initials)
+        — the button itself is the circular box; the inner
+          .um-initials span has no intrinsic size, so we MUST
+          stretch it to fill the button via position:absolute.
+     2. The dropdown HEADER (.um-header .um-avatar.um-initials)
+        — here the same element IS the sized box (38×38). It
+          already lives inline-flex inside .um-header, so we
+          must NOT make it absolute (or it escapes the flex
+          flow and balloons to fill the dropdown card —
+          producing the giant blob you saw before this fix).
+
+   So we split the rule: the absolute-fill behaviour applies
+   only INSIDE .user-menu-btn; the dropdown header keeps its
+   own 38×38 box and only needs the image-clipping rules. */
+.user-menu-btn .um-has-photo{
     position:absolute !important;
     inset:0 !important;
     width:100% !important;
@@ -562,6 +579,14 @@ footer{
     padding:0 !important;
     font-size:0 !important;
     line-height:0 !important;
+}
+/* Dropdown header avatar with photo — keep its 38×38 flex box,
+   just clip the <img> to a circle inside it. */
+.um-header .um-avatar.um-has-photo{
+    background:#eef3f5;
+    padding:0;
+    font-size:0;
+    line-height:0;
 }
 .um-has-photo img{
     width:100%;
