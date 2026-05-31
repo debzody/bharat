@@ -531,8 +531,49 @@ footer{
     width:10px;height:10px;border-radius:50%;
     background:#27ae60;border:2px solid #fff;
     display:none;
+    z-index:2;
 }
 .user-menu-btn.um-online .um-dot{display:block}
+
+/* ── Profile-picture support for the avatar pill ───────────
+   When js/user-menu.js detects a photoURL on the cached
+   profile, it adds the .um-has-photo class to the .um-initials
+   span and inserts an <img> child. The .um-initials span has
+   no fixed size (it's just a text container inside the
+   gradient circle button), so without these rules the <img>
+   would render at its natural pixel size and overflow the
+   topbar. We make the span fill its parent (.user-menu-btn or
+   .um-header .um-avatar) absolutely, then make the <img> fill
+   the span with object-fit: cover so non-square photos crop
+   to a perfect circle instead of stretching. */
+.user-menu-btn{overflow:hidden}
+.um-header .um-avatar{overflow:hidden;position:relative}
+
+.um-has-photo{
+    position:absolute !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+    border-radius:50%;
+    overflow:hidden;
+    background:#eef3f5;
+    /* Hide any text fallback (e.g. initials briefly visible
+       between cache-flush and image-load) by zeroing the font. */
+    padding:0 !important;
+    font-size:0 !important;
+    line-height:0 !important;
+}
+.um-has-photo img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center center;
+    display:block;
+    border-radius:50%;
+    /* Don't let img inherit the parent button's :hover transform
+       (the parent already scales — we don't want a double-zoom). */
+    transform:none;
+}
 
 .user-menu-dropdown{
     position:absolute;top:calc(100% + 12px);right:0;
