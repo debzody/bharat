@@ -37,6 +37,7 @@ import {
 import { callGemini, tryParseJson, extractPackageFromImage } from './gemini.js';
 import { getFirestoreAccessToken, queryFirestore }  from './firestore.js';
 import { sendBrevoEmail }                           from './brevo.js';
+import { handlePasswordReset }                      from './password-reset.js';
 
 export default {
     async fetch(request, env) {
@@ -63,6 +64,12 @@ export default {
             }
             if (request.method === 'POST' && url.pathname === '/extract-package') {
                 return await handleExtractPackage(request, env);
+            }
+            // Public (unauthenticated) endpoint — sends a branded
+            // password-reset email via Brevo so it doesn't go to spam.
+            // Anti-enumeration + per-IP rate limit live inside the handler.
+            if (request.method === 'POST' && url.pathname === '/password-reset') {
+                return await handlePasswordReset(request, env, corsHeaders);
             }
         } catch (err) {
             const status = (err && err.status) || 500;
