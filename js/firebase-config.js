@@ -203,3 +203,50 @@ window.GOOGLE_REVIEWS = {
     cacheHours:   24,    // localStorage cache lifetime
     mapsLanguage: "en"
 };
+
+// ── Password-reset Worker ─────────────────────────────────────
+// js/dataStore.js → sendPasswordReset() POSTs the user's email here
+// instead of letting Firebase's built-in `sendPasswordResetEmail()`
+// ship the message FROM noreply@<project>.firebaseapp.com (which
+// Gmail almost always classifies as spam — see the original bug
+// report screenshot).
+//
+// The Worker generates a real Firebase reset link via the Identity
+// Toolkit REST API (`accounts:sendOobCode` with `returnOobLink=true`)
+// and ships a branded email through Brevo FROM
+// `noreply@andamanvoyages.in` — a domain with verified SPF / DKIM /
+// DMARC, so the email reaches the inbox.
+//
+// To switch off the branded send (e.g. during a Worker outage or
+// before deploy), simply blank this string. js/dataStore.js will
+// fall back to Firebase's built-in sender — which works, but the
+// email will land in spam again.
+//
+// Endpoint: POST <url>/auth/password-reset  body { email }
+// Source:   workers/email-router/password-reset.js
+// Setup:    received_email_cloudflare_setup.md "Password reset" section
+window.PASSWORD_RESET_WORKER_URL = "https://email-router.pittu-das2.workers.dev";
+
+// ── ai-assistant Cloudflare Worker URL ─────────────────────────
+// Hosts the public POST /password-reset endpoint that sends a
+// branded password-reset email via Brevo from noreply@andamanvoyages.in
+// (Firebase's default noreply@<project>.firebaseapp.com lands in spam
+// because it isn't aligned with our DKIM/SPF/DMARC records).
+//
+// Also hosts admin-only endpoints (/summarize, /draft-reply,
+// /daily-report, /extract-package) used by the dashboard. Those
+// require a Firebase admin ID token; only the password-reset
+// endpoint is open (with anti-enumeration + per-IP rate-limit).
+//
+// If this URL is empty / unreachable, js/dataStore.js falls back
+// to Firebase Auth's built-in sendPasswordResetEmail — the email
+// still goes out, it just lands in spam. Setting this URL is what
+// fixes the spam-folder problem.
+//
+// Deployed via:
+//     cd workers/ai-assistant && npx wrangler deploy
+// Then paste the resulting "https://ai-assistant.<sub>.workers.dev"
+// URL here. (Same value also set in dashboard.html for the admin
+// AI features.)
+window.AI_ASSISTANT_WORKER_URL = window.AI_ASSISTANT_WORKER_URL ||
+    'https://ai-assistant.pittu-das2.workers.dev';

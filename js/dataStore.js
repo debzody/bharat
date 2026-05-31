@@ -785,15 +785,75 @@
     }
 
     // ── Forgot password / username helpers ──
+    //
+    // Strategy:
+    //   1) If window.AI_ASSISTANT_WORKER_URL is configured (it is, on
+    //      production), call /password-reset on that worker. The worker
+    //      generates a reset link via Identity Toolkit and emails it via
+    //      Brevo from noreply@andamanvoyages.in — DKIM/SPF/DMARC aligned
+    //      so it lands in the inbox, not spam.
+    //   2) If the worker is unreachable OR not configured, fall back to
+    //      Firebase Auth's built-in sendPasswordResetEmail() — it WILL
+    //      go to spam, but at least the user gets a reset option.
+    //
+    // The worker is anti-enumeration: it ALWAYS returns { ok: true }
+    // regardless of whether the email is registered, so a malicious
+    // caller can't probe for valid accounts. We mirror that here by
+    // resolving with the email even on a 200 reply.
     async function sendPasswordReset(identifier) {
         if (!identifier) throw new Error('Please enter your username or email.');
-        const { auth, firebaseAuth } = await window.__firebaseReady;
         let email = identifier.trim();
         if (email.indexOf('@') === -1) {
             const map = await lookupUsername(email);
             if (!map || !map.email) throw new Error('We could not find that username.');
             email = map.email;
         }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw new Error('That does not look like a valid email.');
+        }
+
+        // 1) Preferred path — branded email via our Worker (no spam).
+        //    The Worker (workers/ai-assistant/password-reset.js)
+        //    generates a real Firebase reset link via the Identity
+        //    Toolkit REST API and ships it through Brevo FROM
+        //    noreply@andamanvoyages.in (verified SPF/DKIM/DMARC),
+        //    so Gmail places it in the inbox instead of the spam folder.
+        //    Configure window.AI_ASSISTANT_WORKER_URL in
+        //    js/firebase-config.js. We also accept the legacy
+        //    PASSWORD_RESET_WORKER_URL / EMAIL_ROUTER_WORKER_URL names
+        //    in case an older deployment still uses them.
+        const workerUrl = (
+            window.AI_ASSISTANT_WORKER_URL   ||
+            window.PASSWORD_RESET_WORKER_URL ||
+            window.EMAIL_ROUTER_WORKER_URL   ||
+            ''
+        ).replace(/\/+$/, '');
+        if (workerUrl) {
+            try {
+                const res = await fetch(workerUrl + '/password-reset', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ email })
+                });
+                if (res.ok) {
+                    // Worker is anti-enumeration: { ok:true } even when
+                    // the email isn't registered. We surface the same
+                    // friendly success to the user.
+                    return email;
+                }
+                if (res.status === 429) {
+                    throw new Error('Too many reset requests. Please try again in an hour.');
+                }
+                const txt = await res.text().catch(() => '');
+                console.warn('[sendPasswordReset] worker responded', res.status, '— falling back to Firebase. Body:', txt);
+            } catch (err) {
+                if (err && err.message && err.message.indexOf('Too many') === 0) throw err;
+                console.warn('[sendPasswordReset] worker call failed, falling back:', err);
+            }
+        }
+
+        // 2) Fallback — Firebase's built-in (may land in spam)
+        const { auth, firebaseAuth } = await window.__firebaseReady;
         try {
             await firebaseAuth.sendPasswordResetEmail(auth, email);
             return email;
@@ -886,14 +946,15 @@
         return true;
     }
 
-    // Send the standard password-reset email to the current user. Used as
-    // an alternative "change password by email link" UX in the profile page.
+    // Send a password-reset email to the CURRENT signed-in user.
+    // Used as an alternative "change password by email link" UX in the
+    // profile page. Goes through the same worker-first / Firebase-fallback
+    // path as sendPasswordReset() so the email lands in the inbox, not spam.
     async function sendPasswordResetEmail() {
-        const { auth, firebaseAuth } = await window.__firebaseReady;
+        const { auth } = await window.__firebaseReady;
         const user = auth.currentUser;
         if (!user || !user.email) throw new Error('Not signed in.');
-        await firebaseAuth.sendPasswordResetEmail(auth, user.email);
-        return user.email;
+        return sendPasswordReset(user.email);
     }
 
     // Delete the CURRENT user's account.
@@ -1075,12 +1136,13 @@
     }
 
     // Direct password-reset for an arbitrary email (admin convenience).
+    // Routed through the same worker-first / Firebase-fallback path as
+    // sendPasswordReset() so the email lands in the customer's inbox
+    // (not spam) when the admin triggers it from the dashboard.
     async function adminSendPasswordReset(email) {
         ensureAdmin();
         if (!email) throw new Error('No email provided.');
-        const { auth, firebaseAuth } = await window.__firebaseReady;
-        await firebaseAuth.sendPasswordResetEmail(auth, email);
-        return email;
+        return sendPasswordReset(email);
     }
 
     // Admin-only: set or clear a per-user advance-rate override (percentage).
