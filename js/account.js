@@ -122,9 +122,54 @@
                 avatarEl.textContent = getInitials(profile);
                 if (removeBtn) removeBtn.style.display = 'none';
             }
-            // Re-render the preset gallery (if mounted) so the active
-            // tile reflects the current selection.
+            // Re-render the recent uploads + preset gallery (if mounted)
+            // so the active tile reflects the current selection.
+            renderRecentUploads();
             renderPresetGallery(ownPhoto || '');
+        }
+
+        // ── Recent uploads ────────────────────────────────────
+        // Renders the customer's last-2 uploaded photos as small tiles
+        // above the preset gallery, so they can switch back to a photo
+        // they used previously without re-uploading. Tiles are rendered
+        // ONLY when the user actually has past uploads — the section
+        // (heading + grid) hides itself entirely otherwise so the
+        // profile card doesn't show an empty placeholder.
+        function renderRecentUploads() {
+            const wrap = $('profAvatarRecentWrap');
+            const host = $('profAvatarRecent');
+            if (!wrap || !host) return;
+            const recent = (window.UsersStore && typeof window.UsersStore.getRecentAvatarUploads === 'function')
+                ? window.UsersStore.getRecentAvatarUploads()
+                : [];
+            if (!recent.length) {
+                wrap.style.display = 'none';
+                host.innerHTML = '';
+                return;
+            }
+            wrap.style.display = '';
+            // Cheap re-render guard — same trick as renderPresetGallery.
+            const sig = recent.join('|');
+            if (host.dataset.sig === sig) return;
+            host.dataset.sig = sig;
+
+            host.innerHTML = recent.map(function (url) {
+                const escUrl = String(url).replace(/"/g, '&quot;');
+                return '<button type="button" class="profile-preset-tile profile-preset-tile-recent" ' +
+                       'data-recent-url="' + escUrl + '" ' +
+                       'title="Use this photo again">' +
+                       '<img src="' + escUrl + '" alt="Previously uploaded photo" draggable="false">' +
+                       '<span class="profile-preset-badge profile-preset-badge-recent">Recent</span>' +
+                       '</button>';
+            }).join('');
+
+            host.querySelectorAll('.profile-preset-tile-recent').forEach(function (tile) {
+                tile.addEventListener('click', function () {
+                    const url = tile.getAttribute('data-recent-url');
+                    if (!url) return;
+                    pickRecentUpload(url, tile);
+                });
+            });
         }
 
         // ── Preset-avatar gallery ─────────────────────────────
@@ -287,6 +332,38 @@
                     setUploading(false);
                 }
             });
+        }
+
+        // ── Recent-upload picker handler ──────────────────────
+        // Called from a tile click in renderRecentUploads(). Tells
+        // UsersStore.useRecentUpload to promote the chosen URL back to
+        // the active photoURL. We optimistically highlight the tile so
+        // the click feels instant, then let the auth-change listener
+        // re-render. If the call fails (e.g. asset went missing on
+        // Cloudinary) we fall back to the default avatar quietly.
+        async function pickRecentUpload(url, tileEl) {
+            if (!window.UsersStore || !window.UsersStore.useRecentUpload) return;
+            // Clear active highlight on preset tiles, ours doesn't get
+            // an "is-active" class (the recent row only ever shows
+            // PAST uploads, never the current one).
+            const grid = $('profAvatarPresets');
+            if (grid) {
+                grid.querySelectorAll('.profile-preset-tile.is-active')
+                    .forEach(t => t.classList.remove('is-active'));
+            }
+            setUploading(true);
+            setStatus(avatarStatus, '', 'Switching…');
+            try {
+                await window.UsersStore.useRecentUpload(url);
+                setStatus(avatarStatus, 'ok', '✓ Switched to a previous photo.');
+                toast.ok('Profile picture switched');
+            } catch (err) {
+                console.error('[avatar-recent] failed:', err);
+                setStatus(avatarStatus, 'err', err.message || 'Switch failed');
+                toast.err(err.message || 'Could not switch to that photo');
+            } finally {
+                setUploading(false);
+            }
         }
 
         // ── Preset picker handler ─────────────────────────────
