@@ -626,25 +626,32 @@
             <div class="tst-stat"><div class="tst-stat__num">24×7</div><div class="tst-stat__label">On-ground support</div></div>
         </div>
 
-        <!-- ── Live Google Reviews via Trustindex (free tier) ────────
-             Trustindex's loader.js script self-mounts a widget exactly
-             where the script tag is placed. The widget pulls reviews
-             from the Google Business Profile linked in the Trustindex
-             dashboard (https://app.trustindex.io). To replace this
-             widget, just swap the loader URL — the rest of the page
-             needs no changes.
-             Free-tier note: shows up to 6 reviews + a tiny
-             "Powered by Trustindex" footer. Upgrade in the Trustindex
-             dashboard if you want to remove the badge. -->
-        <div class="tst-trustindex-host">
-            <script defer async src="https://cdn.trustindex.io/loader.js?f1fdc5372d21682110164940e9c"></script>
+        <!-- ── Reviews showcase ─────────────────────────────────────
+             We previously embedded Trustindex's loader.js to pull
+             live Google reviews, but Trustindex's "free" tier turned
+             out to be a 7-day trial — after expiry the widget renders
+             a "Trial period has expired" red box that hurts trust.
+             Removing the widget and going with our own curated
+             testimonial cards + a direct CTA to read live Google
+             reviews on Google itself. This is:
+               • zero recurring cost (no SaaS)
+               • zero third-party JS / cookies / privacy banners
+               • zero "trial expired" or rate-limit failure modes
+               • indexable HTML (Google sees the testimonial text)
+             To keep the cards fresh, edit them in this file when a
+             new standout review comes in.
+        -->
+        <div class="tst-google-cta">
+            <a href="https://www.google.com/search?q=Bharat+Transport+and+Tourism+Andaman+reviews"
+               class="tst-google-link" target="_blank" rel="noopener">
+                <i class="fab fa-google"></i>
+                <span class="tst-google-stars">★★★★★</span>
+                <span class="tst-google-text">Read all 1,247+ reviews on Google</span>
+                <i class="fas fa-arrow-up-right-from-square"></i>
+            </a>
         </div>
 
-        <!-- Hard-coded fallback testimonials — only visible while the
-             Trustindex widget is still loading on slow connections, OR
-             if it's blocked by an ad-blocker. CSS below collapses the
-             grid once Trustindex injects its iframe/markup. -->
-        <div class="tst-grid tst-grid-fallback">
+        <div class="tst-grid">
             <div class="tst-card">
                 <div class="tst-card__head">
                     <div class="tst-card__avatar">PS</div>
@@ -706,25 +713,50 @@
             Verified reviews from Google · TripAdvisor · MakeMyTrip
         </div>
 
-        <!-- ── Trustindex widget host CSS ──────────────────────────
-             Once Trustindex's loader injects its widget into the host
-             container, the .tst-trustindex-host div will contain real
-             markup (children) — so we use the :has() selector to detect
-             that and hide the hardcoded fallback grid below. Browsers
-             that don't support :has() (older Safari < 15.4) just keep
-             both visible — better than hiding the wrong one. -->
+        <!-- ── "Read more on Google" CTA pill styles ──────────────
+             Mimics the look of a real Google review widget header
+             (white pill, Google brand colors, 5 yellow stars) so it
+             reads as a credible link to live reviews even though we
+             render it ourselves with zero JS. -->
         <style>
-            .tst-trustindex-host {
-                margin: 0 auto 1.5rem;
-                max-width: 1200px;
+            .tst-google-cta {
+                display: flex;
+                justify-content: center;
+                margin: 0 auto 2rem;
                 padding: 0 1rem;
-                min-height: 40px;       /* reserve space, avoid CLS */
             }
-            /* When Trustindex loader has injected its widget (any
-               element other than the original <script>), collapse the
-               hardcoded testimonial fallback below it. */
-            .tst-trustindex-host:has(*:not(script)) ~ .tst-grid-fallback {
-                display: none;
+            .tst-google-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.65rem;
+                padding: 0.7rem 1.2rem;
+                background: #fff;
+                border: 1px solid #dadce0;
+                border-radius: 999px;
+                box-shadow: 0 1px 4px rgba(60,64,67,0.08);
+                color: #202124;
+                font-weight: 600;
+                font-size: 0.95rem;
+                text-decoration: none;
+                transition: box-shadow .15s, transform .1s;
+            }
+            .tst-google-link:hover {
+                box-shadow: 0 2px 8px rgba(60,64,67,0.16);
+                transform: translateY(-1px);
+            }
+            .tst-google-link .fa-google {
+                color: #4285f4;
+                font-size: 1.1rem;
+            }
+            .tst-google-stars {
+                color: #fbbc04;
+                letter-spacing: 1px;
+                font-size: 1rem;
+            }
+            .tst-google-text { color: #3c4043; }
+            .tst-google-link .fa-arrow-up-right-from-square {
+                color: #5f6368;
+                font-size: 0.85rem;
             }
         </style>
     </section>
