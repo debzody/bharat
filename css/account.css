@@ -157,15 +157,11 @@ html.theme-dark .theme-card.active{border-color:var(--teal);box-shadow:0 0 0 3px
     .account-avatar-actions{justify-content:center}
 }
 
-/* ── Topbar avatar (user-menu.js) photo support ───────────
-   When the user uploads a profile picture, user-menu.js
-   adds the .um-has-photo class to the avatar element and
-   inserts an <img> child. We make the <img> fill the
-   circular box so it replaces the initials cleanly. */
-.um-has-photo{padding:0 !important;overflow:hidden;background:#eef3f5}
-.um-has-photo img{
-    width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
-}
+/* NOTE: .um-has-photo styles for the topbar avatar pill live in
+   css/style.css (loaded on every page including the admin dashboard),
+   not here — css/account.css is only loaded on /profile and /settings,
+   which would leave the picture overflowing on every other page.
+   See the .um-has-photo block in style.css next to .user-menu-btn. */
 
 /* Forms */
 .account-form{display:flex;flex-direction:column;gap:.85rem}

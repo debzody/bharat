@@ -6,11 +6,11 @@
     "type": "module",
     "main": "worker.js",
     "scripts": {
-        "dev":    "wrangler dev",
+        "dev": "wrangler dev",
         "deploy": "wrangler deploy",
-        "tail":   "wrangler tail"
+        "tail": "wrangler tail"
     },
     "devDependencies": {
-        "wrangler": "^3.78.0"
+        "wrangler": "^4.95.0"
     }
 }
