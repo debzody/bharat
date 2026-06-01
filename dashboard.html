@@ -181,6 +181,9 @@
             <a href="#" class="topnav-item sidebar-link" data-section="bookings">
                 <i class="fas fa-calendar-check"></i><span>Bookings</span>
             </a>
+            <a href="#" class="topnav-item sidebar-link" data-section="locks">
+                <i class="fas fa-lock"></i><span>Locks</span>
+            </a>
             <a href="#" class="topnav-item sidebar-link" data-section="packages">
                 <i class="fas fa-suitcase"></i><span>Packages</span>
             </a>
@@ -446,6 +449,78 @@
                     <div class="inbox-preview-empty">
                         <i class="fas fa-receipt"></i>
                         <p>Select a booking row to view customer and package details.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Price Locks Section (admin) ──────────────────────────────
+             Lists every /priceLocks doc across all customers. Read by
+             js/dashboard-locks.js using LocksStore-style direct
+             Firestore access (admin can read all per firestore.rules).
+             Active / Used / Expired / Cancelled buckets, search and
+             a side-pane preview that mirrors the bookings layout. -->
+        <section class="dashboard-section" id="section-locks">
+            <div class="section-header" style="justify-content:space-between;">
+                <h2 style="margin:0;"><i class="fas fa-lock"></i> Price Locks</h2>
+                <div class="section-actions">
+                    <input type="text" class="search-input" id="lockSearch" placeholder="Search lock ref, package, email…">
+                    <button class="btn-add-package" id="locksRefreshBtn" style="background:#3498db;" title="Reload locks from Firestore">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <p style="color:#666;font-size:0.92rem;margin-top:.4rem;line-height:1.55;">
+                Customers pay <strong>₹500 / head</strong> on a package page to freeze that day's price for <strong>10 days</strong>.
+                If they convert the lock to a booking within the window, the lock fee is auto-deducted from the advance.
+                Otherwise the fee is forfeited and the lock expires.
+            </p>
+
+            <div class="booking-status-tabs" role="tablist" id="lockStatusTabs">
+                <button type="button" class="bk-status-tab active" data-lock-status="all"       role="tab" aria-selected="true">
+                    <i class="fas fa-layer-group"></i> All <span class="bk-status-count" id="lkCountAll">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-lock-status="active"    role="tab" aria-selected="false">
+                    <i class="fas fa-bolt"></i> Active <span class="bk-status-count" id="lkCountActive">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-lock-status="used"      role="tab" aria-selected="false">
+                    <i class="fas fa-check-circle"></i> Used <span class="bk-status-count" id="lkCountUsed">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-lock-status="expired"   role="tab" aria-selected="false">
+                    <i class="fas fa-hourglass-end"></i> Expired <span class="bk-status-count" id="lkCountExpired">0</span>
+                </button>
+                <button type="button" class="bk-status-tab" data-lock-status="cancelled" role="tab" aria-selected="false">
+                    <i class="fas fa-ban"></i> Cancelled <span class="bk-status-count" id="lkCountCancelled">0</span>
+                </button>
+            </div>
+
+            <div class="inbox-split" id="locksSplit" style="--inbox-list-w:65%;height:auto;min-height:520px;">
+                <div class="inbox-list-wrap table-card">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Lock Ref</th>
+                                    <th>Customer</th>
+                                    <th>Package</th>
+                                    <th>Heads</th>
+                                    <th>Fee</th>
+                                    <th>Locked</th>
+                                    <th>Expires</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allLocksBody">
+                                <tr><td colspan="8" class="table-empty">Loading price locks…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="inbox-divider" id="locksDivider" role="separator" aria-orientation="vertical" aria-label="Drag to resize locks panel" tabindex="0"></div>
+                <div class="inbox-preview-wrap" id="lockPreview">
+                    <div class="inbox-preview-empty">
+                        <i class="fas fa-lock"></i>
+                        <p>Select a lock row to view details, customer and payment id.</p>
                     </div>
                 </div>
             </div>
@@ -2168,12 +2243,13 @@
     <script src="js/refund.js?v=2"></script>
     <script src="js/ai-assistant.js?v=4"></script>
     <script src="js/ai-package-import.js?v=6"></script>
-    <script src="js/dashboard.js?v=44"></script>
+    <script src="js/dashboard.js?v=45"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/inbox.js?v=8"></script>
     <script src="js/inbox-receiver.js?v=9"></script>
     <script src="js/inbox-autoreply.js?v=2"></script>
     <script src="js/dashboard-chats.js?v=2"></script>
+    <script src="js/dashboard-locks.js?v=1"></script>
     <script src="js/security.js?v=2"></script>
     <script>
         document.getElementById('iteBackBtn').addEventListener('click', () => window._closeItineraryEditor());

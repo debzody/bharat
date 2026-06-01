@@ -1193,13 +1193,71 @@
     // Successful price-lock charge → write the lock doc and show
     // confirmation screen. We deliberately DO NOT clear the cart —
     // the customer still has 10 days to come back and convert it.
+    //
+    // Resilience strategy (after the 2026-06 incident where a customer
+    // paid ₹5,000 and saw "could not save the lock" with no recovery
+    // path):
+    //   1) ALWAYS write a fallback record to localStorage immediately,
+    //      keyed under `pendingLocks`. This guarantees we have the
+    //      payment id, lock ref, and amount on disk even before
+    //      Firestore is touched. The customer can refresh, log in,
+    //      come back later — the data is there.
+    //   2) Try Firestore via LocksStore.createLock. If it throws because
+    //      auth isn't ready yet, wait a moment and retry once.
+    //   3) When Firestore eventually succeeds, clear the pendingLocks
+    //      entry. When it fails for good, surface the REAL error
+    //      message to the customer so they can give support actionable
+    //      info, not just a generic "contact support".
+    //   4) Either way, show the success screen — the money has already
+    //      moved at Razorpay, so we don't ever go backwards on the UX.
     function onLockPaymentSuccess(response, lockRef, lockFee, people, name, email, phone, date, notes) {
         var paymentId = (response && response.razorpay_payment_id) || ('LOCK-' + lockRef);
         var pkg = state.cart || {};
 
-        var savePromise = Promise.resolve(null);
-        if (window.LocksStore && window.LocksStore.createLock) {
-            savePromise = window.LocksStore.createLock({
+        // Always-runs fallback: persist the lock locally so it never gets lost.
+        var localRecord = {
+            lockRef:       lockRef,
+            packageId:     pkg.pkgId,
+            packageName:   pkg.name,
+            packagePrice:  pkg.price,
+            people:        people,
+            pricePerHead:  LOCK_PRICE_PER_HEAD,
+            totalPaid:     lockFee,
+            paymentId:     paymentId,
+            travelerName:  name,
+            travelerEmail: email,
+            travelerPhone: phone,
+            travelDate:    date,
+            paidAt:        new Date().toISOString(),
+            expiresAtMs:   Date.now() + LOCK_VALIDITY_MS,
+            status:        'active',
+            firestoreSaved: false
+        };
+        try {
+            var pending = JSON.parse(localStorage.getItem('pendingLocks') || '[]');
+            if (!Array.isArray(pending)) pending = [];
+            // De-dupe: replace any existing entry for the same lockRef.
+            pending = pending.filter(function (p) { return p && p.lockRef !== lockRef; });
+            pending.push(localRecord);
+            localStorage.setItem('pendingLocks', JSON.stringify(pending));
+        } catch (lsErr) {
+            console.warn('[checkout] could not write pendingLocks to localStorage:', lsErr);
+        }
+
+        // Always show the success screen first (money has moved). The
+        // Firestore write happens in the background; we update the
+        // success screen banner if it later fails / succeeds.
+        state.activeLock = Object.assign({}, localRecord, { id: lockRef });
+        renderLockSuccess(lockRef, paymentId, lockFee, people, email);
+
+        // Try the Firestore save with one retry to handle the case
+        // where Firebase auth isn't fully resolved at the moment the
+        // Razorpay callback fires (common race in the embedded flow).
+        function tryCreate() {
+            if (!window.LocksStore || !window.LocksStore.createLock) {
+                return Promise.reject(new Error('LocksStore is not loaded on this page.'));
+            }
+            return window.LocksStore.createLock({
                 bookingRef:    lockRef,
                 packageId:     pkg.pkgId,
                 packageName:   pkg.name,
@@ -1211,39 +1269,46 @@
                 travelerName:  name,
                 travelerEmail: email,
                 travelerPhone: phone
-            }).catch(function (err) {
-                console.warn('[checkout] LocksStore.createLock failed:', err);
-                window.Toast.error('We received your payment but could not save the lock. Please contact support with payment id ' + paymentId + '.', { duration: 12000 });
-                return null;
             });
         }
 
-        savePromise.then(function (saved) {
-            // Stash the active lock on state so the next render() picks
-            // it up (and shows the discounted advance immediately).
-            if (saved) {
-                state.activeLock = Object.assign({
-                    id: saved.id || lockRef,
-                    lockRef: lockRef,
-                    expiresAtMs: Date.now() + LOCK_VALIDITY_MS
-                }, saved);
-            } else {
-                // Fallback object so the UI still reflects the paid lock
-                // even if the Firestore write is still pending.
-                state.activeLock = {
-                    id: lockRef,
-                    lockRef: lockRef,
-                    packageId: pkg.pkgId,
-                    packageName: pkg.name,
-                    people: people,
-                    pricePerHead: LOCK_PRICE_PER_HEAD,
-                    totalPaid: lockFee,
-                    paymentId: paymentId,
-                    expiresAtMs: Date.now() + LOCK_VALIDITY_MS,
-                    status: 'active'
-                };
-            }
-            renderLockSuccess(lockRef, paymentId, lockFee, people, email);
+        function markFirestoreOk(saved) {
+            // Update the local pendingLocks entry so the recovery code
+            // in onCheckoutInit() knows it's safe to drop next time.
+            try {
+                var pending = JSON.parse(localStorage.getItem('pendingLocks') || '[]');
+                pending = pending.filter(function (p) { return p && p.lockRef !== lockRef; });
+                localStorage.setItem('pendingLocks', JSON.stringify(pending));
+            } catch (_) {}
+            state.activeLock = Object.assign({
+                id: (saved && saved.id) || lockRef,
+                lockRef: lockRef,
+                expiresAtMs: Date.now() + LOCK_VALIDITY_MS
+            }, saved || {});
+        }
+
+        function bubbleError(err) {
+            var msg = (err && (err.message || err.code)) || String(err || 'unknown');
+            console.error('[checkout] LocksStore.createLock FAILED — payment_id=' + paymentId +
+                ' lock_ref=' + lockRef + ' people=' + people + ' fee=' + lockFee, err);
+            // Friendlier toast that surfaces what actually went wrong AND
+            // reassures the customer that their money is safe + the lock
+            // is recorded locally so support can recover it.
+            window.Toast.error(
+                'Payment received (₹' + fmt(lockFee) + ', ID ' + paymentId + '). ' +
+                'Saving the lock to our database failed: ' + msg + '. ' +
+                'Don\'t worry — your payment ID + lock reference (' + lockRef + ') are saved on this device. ' +
+                'Please email booking@andamanvoyages.in or call +91 88801 95191 with these details.',
+                { duration: 18000 }
+            );
+        }
+
+        tryCreate().then(markFirestoreOk).catch(function (err1) {
+            console.warn('[checkout] createLock first attempt failed, retrying in 1.5s:', err1);
+            // One retry after a short delay to let Firebase auth settle
+            setTimeout(function () {
+                tryCreate().then(markFirestoreOk).catch(bubbleError);
+            }, 1500);
         });
     }
 

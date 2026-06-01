@@ -8,6 +8,11 @@
  *   5. Re-render the list immediately so the UI shows "Cancelled".
  *   6. Fire-and-forget BookingEmails.sendBookingCancellation in the
  *      background — no mailto:, no manual email composition.
+ *
+ * Price-Lock support (added 2026-06):
+ *   • A 5th tab "Locks" lists every /priceLocks doc owned by the
+ *     signed-in user. The actual rendering is done by js/locks-ui.js,
+ *     which exposes window.LocksUI.renderLocksInto(host).
  */
 (function () {
     'use strict';
@@ -148,8 +153,6 @@
             travellerLine += ', ' + esc(children) + ' child' + (Number(children) !== 1 ? 'ren' : '');
         }
 
-        // Use the booking ref as the key for the cancel button — matches
-        // the merged record (Firestore doc id OR localStorage id).
         var cancelKey = b.booking_ref || b.id || '';
 
         var rows = '';
@@ -194,13 +197,12 @@
         '</div>';
     }
 
+
     // ── Cancellation: update Firestore + localStorage, then send mail in background ──
     async function updateFirestoreCancelled(booking) {
         if (!window.__firebaseReady) return false;
         try {
             var fb = await window.__firebaseReady;
-            // Firestore doc id is stored on _fsId (set during load). Fall
-            // back to id only if it looks like a Firestore-style id.
             var docId = booking._fsId || booking.id;
             if (!docId) return false;
             var ref = fb.firestore.doc(fb.db, 'bookings', String(docId));
@@ -266,10 +268,7 @@
         var msg = 'Cancel this booking?\n\nWe will mark it as cancelled and our team will reach out within 1–2 working days regarding any applicable refund.';
         try {
             if (window.Toast && typeof window.Toast.confirm === 'function') {
-                window.Toast.confirm(msg, {
-                    onYes: onYes,
-                    onNo: function () {}
-                });
+                window.Toast.confirm(msg, { onYes: onYes, onNo: function () {} });
                 return;
             }
         } catch (_) {}
@@ -278,27 +277,12 @@
 
     async function handleCancelClick(key, btn) {
         var booking = findBookingByKey(key);
-        if (!booking) {
-            showToast('error', 'Booking not found.');
-            return;
-        }
+        if (!booking) { showToast('error', 'Booking not found.'); return; }
         if (String(booking.status || '').toLowerCase() === 'cancelled') {
-            showToast('info', 'Already cancelled.');
-            return;
+            showToast('info', 'Already cancelled.'); return;
         }
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…'; }
 
-        // Disable button immediately to prevent double-clicks
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…';
-        }
-
-        // ── Block cancel if Razorpay payment is AUTHORIZED (not captured) ──
-        // An AUTHORIZED payment has only a card hold; money hasn't moved.
-        // Razorpay rejects refunds on uncaptured payments, so we must not
-        // allow the booking to be cancelled in this state. The card hold
-        // will expire automatically; the admin needs to capture or void it
-        // via the Razorpay Dashboard first.
         var isRzp = booking.payment_id && /^pay_/.test(String(booking.payment_id || '')) &&
                     !/^FREE-/i.test(String(booking.payment_id || ''));
         if (isRzp && window.REFUND_WORKER_URL) {
@@ -308,92 +292,47 @@
                 if (statusRes.ok) {
                     var statusData = await statusRes.json();
                     if (statusData && String(statusData.status || '').toLowerCase() === 'authorized') {
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-times-circle"></i> Cancel';
-                        }
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-times-circle"></i> Cancel'; }
                         showToast('error',
                             'Cannot cancel yet — your payment is still being processed (AUTHORIZED). ' +
-                            'Please contact us at +91 88801 95191 or wait a few minutes and try again.'
-                        );
+                            'Please contact us at +91 88801 95191 or wait a few minutes and try again.');
                         return;
                     }
                 }
-            } catch (_) {
-                // If live check fails, allow the cancel to proceed —
-                // better to let the customer cancel than to block them
-                // on a network error.
-            }
+            } catch (_) {}
         }
 
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling…';
-        }
+        if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling…'; }
 
-        // 1. Update Firestore (authoritative store)
         var fsOk = await updateFirestoreCancelled(booking);
-
-        // 2. Mirror in localStorage so /bookings keeps showing it cancelled
         updateLocalStorageCancelled(booking);
-
-        // 3. Update the in-memory record + UI immediately
         booking.status = 'cancelled';
         booking.cancelledAt = new Date().toISOString();
         booking.cancelledBy = 'customer';
         render();
 
-        // 4. Fire-and-forget cancellation email — runs in background, no popup
         if (window.BookingEmails && window.BookingEmails.sendBookingCancellation) {
             window.BookingEmails.sendBookingCancellation(booking, {
                 cancelledBy: 'customer (self-service from /bookings)',
                 reason: 'Cancelled by customer from My Bookings page'
-            }).then(function (sent) {
-                if (sent) {
-                    console.log('[bookings-page] Cancellation email queued for', booking.booking_ref || booking.id);
-                } else {
-                    console.warn('[bookings-page] Cancellation email NOT sent — see earlier console warnings.');
-                }
-            }).catch(function (err) {
-                console.warn('[bookings-page] Cancellation email error:', err);
-            });
-        } else {
-            console.warn('[bookings-page] BookingEmails helper not loaded — cancellation email skipped.');
+            }).catch(function (err) { console.warn('[bookings-page] Cancellation email error:', err); });
         }
 
-        // 5. Auto-process refund (best-effort, runs in background).
-        //    Skips silently for FREE bookings, 0–7 day no-refund slabs,
-        //    or when REFUND_WORKER_URL isn't configured. Only logged-in
-        //    admins can actually trigger Razorpay refunds (the Worker
-        //    enforces this); for customer self-service the refund
-        //    request is parked for admin approval — they get the
-        //    cancellation email and follow up manually.
         var refundMsg = '';
         if (window.Refund && window.Refund.processRefund) {
             try {
-                var refund = await window.Refund.processRefund(booking, {
-                    reason: 'Customer cancellation from /bookings'
-                });
+                var refund = await window.Refund.processRefund(booking, { reason: 'Customer cancellation from /bookings' });
                 if (refund && refund.ok && !refund.skipped) {
                     await window.Refund.saveRefundToBooking(booking, refund);
                     window.Refund.logRefund(booking, refund, 'customer-self-service');
                     refundMsg = ' ₹' + Number(refund.amount).toLocaleString('en-IN') +
                                 ' refund ' + (refund.status === 'processed' ? 'processed' : 'initiated') +
                                 ' to your original payment method (3–5 working days).';
-                    render();   // re-render so the card shows refund status
-                } else if (refund && refund.skipped) {
-                    console.log('[bookings-page] Refund skipped:', refund.reason);
-                } else if (refund && !refund.ok) {
-                    // Most common: customer is not an admin → Worker
-                    // returns 403. That's fine; admin will refund manually
-                    // from /dashboard. Just log it.
-                    console.log('[bookings-page] Refund deferred to admin:', refund.error);
+                    render();
                 }
-            } catch (err) {
-                console.warn('[bookings-page] Refund call threw:', err);
-            }
+            } catch (err) { console.warn('[bookings-page] Refund call threw:', err); }
         }
 
-        // 6. Notify user
         if (fsOk) {
             showToast('success', 'Booking cancelled.' + (refundMsg || ' Our team will contact you shortly regarding refunds.'));
         } else {
@@ -412,15 +351,22 @@
             e.preventDefault();
             var key = btn.getAttribute('data-cancel-ref') || '';
             if (!key) return;
-            confirmCancel(function () {
-                handleCancelClick(key, btn);
-            });
+            confirmCancel(function () { handleCancelClick(key, btn); });
         });
     }
 
     function render() {
         var host = document.getElementById('bookingsContainer');
         if (!host) return;
+        // Locks tab is delegated to LocksUI (js/locks-ui.js).
+        if (_activeFilter === 'locks') {
+            if (window.LocksUI && typeof window.LocksUI.renderLocksInto === 'function') {
+                window.LocksUI.renderLocksInto(host);
+            } else {
+                host.innerHTML = '<div class="bookings-empty-inline"><i class="fas fa-lock"></i><h3>Loading locks…</h3></div>';
+            }
+            return;
+        }
         var filtered = applyFilter(_bookings, _activeFilter);
         if (!filtered.length) {
             host.innerHTML = emptyHtml(_activeFilter);

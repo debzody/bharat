@@ -40,6 +40,50 @@
     "visible": true
   },
   {
+    "id": "honeymoon-4a-2026",
+    "name": "Honeymoon Package (4A) — 2026",
+    "desc": "4N/5D | Port Blair + Havelock | Beach Resort + Candlelight Dinner + Photoshoot + AC Premium Cruise",
+    "price": 29500,
+    "rating": 4.8,
+    "image": "images/beach4.jpg",
+    "inclusions": [
+      "Star Category Accommodation",
+      "Beach Resort at Havelock",
+      "Welcome Drinks & Bouquet",
+      "Breakfast",
+      "Flower Bed Decor + Honeymoon Cake",
+      "1 Night Candlelight Dinner",
+      "AC Personal Car",
+      "Elephant Beach by Speed Boat (with Snorkelling)",
+      "Photoshoot at Radhanagar Beach (15 min)",
+      "All Entry Fees",
+      "Toll Tax & Parking",
+      "Airport Pickup & Drop",
+      "AC Premium Cruise (Havelock)"
+    ],
+    "visible": true
+  },
+  {
+    "id": "royal-4b-2026",
+    "name": "Royal Package (4B) — 2026",
+    "desc": "4N/5D | Port Blair + Havelock + Neil | Star Hotels + AC Premium Cruise + AC Personal Car",
+    "price": 29500,
+    "rating": 4.7,
+    "image": "images/beach3.jpg",
+    "inclusions": [
+      "Star Category Accommodation",
+      "Resort at Havelock & Neil",
+      "Welcome Drinks",
+      "Breakfast & Dinner",
+      "AC Personal Car",
+      "All Entry Fees",
+      "Toll Tax & Parking",
+      "Airport Pickup & Drop",
+      "AC Premium Cruise (Havelock & Neil)"
+    ],
+    "visible": true
+  },
+  {
     "id": "test",
     "name": "🧪 Payment Test Package",
     "desc": "Test the live payment gateway for ₹1 only",
