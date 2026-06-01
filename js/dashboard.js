@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const sectionTitles = {
         overview: 'Dashboard Overview',
         bookings: 'All Bookings',
+        locks:    'Price Locks',
         packages: 'Package Performance',
         gallery:  'Photo Gallery',
         analytics:'Analytics — Google Analytics 4',
