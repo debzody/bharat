@@ -159,6 +159,16 @@ async function handleWebhookEvent(request, env) {
     const fromId = msg.from && msg.from.id;
     const fromName = ((msg.from && (msg.from.first_name || msg.from.username)) || 'Admin');
     const text = String(msg.text || '').trim();
+    // Diagnostic: log every inbound message so wrangler tail surfaces the
+    // chat-id even if the welcome reply fails. Trim text to 80 chars to
+    // keep logs compact.
+    console.log('[telegram-bridge] inbound:', JSON.stringify({
+        chatId: chatId,
+        fromId: fromId,
+        fromName: fromName,
+        textPreview: text.slice(0, 80),
+        textLen: text.length
+    }));
     if (!text || !chatId) return new Response('ok', { status: 200 });
 
     // ── Bot-friendly commands ─────────────────────────────────
@@ -298,55 +308,127 @@ async function handleNotify(request, env) {
     }
 
     // Enrich the message with parent-chat metadata (customer name + email).
+    // We keep the access-token from the settings read above to avoid a
+    // second OAuth round-trip — getFirestoreAccessToken caches anyway, but
+    // belt and braces.
     let parent = null;
+    let token = null;
     try {
-        const t = await getFirestoreAccessToken(env);
-        parent = await firestoreGetDoc(env, t, 'chats', sessionId);
+        token = await getFirestoreAccessToken(env);
+        parent = await firestoreGetDoc(env, token, 'chats', sessionId);
     } catch (_) {}
     const customerName  = (parent && parent.customerName)  || '';
     const customerEmail = (parent && parent.customerEmail) || '';
     const customerLabel = customerName ? customerName + (customerEmail ? ' (' + customerEmail + ')' : '')
                        : (customerEmail || 'a website visitor');
+    const customerPage  = (parent && parent.page)        || '';
 
-    // Telegram supports basic HTML in sendMessage when parse_mode='HTML'.
-    // We use it for bold names / monospace session-id.
-    const text =
-        '💬 <b>New chat from ' + escapeHtml(customerLabel) + '</b>\n\n' +
-        '<i>"' + escapeHtml(preview) + '"</i>\n\n' +
-        '↩ Reply to this message and it will go straight to the customer.\n' +
-        '<code>session: ' + escapeHtml(sessionId) + '</code>';
+    // Conversation-thread heuristic: if we've sent a digest for this
+    // session before and stored its Telegram message-id on the parent
+    // /chats doc, send the new digest as a reply_to_message of the first
+    // one. Telegram then visually threads them in the bot chat — admin
+    // sees a clean per-customer conversation instead of a mixed feed.
+    //
+    // The first digest of a session uses a richer "intro" header
+    // (customer name + email + first-page URL); follow-up messages from
+    // the same customer use a compact body. Both end with the
+    // <code>session: ...</code> marker so /reply auto-detection in the
+    // /webhook handler keeps working when the admin uses any message in
+    // the thread as the reply target.
+    const priorDigestId =
+        parent && parent.telegramDigestMessageId
+            ? Number(parent.telegramDigestMessageId)
+            : 0;
+
+    let text;
+    if (priorDigestId) {
+        // Follow-up message — compact body, threaded under the original.
+        text =
+            '<i>"' + escapeHtml(preview) + '"</i>\n' +
+            '<code>session: ' + escapeHtml(sessionId) + '</code>';
+    } else {
+        // First contact — full intro card with customer details.
+        const subParts = [];
+        if (customerEmail) subParts.push('📧 ' + escapeHtml(customerEmail));
+        if (customerPage)  subParts.push('📄 ' + escapeHtml(customerPage.slice(0, 60)));
+        const subLine = subParts.length ? subParts.join('  ·  ') + '\n\n' : '';
+        text =
+            '💬 <b>New chat from ' + escapeHtml(customerName || customerEmail || 'a website visitor') + '</b>\n' +
+            subLine +
+            '<i>"' + escapeHtml(preview) + '"</i>\n\n' +
+            '↩ Reply to this message and it will go straight to the customer.\n' +
+            '<code>session: ' + escapeHtml(sessionId) + '</code>';
+    }
 
     let res;
     try {
-        res = await tgSendMessage(env, adminChatId, text);
+        res = await tgSendMessage(env, adminChatId, text, priorDigestId);
     } catch (err) {
         return jsonResponse(env, request, { error: 'telegram request failed: ' + (err.message || err) }, 502);
     }
     if (!res.ok) {
-        return jsonResponse(env, request, {
-            error: 'telegram rejected: ' + (res.status || ''),
-            detail: res.body
-        }, 502);
+        // If the prior message was deleted from the bot chat, Telegram
+        // returns 'message to be replied not found' — retry without the
+        // reply target so the admin still gets the digest.
+        if (priorDigestId && res.body && res.body.description &&
+            /reply.*not found/i.test(res.body.description)) {
+            try {
+                res = await tgSendMessage(env, adminChatId, text, 0);
+            } catch (_) {}
+        }
+        if (!res.ok) {
+            return jsonResponse(env, request, {
+                error: 'telegram rejected: ' + (res.status || ''),
+                detail: res.body
+            }, 502);
+        }
     }
+
+    // Store the FIRST digest's message-id on the parent /chats doc so
+    // future digests for the same session can reply_to it. Best-effort —
+    // if Firestore write fails the bridge keeps working, just without
+    // the threading on the next message.
+    const sentMessageId = (res.body && res.body.result && res.body.result.message_id) || null;
+    if (sentMessageId && !priorDigestId && token) {
+        try {
+            await firestoreSetDoc(env, token, ['chats', sessionId].join('/'), {
+                telegramDigestMessageId: Number(sentMessageId)
+            });
+        } catch (_) {}
+    }
+
     return jsonResponse(env, request, {
         ok: true,
-        messageId: (res.body && res.body.result && res.body.result.message_id) || null
+        messageId: sentMessageId,
+        threaded: !!priorDigestId
     });
 }
 
-/* ── Telegram sendMessage helper ────────────────────────────── */
-async function tgSendMessage(env, chatId, text) {
+/* ── Telegram sendMessage helper ──────────────────────────────
+ * Optional 4th arg `replyToMessageId`: when truthy, the new message is
+ * sent as a reply to that message-id, which makes Telegram visually
+ * thread it in the bot chat. We use this in handleNotify() so all
+ * digests for the same /chats session group under the original
+ * "💬 New chat from <name>" intro card. */
+async function tgSendMessage(env, chatId, text, replyToMessageId) {
     if (!env.TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN not configured');
     const url = TELEGRAM_API + '/bot' + env.TELEGRAM_BOT_TOKEN + '/sendMessage';
+    const payload = {
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true
+    };
+    if (replyToMessageId && Number(replyToMessageId) > 0) {
+        payload.reply_parameters = {
+            message_id: Number(replyToMessageId),
+            allow_sending_without_reply: true
+        };
+    }
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: chatId,
-            text: text,
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-        })
+        body: JSON.stringify(payload)
     });
     let json = null;
     try { json = await res.json(); } catch (_) {}
