@@ -1476,6 +1476,31 @@
                         </select>
                     </label>
 
+                    <!-- ── Auto-reply on customer's first message ──────
+                         When the LIVE chat widget (custom provider only)
+                         receives the customer's very first message in a
+                         session, this text is shown back as an
+                         "Andaman Voyages Team" bubble within ~0.5s so the
+                         visitor knows we're notified and is more likely
+                         to keep the tab open until a real human replies.
+                         The bubble is also persisted to Firestore as
+                         role:'bot' so the dashboard's Live Chats panel
+                         shows the same context — the dashboard treats
+                         only role:'admin' as a real human reply, so
+                         this never gets confused with one.
+
+                         Empty value → use the built-in default in
+                         js/live-chat.js. -->
+                    <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.86rem;font-weight:600;color:#3a4a55;margin-top:.6rem;">
+                        Auto-reply on first customer message
+                        <small style="font-weight:400;color:#888;text-transform:none;">
+                            Shown automatically when a visitor sends their first chat message in a session, so they don't feel ignored. Leave blank to use the default.
+                        </small>
+                        <textarea id="liveChatAutoReplyInput" rows="3"
+                                  placeholder="Thank you for contacting us! 🙏 Please share your query and we will assign someone from our team to answer you shortly."
+                                  style="padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:inherit;font-size:.92rem;resize:vertical;min-height:64px;"></textarea>
+                    </label>
+
                     <!-- WhatsApp bridge sub-section (only relevant for 'custom') -->
                     <div id="chatWhatsappBlock" style="margin-top:.85rem;background:#fff;border:1px solid #e3e8ef;border-radius:10px;padding:1rem;">
                         <div class="settings-row">
@@ -3576,6 +3601,9 @@
         var tgChatId          = document.getElementById('telegramBridgeChatId');
         var tgBotUsername     = document.getElementById('telegramBridgeBotUsername');
         var tgOpenBotLink     = document.getElementById('telegramBridgeOpenBot');
+        // Auto-reply text shown when a customer sends their first message
+        // in a LIVE chat session. Read by js/live-chat.js → getAutoReplyText().
+        var autoReplyEl       = document.getElementById('liveChatAutoReplyInput');
         var saveBtn           = document.getElementById('saveChatWidgetBtn');
         var statusEl          = document.getElementById('chatWidgetStatus');
 
@@ -3627,6 +3655,7 @@
                 if (tgUrl)           tgUrl.value           = s.telegramBridgeWorkerUrl || '';
                 if (tgChatId)        tgChatId.value        = s.telegramBridgeChatId || '';
                 if (tgBotUsername)   tgBotUsername.value   = s.telegramBridgeBotUsername || '';
+                if (autoReplyEl)     autoReplyEl.value     = s.liveChatAutoReply || '';
                 refreshVisibility();
                 refreshOpenBotLink();
             }).catch(function () {});
@@ -3659,7 +3688,10 @@
                     telegramBridgeEnabled:       !!(tgToggle && tgToggle.checked),
                     telegramBridgeWorkerUrl:     (tgUrl && tgUrl.value || '').trim(),
                     telegramBridgeChatId:        (tgChatId && tgChatId.value || '').replace(/\s+/g, ''),
-                    telegramBridgeBotUsername:   (tgBotUsername && tgBotUsername.value || '').trim().replace(/^@/, '')
+                    telegramBridgeBotUsername:   (tgBotUsername && tgBotUsername.value || '').trim().replace(/^@/, ''),
+                    // Auto-reply text — empty string means "use built-in default"
+                    // when js/live-chat.js renders the bubble.
+                    liveChatAutoReply:           (autoReplyEl && autoReplyEl.value || '').trim()
                 };
                 // Validate: if WhatsApp bridge is enabled, the URL + phone fields must be filled.
                 if (patch.chatProvider === 'custom' && patch.whatsappBridgeEnabled) {

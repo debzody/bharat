@@ -341,7 +341,7 @@ fileInput.addEventListener('change',async function(){
     persist('user','',url).catch(function(){});
     pingWhatsApp('[photo] '+url);
     pingTelegram('[photo] '+url);
-    if(!fbState.seeded){fbState.seeded=true;setTimeout(function(){addBubble('system','Photo delivered. We will reply soon.');},400);}
+    if(!fbState.seeded){fbState.seeded=true;setTimeout(sendAutoReply,500);}
   }catch(err){
     addBubble('system','Could not upload photo: '+(err&&err.message||err));
   }finally{
@@ -381,9 +381,37 @@ async function send(text){
   persist('user',text).catch(function(){});
   pingWhatsApp(text);
   pingTelegram(text);
-  if(!fbState.seeded){fbState.seeded=true;setTimeout(function(){addBubble('system','Message delivered. We will reply here as soon as someone is available.');},400);}
+  if(!fbState.seeded){fbState.seeded=true;setTimeout(sendAutoReply,500);}
   isBusy=false;sendBtn.disabled=false;
   try{input.focus();}catch(_){}
+}
+
+/* ── Auto-reply on the customer's first message ─────────────────
+ *   Renders an "Andaman Voyages Team" bubble that thanks the visitor
+ *   and lets them know we are notified — purely for UX so they don't
+ *   feel ignored while a human is being paged. The text is editable
+ *   in Dashboard → Settings → Chat Widget (key: liveChatAutoReply); a
+ *   sane default is used otherwise. We also persist this bubble to
+ *   Firestore as role:'bot' so the dashboard's Live Chats panel sees
+ *   the same context the customer is seeing — but with role!='admin'
+ *   so the dashboard doesn't mistake it for a real human reply. */
+function getAutoReplyText(){
+  try{
+    var s=(window.SettingsStore&&window.SettingsStore.cached&&window.SettingsStore.cached())||{};
+    var custom=String(s.liveChatAutoReply||'').trim();
+    if(custom)return custom;
+  }catch(_){}
+  return 'Thank you for contacting us! 🙏 Please share your query and we will assign someone from our team to answer you shortly. During business hours we usually reply within 10 minutes.';
+}
+function sendAutoReply(){
+  var text=getAutoReplyText();
+  // Render in the open bubble immediately
+  addBubble('them',text,'Andaman Voyages Team');
+  // Persist as role:'bot' so the dashboard's Live Chats list shows
+  // the auto-reply in the transcript without mis-attributing it to a
+  // real admin (role:'admin' is reserved for human replies, including
+  // those that come back via the Telegram / WhatsApp bridges).
+  persist('bot',text).catch(function(){});
 }
 
 btn.addEventListener('click',function(){isOpen?close():open();});
