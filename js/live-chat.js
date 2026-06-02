@@ -287,6 +287,24 @@ async function pingWhatsApp(text){
   }catch(_){}
 }
 
+/* Mirror of pingWhatsApp for the Telegram bridge. The worker owns the
+ * bot token + Telegram API call; we just hand it the sessionId + preview
+ * so it can format a digest, DM the admin's bot, and route the admin's
+ * reply back into /chats/{sessionId}/messages — which then streams to
+ * the customer's open browser via the existing Firestore subscription.
+ *
+ * Both bridges fire side-by-side: admin can have WhatsApp on, Telegram
+ * on, both, or neither. The Firestore write is what powers the dashboard
+ * so the bridges are pure notification add-ons, not replacements. */
+async function pingTelegram(text){
+  try{
+    var s=(window.SettingsStore&&window.SettingsStore.cached&&window.SettingsStore.cached())||{};
+    if(!s.telegramBridgeEnabled||!s.telegramBridgeWorkerUrl)return;
+    var url=String(s.telegramBridgeWorkerUrl).replace(/\/+$/,'')+'/notify';
+    await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sessionId,preview:String(text||'').slice(0,500)})}).catch(function(){});
+  }catch(_){}
+}
+
 /* Cloudinary upload */
 function uploadImage(file){
   return new Promise(function(resolve,reject){
@@ -322,6 +340,7 @@ fileInput.addEventListener('change',async function(){
     addBubble('me','',null,url);
     persist('user','',url).catch(function(){});
     pingWhatsApp('[photo] '+url);
+    pingTelegram('[photo] '+url);
     if(!fbState.seeded){fbState.seeded=true;setTimeout(function(){addBubble('system','Photo delivered. We will reply soon.');},400);}
   }catch(err){
     addBubble('system','Could not upload photo: '+(err&&err.message||err));
@@ -361,6 +380,7 @@ async function send(text){
   input.value='';
   persist('user',text).catch(function(){});
   pingWhatsApp(text);
+  pingTelegram(text);
   if(!fbState.seeded){fbState.seeded=true;setTimeout(function(){addBubble('system','Message delivered. We will reply here as soon as someone is available.');},400);}
   isBusy=false;sendBtn.disabled=false;
   try{input.focus();}catch(_){}

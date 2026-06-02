@@ -1521,6 +1521,67 @@
                         </div>
                     </div>
 
+                    <!-- ── Telegram-bridge sub-section (only relevant for 'custom') ──
+                         Mirrors the WhatsApp bridge but uses the Telegram Bot
+                         API (much simpler — no Meta dev account, no review
+                         queue). Bot token + webhook secret live as Cloudflare
+                         Worker secrets on workers/telegram-bridge. The admin's
+                         Telegram chat-id is the only public-facing setting. -->
+                    <div id="chatTelegramBlock" style="margin-top:.85rem;background:#fff;border:1px solid #e3e8ef;border-radius:10px;padding:1rem;">
+                        <div class="settings-row">
+                            <div class="settings-label-block">
+                                <h4 style="margin:0 0 .2rem;font-size:1rem;color:#1c2b48;">
+                                    <i class="fab fa-telegram-plane" style="color:#0088cc;"></i>
+                                    Forward chats to Telegram
+                                </h4>
+                                <p style="font-size:.86rem;color:#666;">
+                                    When enabled, every customer message also lands in your Telegram via the
+                                    <strong>telegram-bridge</strong> Cloudflare Worker. Reply in your bot chat and the
+                                    message returns to the customer's open browser within ~1 second &mdash; same flow
+                                    as WhatsApp, but with a free bot you create in <strong>@BotFather</strong>.
+                                    <em>Setup: see <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">telegram_setup.md</code> in the repo.</em>
+                                </p>
+                            </div>
+                            <label class="toggle-switch" title="Forward customer messages to your Telegram bot">
+                                <input type="checkbox" id="telegramBridgeToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row" style="margin-top:.6rem;flex-direction:column;align-items:stretch;gap:.3rem;">
+                            <label for="telegramBridgeWorkerUrl" style="font-size:.82rem;font-weight:600;color:#666;">
+                                Telegram bridge Worker URL
+                                <small style="color:#aaa;text-transform:none;font-weight:400;">(after deploying <code>workers/telegram-bridge</code>)</small>
+                            </label>
+                            <input type="text" id="telegramBridgeWorkerUrl"
+                                   placeholder="https://telegram-bridge.<account>.workers.dev"
+                                   spellcheck="false"
+                                   style="width:100%;padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:'SF Mono',Menlo,monospace;font-size:.88rem;">
+
+                            <label for="telegramBridgeChatId" style="font-size:.82rem;font-weight:600;color:#666;margin-top:.5rem;">
+                                Your Telegram chat-id
+                                <small style="color:#aaa;text-transform:none;font-weight:400;">(send <code>/chatid</code> to your bot — the worker echoes it back)</small>
+                            </label>
+                            <input type="text" id="telegramBridgeChatId"
+                                   placeholder="123456789"
+                                   spellcheck="false"
+                                   style="width:100%;padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:'SF Mono',Menlo,monospace;font-size:.88rem;">
+
+                            <label for="telegramBridgeBotUsername" style="font-size:.82rem;font-weight:600;color:#666;margin-top:.5rem;">
+                                Bot username <small style="color:#aaa;text-transform:none;font-weight:400;">(optional &mdash; used for the <em>Open bot</em> shortcut)</small>
+                            </label>
+                            <input type="text" id="telegramBridgeBotUsername"
+                                   placeholder="BharatTourismBot"
+                                   spellcheck="false"
+                                   style="width:100%;padding:.55rem .75rem;border:1px solid #cfd9df;border-radius:8px;font-family:'SF Mono',Menlo,monospace;font-size:.88rem;">
+
+                            <small style="color:#888;line-height:1.5;margin-top:.4rem;">
+                                The bot token + webhook secret are <strong>not</strong> stored here &mdash; they live as Cloudflare Worker secrets on the telegram-bridge worker. See <code style="background:#fef9e7;padding:.05rem .3rem;border-radius:3px;">telegram_setup.md</code>.
+                                <br>Quick test: open <a href="#" id="telegramBridgeOpenBot" target="_blank" rel="noopener" style="color:#0088cc;font-weight:600;">your bot in Telegram</a> and send <code>/start</code>.
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="settings-actions" style="margin-top:1.2rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
                         <button class="btn-save-packages" id="saveChatWidgetBtn">
                             <i class="fas fa-save"></i> Save Chat Widget
@@ -3503,6 +3564,14 @@
         var waUrl             = document.getElementById('whatsappBridgeWorkerUrl');
         var waPhone           = document.getElementById('whatsappBridgeAdminPhone');
         var waPhoneNumberId   = document.getElementById('whatsappBridgePhoneNumberId');
+        // Telegram bridge fields (mirrors WhatsApp; both bridges fire
+        // independently from js/chat.js + js/live-chat.js when enabled).
+        var tgBlock           = document.getElementById('chatTelegramBlock');
+        var tgToggle          = document.getElementById('telegramBridgeToggle');
+        var tgUrl             = document.getElementById('telegramBridgeWorkerUrl');
+        var tgChatId          = document.getElementById('telegramBridgeChatId');
+        var tgBotUsername     = document.getElementById('telegramBridgeBotUsername');
+        var tgOpenBotLink     = document.getElementById('telegramBridgeOpenBot');
         var saveBtn           = document.getElementById('saveChatWidgetBtn');
         var statusEl          = document.getElementById('chatWidgetStatus');
 
@@ -3514,14 +3583,31 @@
             statusEl.style.color = isError ? '#c0392b' : '#0a5a68';
         }
 
-        // The WhatsApp block is only relevant when provider === 'custom'.
+        // The WhatsApp + Telegram blocks are only relevant when provider === 'custom'.
+        // When the admin picks 'brevo' or 'none', the bridges are dead-code regardless
+        // (the LIVE chat widget that talks to them only renders for 'custom').
         function refreshVisibility() {
-            if (waBlock) {
-                waBlock.style.display = (providerSel.value === 'custom') ? '' : 'none';
-            }
+            var isCustom = (providerSel.value === 'custom');
+            if (waBlock) waBlock.style.display = isCustom ? '' : 'none';
+            if (tgBlock) tgBlock.style.display = isCustom ? '' : 'none';
         }
         providerSel.addEventListener('change', refreshVisibility);
         refreshVisibility();
+
+        // Live-update the "Open bot in Telegram" deep-link as the admin
+        // types the bot username — saves a roundtrip vs. requiring a save first.
+        function refreshOpenBotLink() {
+            if (!tgOpenBotLink) return;
+            var u = String((tgBotUsername && tgBotUsername.value) || '').trim().replace(/^@/, '');
+            if (!u) {
+                tgOpenBotLink.href = 'https://t.me';
+                tgOpenBotLink.removeAttribute('data-ready');
+            } else {
+                tgOpenBotLink.href = 'https://t.me/' + encodeURIComponent(u);
+                tgOpenBotLink.setAttribute('data-ready', '1');
+            }
+        }
+        if (tgBotUsername) tgBotUsername.addEventListener('input', refreshOpenBotLink);
 
         // Hydrate fields from SettingsStore
         function hydrate() {
@@ -3533,7 +3619,12 @@
                 if (waUrl)           waUrl.value          = s.whatsappBridgeWorkerUrl || '';
                 if (waPhone)         waPhone.value        = s.whatsappBridgeAdminPhone || '';
                 if (waPhoneNumberId) waPhoneNumberId.value = s.whatsappBridgePhoneNumberId || '';
+                if (tgToggle)        tgToggle.checked      = !!s.telegramBridgeEnabled;
+                if (tgUrl)           tgUrl.value           = s.telegramBridgeWorkerUrl || '';
+                if (tgChatId)        tgChatId.value        = s.telegramBridgeChatId || '';
+                if (tgBotUsername)   tgBotUsername.value   = s.telegramBridgeBotUsername || '';
                 refreshVisibility();
+                refreshOpenBotLink();
             }).catch(function () {});
         }
         // Defer until Firebase is ready so SettingsStore can read.
@@ -3558,13 +3649,26 @@
                     whatsappBridgeEnabled:       !!(waToggle && waToggle.checked),
                     whatsappBridgeWorkerUrl:     (waUrl && waUrl.value || '').trim(),
                     whatsappBridgeAdminPhone:    (waPhone && waPhone.value || '').replace(/\D/g, ''),
-                    whatsappBridgePhoneNumberId: (waPhoneNumberId && waPhoneNumberId.value || '').replace(/\D/g, '')
+                    whatsappBridgePhoneNumberId: (waPhoneNumberId && waPhoneNumberId.value || '').replace(/\D/g, ''),
+                    // Telegram bridge — same shape as WhatsApp; the telegram-bridge
+                    // Worker reads these from /settings/site at request time.
+                    telegramBridgeEnabled:       !!(tgToggle && tgToggle.checked),
+                    telegramBridgeWorkerUrl:     (tgUrl && tgUrl.value || '').trim(),
+                    telegramBridgeChatId:        (tgChatId && tgChatId.value || '').replace(/\s+/g, ''),
+                    telegramBridgeBotUsername:   (tgBotUsername && tgBotUsername.value || '').trim().replace(/^@/, '')
                 };
                 // Validate: if WhatsApp bridge is enabled, the URL + phone fields must be filled.
                 if (patch.chatProvider === 'custom' && patch.whatsappBridgeEnabled) {
                     if (!patch.whatsappBridgeWorkerUrl) throw new Error('Worker URL is required when WhatsApp bridge is enabled.');
                     if (!patch.whatsappBridgeAdminPhone) throw new Error('Admin WhatsApp phone is required when bridge is enabled.');
                     if (!patch.whatsappBridgePhoneNumberId) throw new Error('Meta Phone Number ID is required when bridge is enabled.');
+                }
+                // Same validation for Telegram bridge — both URL and chat-id
+                // are mandatory or the worker has nothing to send the digest to.
+                if (patch.chatProvider === 'custom' && patch.telegramBridgeEnabled) {
+                    if (!patch.telegramBridgeWorkerUrl) throw new Error('Worker URL is required when Telegram bridge is enabled.');
+                    if (!patch.telegramBridgeChatId)    throw new Error('Telegram chat-id is required when bridge is enabled. Send /chatid to your bot to retrieve it.');
+                    if (!/^-?\d{5,}$/.test(patch.telegramBridgeChatId)) throw new Error('Telegram chat-id must be a numeric id (e.g. 123456789). Send /chatid to your bot to retrieve it.');
                 }
                 await window.SettingsStore.save(patch);
                 setStatus('✓ Chat widget settings saved. New visitors see the change immediately.');

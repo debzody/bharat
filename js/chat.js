@@ -491,6 +491,36 @@
         } catch (_) {}
     }
 
+    /* Optional: ping the Telegram bridge worker. Mirrors the WhatsApp
+       bridge — the worker owns the bot token + Telegram API call; we
+       just hand it the sessionId + preview so it can format a digest
+       and DM the admin. The admin's reply comes back through the
+       worker's /webhook handler and lands in /chats/{sessionId}/messages
+       just like a dashboard reply, so the customer's open browser
+       gets it via the existing Firestore live-sync.
+
+       Both bridges fire side-by-side (admin can have WhatsApp AND
+       Telegram on simultaneously, or either one alone). The Firestore
+       write that powers the dashboard happens regardless — the
+       bridges are notification add-ons, not replacements. */
+    async function notifyTelegramBridge(text) {
+        try {
+            var s = (window.SettingsStore && window.SettingsStore.cached && window.SettingsStore.cached()) || {};
+            if (!s.telegramBridgeEnabled) return;
+            if (!s.telegramBridgeWorkerUrl) return;
+            var url = String(s.telegramBridgeWorkerUrl).replace(/\/+$/, '') + '/notify';
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: sessionId,
+                    preview:   String(text || '').slice(0, 500)
+                })
+            }).catch(function () {});
+            bridgeNotified = true;
+        } catch (_) {}
+    }
+
     const QUICK_Q = [
         '💰 Package prices', '🏖️ Best beaches', '🤿 Scuba diving',
         '💑 Honeymoon', '📅 Best time to visit', '📞 Contact us'
@@ -582,9 +612,11 @@
         //    if Firestore is unreachable, the bot still answers locally.
         persistMessage('user', text).catch(function () {});
 
-        // 2) Ping the WhatsApp bridge worker (if configured) so the
-        //    admin gets a WhatsApp DM. Fire-and-forget.
+        // 2) Ping the WhatsApp + Telegram bridge workers (whichever
+        //    are configured/enabled). Both are fire-and-forget and run
+        //    in parallel — admin can have one, both, or neither on.
         notifyWhatsAppBridge(text);
+        notifyTelegramBridge(text);
 
         // 3) Local rule-based bot — runs immediately so the customer
         //    isn't left waiting while the human catches up.
