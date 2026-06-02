@@ -591,3 +591,103 @@ body {
     .ite-counts-row { padding: .5rem; }
     .ite-count-pill { font-size: .72rem; padding: .28rem .6rem; }
 }
+
+/* ── Phase 3 Option B — "Tweak this trip" widget ──
+ * Compact mirror of the homepage hero search bar, rendered just under
+ * the .pkg-highlights-bar. Wraps to two rows on desktop, stacks on
+ * mobile. SEARCH bounces the visitor back to /#packages with the
+ * full query string. */
+
+.pkg-tweak-trip {
+    max-width: 1200px;
+    margin: .85rem auto 0;
+    padding: .85rem 1.1rem 1rem;
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(10, 31, 68, 0.06);
+}
+.pkg-tweak-head {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin-bottom: .65rem;
+    color: #1c2b48;
+    font-size: .98rem;
+}
+.pkg-tweak-head i { color: #0d7a8a; font-size: 1rem; }
+.pkg-tweak-head strong { font-weight: 700; }
+.pkg-tweak-sub {
+    color: #6b7a99;
+    font-size: .82rem;
+    font-weight: 400;
+    margin-left: .35rem;
+}
+.pkg-tweak-fields {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr .8fr .8fr 1fr auto;
+    gap: .6rem;
+    align-items: end;
+}
+.pkg-tweak-field {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    min-width: 0;
+}
+.pkg-tweak-field span {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #5a6877;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.pkg-tweak-field input,
+.pkg-tweak-field select {
+    width: 100%;
+    padding: .55rem .7rem;
+    border: 1px solid #cfd9df;
+    border-radius: 8px;
+    font: inherit;
+    font-size: .92rem;
+    color: #1c2b48;
+    background: #fff;
+    transition: border-color .12s, box-shadow .12s;
+}
+.pkg-tweak-field input:focus,
+.pkg-tweak-field select:focus {
+    outline: none;
+    border-color: #0d7a8a;
+    box-shadow: 0 0 0 3px rgba(13, 122, 138, .15);
+}
+.pkg-tweak-btn {
+    padding: .65rem 1.1rem;
+    background: linear-gradient(135deg, #0d7a8a, #16a085);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    box-shadow: 0 2px 8px rgba(13, 122, 138, .25);
+    transition: transform .1s, filter .15s;
+}
+.pkg-tweak-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.pkg-tweak-btn:active { transform: none; }
+
+@media (max-width: 900px) {
+    .pkg-tweak-fields {
+        grid-template-columns: 1fr 1fr;
+    }
+    .pkg-tweak-btn { grid-column: 1 / -1; padding: .7rem; justify-content: center; }
+}
+@media (max-width: 600px) {
+    .pkg-tweak-trip { margin: .6rem .75rem 0; padding: .7rem .85rem; border-radius: 10px; }
+    .pkg-tweak-head { font-size: .9rem; flex-wrap: wrap; }
+    .pkg-tweak-sub { width: 100%; margin-left: 0; }
+    .pkg-tweak-fields { grid-template-columns: 1fr; }
+}
