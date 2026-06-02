@@ -488,6 +488,19 @@
         whatsappBridgeAdminPhone: '',     // E.164 without '+', e.g. 918880195191
         whatsappBridgePhoneNumberId: '',  // Meta WhatsApp Phone Number ID (numeric)
 
+        // ── Telegram Cloud-Bot bridge (admin-only) ───────────
+        // When `chatProvider === 'custom'` AND `telegramBridgeEnabled`
+        // is true, every new customer chat message is also DM'd to the
+        // admin's Telegram via the telegram-bridge Worker. Admin replies
+        // in their bot chat are routed back into the customer's session.
+        // Same store/worker pattern as the WhatsApp bridge — only the
+        // public bits live here; bot token + webhook secret live as
+        // Cloudflare Worker secrets on workers/telegram-bridge.
+        telegramBridgeEnabled:    false,
+        telegramBridgeWorkerUrl:  '',     // e.g. https://telegram-bridge.<acc>.workers.dev
+        telegramBridgeChatId:     '',     // Admin's Telegram chat-id (use /chatid in the bot)
+        telegramBridgeBotUsername:'',     // Optional, for the "Open Bot" link in Settings (e.g. @BharatTourismBot)
+
         // ── Gallery upload-form dropdown options (admin-managed) ──
         // The staff-facing upload form on /dashboard locks Category /
         // Place / Package to a fixed dropdown so they can ONLY pick from
