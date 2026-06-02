@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=2">
+    <link rel="stylesheet" href="css/package.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
@@ -461,6 +461,67 @@ function renderPage(pkg) {
             ${(pkg.highlights || []).map(h => `<div class="pkg-highlight-item"><i class="fas fa-check-circle"></i> ${h}</div>`).join('')}
         </div>
 
+        <!-- Phase 3 Option B — "Tweak this trip" widget.
+             Compact mirror of the homepage hero search bar. Pre-fills from
+             sessionStorage.searchContext (set by the homepage SEARCH btn) so
+             whatever the visitor entered there carries over. Clicking
+             "Update search" pushes a fresh ?from=…&date=…&adults=…&children=…
+             &category=… back to /#packages, which Phase 3 already wires to
+             auto-apply on the homepage. -->
+        <div class="pkg-tweak-trip" id="pkgTweakTrip">
+            <div class="pkg-tweak-head">
+                <i class="fas fa-pen-to-square"></i>
+                <strong>Tweak this trip</strong>
+                <span class="pkg-tweak-sub">change dates / heads / package style</span>
+            </div>
+            <div class="pkg-tweak-fields">
+                <label class="pkg-tweak-field">
+                    <span>Travelling from</span>
+                    <input type="text" id="ttFrom" placeholder="e.g. Bangalore" autocomplete="off">
+                </label>
+                <label class="pkg-tweak-field">
+                    <span>Travel date</span>
+                    <input type="date" id="ttDate">
+                </label>
+                <label class="pkg-tweak-field">
+                    <span>Adults</span>
+                    <select id="ttAdults">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                    </select>
+                </label>
+                <label class="pkg-tweak-field">
+                    <span>Kids</span>
+                    <select id="ttChildren">
+                        <option value="0" selected>0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </label>
+                <label class="pkg-tweak-field">
+                    <span>Category</span>
+                    <select id="ttCategory">
+                        <option value="all">Any</option>
+                        <option value="budget">Budget</option>
+                        <option value="standard">Standard</option>
+                        <option value="deluxe">Deluxe</option>
+                        <option value="luxury">Luxury</option>
+                        <option value="royal">Royal</option>
+                        <option value="honeymoon">Honeymoon</option>
+                    </select>
+                </label>
+                <button type="button" class="pkg-tweak-btn" id="ttSearchBtn">
+                    <i class="fas fa-search"></i> Update search
+                </button>
+            </div>
+        </div>
+
         <!-- Main Content -->
         <div class="pkg-main">
             <!-- Left Column -->
@@ -695,6 +756,115 @@ function renderPage(pkg) {
     // Lightbox click to close
     const lightbox = document.getElementById('lightbox');
     if (lightbox) lightbox.addEventListener('click', () => { lightbox.style.display = 'none'; });
+
+    // ── Phase 3 Option B — wire the "Tweak this trip" widget ───
+    wireTweakTrip(pkg);
+}
+
+// Phase 3 Option B — hydrate the inline trip-tweaker with whatever the
+// visitor entered on the homepage (sessionStorage.searchContext) and
+// pre-select Category from the package they're currently viewing.
+// Clicking the SEARCH button bounces them back to /#packages with the
+// updated query string — js/script.js' `initMmtSearchDefaults` IIFE
+// then auto-applies all five fields to the homepage hero search bar
+// AND to mmtState.cat for the first render.
+function wireTweakTrip(pkg) {
+    const tt = document.getElementById('pkgTweakTrip');
+    if (!tt) return;
+
+    const fromEl     = document.getElementById('ttFrom');
+    const dateEl     = document.getElementById('ttDate');
+    const adultsEl   = document.getElementById('ttAdults');
+    const childrenEl = document.getElementById('ttChildren');
+    const categoryEl = document.getElementById('ttCategory');
+    const btn        = document.getElementById('ttSearchBtn');
+
+    // Min date = today; default = today + 30 days when empty.
+    if (dateEl) {
+        dateEl.min = new Date().toISOString().slice(0, 10);
+        if (!dateEl.value) {
+            const d = new Date(); d.setDate(d.getDate() + 30);
+            dateEl.value = d.toISOString().slice(0, 10);
+        }
+    }
+
+    // Pre-fill from sessionStorage.searchContext (set by the homepage
+    // hero SEARCH button). Falls through silently when nothing's there.
+    let sc = null;
+    try { sc = JSON.parse(sessionStorage.getItem('searchContext') || 'null'); } catch (e) {}
+    if (sc) {
+        if (fromEl     && sc.from)              fromEl.value     = sc.from;
+        if (dateEl     && sc.date)              dateEl.value     = sc.date;
+        if (adultsEl   && sc.adults != null)    adultsEl.value   = String(sc.adults);
+        if (childrenEl && sc.children != null)  childrenEl.value = String(sc.children);
+    }
+
+    // Category default = the slug for THIS package (so the widget feels
+    // pre-set to "show me more like this"). Falls back to "all".
+    if (categoryEl) {
+        const slug = (function () {
+            const explicit = String(pkg.category || '').trim().toLowerCase();
+            if (explicit) return explicit;
+            const name = String(pkg.name || '').toLowerCase();
+            const id   = String(pkg.id || '').toLowerCase();
+            if (/honeymoon/.test(name) || id === 'honeymoon')      return 'honeymoon';
+            if (/royal/.test(name))                                return 'royal';
+            if (/luxury|premium|5[\s-]?star/.test(name) || id === 'luxury') return 'luxury';
+            if (/deluxe/.test(name))                               return 'deluxe';
+            if (/budget|backpack|saver|economy/.test(name) || id === 'budget') return 'budget';
+            return 'all';
+        })();
+        const has = Array.prototype.some.call(categoryEl.options, o => o.value === slug);
+        categoryEl.value = has ? slug : 'all';
+        // sessionStorage value (if any) wins — the visitor explicitly set it
+        if (sc && sc.category) {
+            const has2 = Array.prototype.some.call(categoryEl.options, o => o.value === sc.category);
+            if (has2) categoryEl.value = sc.category;
+        }
+    }
+
+    if (btn) {
+        btn.addEventListener('click', () => {
+            const from     = (fromEl && fromEl.value || '').trim();
+            const date     = dateEl ? dateEl.value : '';
+            const adults   = adultsEl ? parseInt(adultsEl.value, 10) || 2 : 2;
+            const children = childrenEl ? parseInt(childrenEl.value, 10) || 0 : 0;
+            const category = categoryEl ? (categoryEl.value || 'all').toLowerCase() : 'all';
+
+            if (!from) {
+                alert('Please enter your travelling-from city.');
+                if (fromEl) fromEl.focus();
+                return;
+            }
+            if (!date) {
+                alert('Please pick a travel date.');
+                if (dateEl) dateEl.focus();
+                return;
+            }
+
+            // Persist for downstream booking flow (mirrors index.html)
+            const ctx = { from, to: 'Andaman', date, adults, children, category, totalPersons: adults + children };
+            try { sessionStorage.setItem('searchContext', JSON.stringify(ctx)); } catch (e) {}
+
+            // GA4 — search event
+            try {
+                window.Analytics && window.Analytics.search(
+                    `${from} → Andaman | ${date} | ${adults}A${children}C | ${category} (from package page)`
+                );
+            } catch (e) {}
+
+            // Bounce to homepage with full search params; #packages anchor
+            // scrolls the grid into view, mmt-search hydrator on index.html
+            // re-applies the form & filter on first paint.
+            const next = new URLSearchParams();
+            next.set('from', from);
+            next.set('date', date);
+            next.set('adults', String(adults));
+            next.set('children', String(children));
+            if (category && category !== 'all') next.set('category', category);
+            window.location.href = '/?' + next.toString() + '#packages';
+        });
+    }
 }
 
 function openImgLightbox(src) {

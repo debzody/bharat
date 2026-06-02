@@ -6,6 +6,7 @@
     "price": 15999,
     "rating": 4.2,
     "image": "images/beach1.jpg",
+    "category": "Budget",
     "inclusions": ["Hotels", "Ferries", "Breakfast"],
     "visible": true
   },
@@ -16,6 +17,7 @@
     "price": 21999,
     "rating": 4.6,
     "image": "images/beach2.jpg",
+    "category": "Standard",
     "inclusions": ["Deluxe Hotels", "Premium Ferries", "Snorkeling"],
     "visible": true
   },
@@ -26,6 +28,7 @@
     "price": 28999,
     "rating": 4.8,
     "image": "images/beach3.jpg",
+    "category": "Luxury",
     "inclusions": ["5* Resorts", "VIP Ferries", "Scuba Dive"],
     "visible": true
   },
@@ -36,6 +39,7 @@
     "price": 24999,
     "rating": 4.9,
     "image": "images/beach4.jpg",
+    "category": "Honeymoon",
     "inclusions": ["Romantic Setup", "Photoshoot", "Dinner"],
     "visible": true
   },
@@ -46,6 +50,7 @@
     "price": 29500,
     "rating": 4.8,
     "image": "images/beach4.jpg",
+    "category": "Honeymoon",
     "inclusions": [
       "Star Category Accommodation",
       "Beach Resort at Havelock",
@@ -70,6 +75,7 @@
     "price": 29500,
     "rating": 4.7,
     "image": "images/beach3.jpg",
+    "category": "Royal",
     "inclusions": [
       "Star Category Accommodation",
       "Resort at Havelock & Neil",
