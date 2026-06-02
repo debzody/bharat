@@ -93,6 +93,7 @@
         /* Hide every sidebar link except Packages + Gallery for staff */
         html[data-dashboard-role="staff"] .sidebar-link[data-section="overview"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="bookings"],
+        html[data-dashboard-role="staff"] .sidebar-link[data-section="locks"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="inbox"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="chats"],
         html[data-dashboard-role="staff"] .sidebar-link[data-section="analytics"],
@@ -101,13 +102,16 @@
         html[data-dashboard-role="staff"] .sidebar-link[data-section="settings"] {
             display: none !important;
         }
-        /* Belt-and-braces: hide the Live Chats section content itself
-           (so a staff user who somehow forces #section-chats — e.g. a
-           hand-edited URL or a stale localStorage value — sees nothing).
+        /* Belt-and-braces: hide the Live Chats + Locks section content itself
+           (so a staff user who somehow forces #section-chats / #section-locks
+           — e.g. a hand-edited URL or a stale localStorage value — sees nothing).
            The activate-section logic in dashboard.js already redirects
-           staff away from this section, but it's safer to also gate on
-           CSS in case the script ordering changes. */
-        html[data-dashboard-role="staff"] #section-chats {
+           staff away from these sections, but it's safer to also gate on
+           CSS in case the script ordering changes. Price Locks is admin-only
+           because it shows every customer's payment id + lock fee, which staff
+           shouldn't have visibility into. */
+        html[data-dashboard-role="staff"] #section-chats,
+        html[data-dashboard-role="staff"] #section-locks {
             display: none !important;
         }
         /* Hide admin-only controls in the Packages section.
