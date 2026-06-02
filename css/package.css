@@ -466,3 +466,128 @@ body {
     .pkg-hero-meta { gap: 0.75rem; }
     .pkg-hero-meta .price-badge { font-size: 1rem; }
 }
+/* ── Phase 2 — MMT-style typed itinerary timeline (public renderer) ──
+ * Rendered by package.html when pkg.days[].blocks is non-empty.
+ * Falls back to .timeline-activities (the legacy plain list) when
+ * blocks are missing — both styles coexist within the same .timeline. */
+
+.ite-counts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin: 0 0 1rem;
+    padding: .65rem .85rem;
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+    border: 1px solid #fbe1b6;
+    border-radius: 10px;
+}
+.ite-count-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    background: #fff;
+    color: #a04000;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    border: 1px solid #f3dfb6;
+}
+.ite-count-pill i { color: #d97706; }
+
+.ite-pub-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+    margin: .6rem 0 .35rem;
+}
+.ite-pub-block {
+    display: flex;
+    gap: .85rem;
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 10px;
+    padding: .75rem .85rem;
+    transition: border-color .15s, box-shadow .15s;
+}
+.ite-pub-block:hover {
+    border-color: #cfd9df;
+    box-shadow: 0 4px 12px rgba(10, 31, 68, 0.06);
+}
+.ite-pub-thumb {
+    flex-shrink: 0;
+    width: 96px;
+    height: 96px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f3f5;
+}
+.ite-pub-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.ite-pub-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #eef6f8;
+    color: #0d7a8a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+.ite-pub-body { flex: 1; min-width: 0; }
+.ite-pub-type {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #0d7a8a;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .15rem;
+}
+.ite-pub-title {
+    font-size: .98rem;
+    font-weight: 700;
+    color: #1c2b48;
+    line-height: 1.35;
+    margin-bottom: .2rem;
+    word-break: break-word;
+}
+.ite-pub-meta {
+    font-size: .82rem;
+    color: #5a6877;
+    line-height: 1.5;
+    margin-bottom: .25rem;
+}
+.ite-pub-meta i { margin-right: .15rem; opacity: .8; }
+.ite-pub-desc {
+    margin: .25rem 0 0;
+    font-size: .88rem;
+    color: #444;
+    line-height: 1.55;
+}
+
+/* Per-type accent bars (left edge) — match the editor styling */
+.ite-pub-block.ite-pub-activity     { border-left: 3px solid #0d7a8a; }
+.ite-pub-block.ite-pub-transfer     { border-left: 3px solid #3498db; }
+.ite-pub-block.ite-pub-hotel        { border-left: 3px solid #9b59b6; }
+.ite-pub-block.ite-pub-sightseeing  { border-left: 3px solid #16a085; }
+.ite-pub-block.ite-pub-meal         { border-left: 3px solid #e67e22; }
+.ite-pub-block.ite-pub-flight       { border-left: 3px solid #e74c3c; }
+.ite-pub-block.ite-pub-hotel-checkout { border-left: 3px solid #95a5a6; }
+
+@media (max-width: 600px) {
+    .ite-pub-block { padding: .6rem; gap: .6rem; }
+    .ite-pub-thumb { width: 72px; height: 72px; }
+    .ite-pub-title { font-size: .92rem; }
+    .ite-counts-row { padding: .5rem; }
+    .ite-count-pill { font-size: .72rem; padding: .28rem .6rem; }
+}

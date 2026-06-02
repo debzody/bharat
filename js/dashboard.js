@@ -1930,8 +1930,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function buildDayCard(pkgIdx, dayIdx, day) {
-        // Ensure imageIds always exists so we can mutate it safely
+        // Ensure imageIds + blocks always exist so we can mutate them safely.
+        // Phase 2 (package_redesign_plan.md): the typed `blocks[]` array is
+        // additive — when it has rows, the public renderer shows an MMT-style
+        // typed timeline. When empty, the renderer falls back to the legacy
+        // `activities[]` plain list. Existing packages keep working unchanged.
         if (!Array.isArray(day.imageIds)) day.imageIds = [];
+        if (!Array.isArray(day.blocks))   day.blocks   = [];
 
         const el = document.createElement('div');
         el.className = 'ite-day-card';
@@ -1972,6 +1977,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
                 <div class="ite-day-gallery-strip"></div>
                 <div class="ite-day-gallery-status"></div>
+            </div>
+            <!-- Phase 2: typed trip-blocks (MMT-style timeline). Empty → public renderer falls back to activities[]. -->
+            <div class="ite-blocks-section" data-day-blocks>
+                <div class="ite-blocks-head">
+                    <label>Trip Blocks <small>(<span class="ite-blocks-count">0</span>) — leave empty to keep the plain Activities list above</small></label>
+                </div>
+                <div class="ite-blocks-toolbar"></div>
+                <div class="ite-blocks-list"></div>
             </div>
         `;
         // Set textarea value directly (avoids HTML entity issues)
@@ -2118,6 +2131,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Initial paint
         refreshStrip();
+
+        // Phase 2: wire the typed trip-blocks editor (MMT-style timeline).
+        // Self-contained module in js/itinerary-blocks.js — mutates day.blocks directly.
+        if (window.IteBlocks && typeof window.IteBlocks.wire === 'function') {
+            window.IteBlocks.wire(el.querySelector('[data-day-blocks]'), day);
+        }
 
         return el;
     }

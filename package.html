@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css">
+    <link rel="stylesheet" href="css/package.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
@@ -124,6 +124,7 @@
     <script src="js/firebase-config.js?v=21"></script>
     <script src="js/analytics.js?v=1"></script>
     <script src="js/dataStore.js?v=25"></script>
+    <script src="js/itinerary-blocks.js?v=1"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/travelpayouts-init.js?v=1"></script>
     <!-- ── Google AdSense loader (publisher pub-8154901590978667) ── -->
@@ -473,21 +474,98 @@ function renderPage(pkg) {
                 <!-- Itinerary -->
                 <div class="pkg-section">
                     <h2><i class="fas fa-map-marked-alt"></i> Day-by-Day Itinerary</h2>
+                    ${(function () {
+                        // Phase 2 — MMT-style typed timeline.
+                        // Show the counts strip + per-day typed-block rendering when ANY day
+                        // has a blocks[] array. When empty, the legacy `activities[]` plain
+                        // list renders below — back-compat for every existing package.
+                        var IB = window.IteBlocks;
+                        var hasBlocks = !!(IB && IB.hasAnyBlocks && IB.hasAnyBlocks(pkg.days));
+                        if (!hasBlocks) return '';
+                        var c = IB.countBlocks(pkg.days);
+                        function pill(n, label, icon) {
+                            if (!n) return '';
+                            return '<span class="ite-count-pill"><i class="fas ' + icon + '"></i> ' +
+                                   n + ' ' + label + '</span>';
+                        }
+                        return '<div class="ite-counts-row">' +
+                            pill(c.transfers,   'TRANSFERS',   'fa-bus') +
+                            pill(c.hotels,      'HOTELS',      'fa-hotel') +
+                            pill(c.activities,  'ACTIVITIES',  'fa-person-walking') +
+                            pill(c.sightseeing, 'SIGHTSEEING', 'fa-camera') +
+                            pill(c.meals,       'MEALS',       'fa-utensils') +
+                            pill(c.flights,     'FLIGHTS',     'fa-plane-departure') +
+                        '</div>';
+                    })()}
                     <div class="timeline">
-                        ${(pkg.days || []).map(d => `
-                        <div class="timeline-day">
-                            <div class="timeline-dot">${d.day}</div>
-                            <div class="timeline-day-header">
-                                <span class="day-badge">Day ${d.day}</span>
-                                <span class="timeline-day-title">${d.title}</span>
-                            </div>
-                            ${d.desc ? `<p class="timeline-day-desc">${d.desc}</p>` : ''}
-                            <ul class="timeline-activities">
-                                ${(d.activities || []).map(a => `<li><i class="fas fa-chevron-right"></i> ${a}</li>`).join('')}
-                            </ul>
-                            <!-- Per-day photo strip — populated by hydrateDayGalleries() after render -->
-                            <div class="day-photo-strip" data-day-photos="${(d.imageIds || []).join(',')}"></div>
-                        </div>`).join('')}
+                        ${(pkg.days || []).map(d => {
+                            var IB2 = window.IteBlocks;
+                            var blocks = Array.isArray(d.blocks) ? d.blocks : [];
+                            var esc = (IB2 && IB2.escHtml) ? IB2.escHtml : (s => String(s == null ? '' : s)
+                                .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+                            var blockMeta = (IB2 && IB2.blockMeta) ? IB2.blockMeta : (function (t) {
+                                var m = { activity:'fa-person-walking', transfer:'fa-bus', hotel:'fa-hotel',
+                                          sightseeing:'fa-camera', meal:'fa-utensils', flight:'fa-plane-departure',
+                                          'hotel-checkout':'fa-right-from-bracket' };
+                                return { type: t, icon: m[t] || 'fa-circle', label: t || '' };
+                            });
+                            // Render one typed block as an MMT-style row
+                            function renderBlock(b) {
+                                var meta = blockMeta(b.type);
+                                var titleParts = [];
+                                if (b.title) titleParts.push(esc(b.title));
+                                else if (b.type === 'meal' && b.label) titleParts.push(esc(b.label));
+                                else if (b.type === 'hotel-checkout') titleParts.push('Hotel Check-out');
+                                var title = titleParts.join(' ');
+                                var metaBits = [];
+                                if (b.duration)   metaBits.push('<i class="far fa-clock"></i> ' + esc(b.duration));
+                                if (b.timeOfDay)  metaBits.push(esc(b.timeOfDay));
+                                if (b.place)      metaBits.push('<i class="fas fa-location-dot"></i> ' + esc(b.place));
+                                if (b.vehicle)    metaBits.push(esc(b.vehicle));
+                                if (b.starRating) metaBits.push('★ ' + esc(b.starRating));
+                                if (b.checkIn)    metaBits.push('Check-in: ' + esc(b.checkIn));
+                                if (b.checkOut)   metaBits.push('Check-out: ' + esc(b.checkOut));
+                                if (b.nights)     metaBits.push(esc(b.nights) + ' night' + (Number(b.nights) === 1 ? '' : 's'));
+                                if (b.roomType)   metaBits.push(esc(b.roomType));
+                                if (b.address)    metaBits.push(esc(b.address));
+                                if (b.departTime) metaBits.push('Departs ' + esc(b.departTime));
+                                if (b.arriveTime) metaBits.push('Arrives ' + esc(b.arriveTime));
+                                if (b.mealsIncluded && b.mealsIncluded.length) {
+                                    metaBits.push('Meals: ' + esc((Array.isArray(b.mealsIncluded) ? b.mealsIncluded.join(', ') : b.mealsIncluded)));
+                                }
+                                return '<div class="ite-pub-block ite-pub-' + esc(b.type) + '">' +
+                                    (b.imageUrl
+                                        ? '<div class="ite-pub-thumb"><img src="' + esc(b.imageUrl) + '" alt="" loading="lazy" decoding="async"></div>'
+                                        : '<div class="ite-pub-icon"><i class="fas ' + esc(meta.icon) + '"></i></div>'
+                                    ) +
+                                    '<div class="ite-pub-body">' +
+                                        '<div class="ite-pub-type">' +
+                                            '<i class="fas ' + esc(meta.icon) + '"></i> ' + esc(meta.label) +
+                                        '</div>' +
+                                        (title ? '<div class="ite-pub-title">' + title + '</div>' : '') +
+                                        (metaBits.length ? '<div class="ite-pub-meta">' + metaBits.join(' &middot; ') + '</div>' : '') +
+                                        (b.description ? '<p class="ite-pub-desc">' + esc(b.description) + '</p>' : '') +
+                                    '</div>' +
+                                '</div>';
+                            }
+                            return `
+                            <div class="timeline-day">
+                                <div class="timeline-dot">${d.day}</div>
+                                <div class="timeline-day-header">
+                                    <span class="day-badge">Day ${d.day}</span>
+                                    <span class="timeline-day-title">${d.title || ''}</span>
+                                </div>
+                                ${d.desc ? `<p class="timeline-day-desc">${d.desc}</p>` : ''}
+                                ${blocks.length
+                                    ? '<div class="ite-pub-blocks">' + blocks.map(renderBlock).join('') + '</div>'
+                                    : `<ul class="timeline-activities">
+                                        ${(d.activities || []).map(a => `<li><i class="fas fa-chevron-right"></i> ${a}</li>`).join('')}
+                                      </ul>`
+                                }
+                                <!-- Per-day photo strip — populated by hydrateDayGalleries() after render -->
+                                <div class="day-photo-strip" data-day-photos="${(d.imageIds || []).join(',')}"></div>
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
 
