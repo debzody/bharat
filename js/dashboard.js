@@ -2517,6 +2517,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Phase 1.2 — Category dropdown.
+        // Allowed values mirror the public filter pills the user requested
+        // in package_redesign_plan.md. Empty string = no category (treated
+        // as "Standard" by the public renderer for back-compat).
+        const PKG_CATEGORIES = ['Budget','Standard','Deluxe','Luxury','Royal','Honeymoon'];
+
         container.innerHTML = packagesData.map((pkg, idx) => `
             <div class="pkg-edit-card" data-idx="${idx}">
                 <div class="pkg-edit-header">
@@ -2526,7 +2532,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             onchange="window._pkgUpdate(${idx},'visible',this.checked)">
                         <span>Visible</span>
                     </label>
-                    <label class="pkg-visible-toggle" style="background:${pkg.soldOut ? '#fdedec' : '#f7f9fc'};color:${pkg.soldOut ? '#c0392b' : 'inherit'};">
+                    <label class="pkg-visible-toggle ${pkg.soldOut ? 'is-soldout' : ''}">
                         <input type="checkbox" ${pkg.soldOut === true ? 'checked' : ''}
                             onchange="window._pkgUpdate(${idx},'soldOut',this.checked)">
                         <span>Sold&nbsp;Out</span>
@@ -2560,17 +2566,26 @@ document.addEventListener('DOMContentLoaded', function () {
                                 oninput="window._pkgUpdate(${idx},'rating',parseFloat(this.value)||0)">
                         </div>
                     </div>
+                    <div class="pkg-edit-row pkg-edit-row-2col">
+                        <div>
+                            <label>Category</label>
+                            <select class="pkg-input" onchange="window._pkgUpdate(${idx},'category',this.value)">
+                                <option value="" ${!pkg.category ? 'selected' : ''}>— Choose —</option>
+                                ${PKG_CATEGORIES.map(c => `<option value="${c}" ${pkg.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Image</label>
+                            <select class="pkg-input" onchange="window._pkgUpdate(${idx},'image',this.value)">
+                                ${SITE_IMAGES.map(img => `<option value="${img}" ${pkg.image===img?'selected':''}>${img.split('/').pop()}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
                     <div class="pkg-edit-row">
                         <label>Inclusions <small>(comma-separated)</small></label>
                         <input type="text" class="pkg-input" value="${escHtml((pkg.inclusions||[]).join(', '))}"
                             placeholder="e.g. Hotels, Ferries, Breakfast"
                             oninput="window._pkgUpdate(${idx},'inclusions',this.value.split(',').map(s=>s.trim()).filter(Boolean))">
-                    </div>
-                    <div class="pkg-edit-row">
-                        <label>Image</label>
-                        <select class="pkg-input" onchange="window._pkgUpdate(${idx},'image',this.value)">
-                            ${SITE_IMAGES.map(img => `<option value="${img}" ${pkg.image===img?'selected':''}>${img.split('/').pop()}</option>`).join('')}
-                        </select>
                     </div>
                 </div>
                 <!-- Itinerary Editor Button -->

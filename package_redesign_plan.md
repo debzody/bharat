@@ -31,14 +31,18 @@ The user attached four screenshots: the current dashboard package card (problem 
 
 ## Phase plan (next session)
 
-### Phase 1 · Quick wins (~1 hour)
+### Phase 1 · Quick wins ✅ SHIPPED
 
-| # | Task | Files | Notes |
-|---|------|-------|-------|
-| 1 | Fix invisible **Visible / Sold Out** label row in package editor card | `css/dashboard.css` | Add explicit `color: var(--dash-text, #1c2b48)` to `.pkg-edit-head .field-row label` etc. Test all six themes (`hacker / light / ocean / sunset / midnight / cyberpunk`). |
-| 2 | Add **Category** dropdown to each package editor card | `dashboard.html` (template render in `js/dashboard.js` `renderPackagesEditor()`), `js/dataStore.js` (add `category: ''` to default doc shape) | Values: `Budget · Standard · Deluxe · Luxury · Royal · Honeymoon`. Saved as `pkg.category`. |
-| 3 | Surface category in the public package list | `package.html` (or wherever `js/dataStore.js → loadPackages()` is rendered to a grid), `index.html` (homepage featured packages) | Show as a coloured pill on the card; expose `data-category` for client-side filtering. |
-| 4 | Filter pills row on `/packages` list | the page that lists all packages (currently `index.html`'s "Packages" section + `package.html`'s related-packages strip) | Mirrors the existing `inbox-mailbox-tabs` style: All · Budget · Standard · …, with counts. Pure client-side `filter()` — no Firestore re-query. |
+| # | Task | Files touched | Status |
+|---|------|---------------|--------|
+| 1 | Fix invisible **Visible / Sold Out** label row | `css/dashboard.css` (lines ~750–810) | ✅ Done — `.pkg-edit-header` now locks `color: #1c2b48`, descendants use `color: inherit`, `.pkg-visible-toggle` got an explicit teal-on-light pill styling, and a new `.pkg-visible-toggle.is-soldout` modifier for the sold-out variant. Belt-and-braces `!important` on the inner `<span>` so themes can't bleed through. |
+| 2 | Add **Category** dropdown | `js/dashboard.js → renderPackageEditorCards()` | ✅ Done — values `Budget · Standard · Deluxe · Luxury · Royal · Honeymoon`, saves to `pkg.category`. Lives next to the Image picker in a new 2-col row. Empty `''` is the default ("— Choose —"). |
+| 3 | Surface category on public cards | `js/script.js` (`pkgCategory()` rewritten to read `pkg.category` first, then name heuristic, then legacy id), `pkgCategoryLabel()` + `pkgCategoryColor()` helpers, render template adds `<span class="mmt-cat-pill">` and `data-category` attr; `css/mmt.css` (`.mmt-cat-pill` rule) | ✅ Done — pill colour comes from `pkgCategoryColor(slug)`; bottom-left of card image. |
+| 4 | Filter pills row | `index.html` `#mmtTabs` updated to **All / Budget / Standard / Deluxe / Luxury / Royal / Honeymoon**; `js/script.js → updateTabCounts()` gets six new buckets (plus a legacy `premium = luxury+royal` alias for any cached HTML); `applyFilters()` already drives off `mmtState.cat` so this is a one-line change. | ✅ Done — counts auto-update on every render. |
+
+Cache-busters bumped: `js/script.js?v=31`, `css/mmt.css?v=29`, `js/dashboard.js?v=46`, `css/dashboard.css?v=10`. JS smoke-test (`node --check`) passes on both touched files.
+
+**Open issue (carried into Phase 2):** existing packages in Firestore have no `category` field. They still group correctly because of the name-based heuristic in `pkgCategory()` (`/honeymoon/i → 'honeymoon'` etc.), but the dashboard editor's Category dropdown will show "— Choose —" until an admin saves each card. The Phase 4 backfill script will fix this in one shot.
 
 ### Phase 2 · MMT-style itinerary editor (~3–4 hours)
 
@@ -225,4 +229,4 @@ Just so the next session has full context — these are **already live** on `ups
 
 The Cloudflare `telegram-bridge` Worker is deployed to `https://telegram-bridge.pittu-das2.workers.dev`, all secrets installed, webhook registered, chat-id `8777900971` saved in `/settings/site`. Smoke-tested end-to-end; threading confirmed working.
 
-Hand-off complete — see you next session 🌴
+Hand-off compl

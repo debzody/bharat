@@ -747,19 +747,32 @@
     border-color: #0d7a8a;
 }
 
+/* Header strip across the top of every editor card.
+   The plan_redesign_plan.md → Phase 1.1 bug: in some dashboard themes
+   (hacker / midnight / cyberpunk) the header text rendered white-on-white
+   because the `color` was inherited from the page-level theme override
+   while the background stayed light. Locking explicit colours here keeps
+   the row legible under every theme. */
 .pkg-edit-header {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.25rem;
     background: #f8f9fa;
+    color: #1c2b48;          /* explicit fallback so themes can't blank it */
     border-bottom: 1px solid #eee;
+}
+
+.pkg-edit-header * {
+    /* Belt-and-braces: every descendant inherits a usable colour even when
+       the parent theme tries to recolour the whole dashboard. */
+    color: inherit;
 }
 
 .pkg-edit-num {
     font-size: 0.8rem;
     font-weight: 700;
-    color: #888;
+    color: #555 !important;  /* dark grey label, always readable on #e9ecef */
     background: #e9ecef;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
@@ -767,13 +780,28 @@
 }
 
 .pkg-visible-toggle {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     font-size: 0.85rem;
-    color: #555;
+    color: #1c2b48 !important;    /* force-readable on the light header */
+    background: #f7f9fc;
+    border: 1px solid #e1e6ef;
+    border-radius: 6px;
+    padding: 0.25rem 0.55rem;
     cursor: pointer;
-    flex: 1;
+    flex: 0 0 auto;
+}
+
+.pkg-visible-toggle:hover {
+    background: #eef3fb;
+    border-color: #c9d4e6;
+}
+
+.pkg-visible-toggle span {
+    color: #1c2b48 !important;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .pkg-visible-toggle input {
@@ -781,6 +809,17 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
+}
+
+/* Sold-out variant overrides the ambient toggle styling without losing
+   contrast — soft red surface + dark red text. */
+.pkg-visible-toggle.is-soldout {
+    background: #fdedec;
+    border-color: #f3c5c0;
+    color: #7a1f15 !important;
+}
+.pkg-visible-toggle.is-soldout span {
+    color: #7a1f15 !important;
 }
 
 .btn-del-pkg {

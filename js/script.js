@@ -61,13 +61,72 @@ function pkgRoute(pkg) {
         test:      ['Test Package']
     }[pkg.id] || ['Andaman Tour']);
 }
+// Map a package to its filter-tab category (lower-case slug).
+//
+// Phase 1 of the package redesign added an explicit `pkg.category` field
+// in the dashboard editor — values: Budget / Standard / Deluxe / Luxury /
+// Royal / Honeymoon. The MMT-style tab strip on the homepage uses six
+// matching slugs (all-packages / budget / standard / deluxe / luxury /
+// royal / honeymoon).
+//
+// Order of resolution:
+//   1) explicit pkg.category (new field, admin-set)
+//   2) name-based heuristic (catches existing un-tagged packages so the
+//      filter pills still group them sensibly without a backfill)
+//   3) legacy hard-coded id mapping (back-compat with the original
+//      budget / standard / luxury / honeymoon ids)
+//   4) fall back to "standard"
 function pkgCategory(pkg) {
-    if (pkg.id === 'test') return 'budget';
-    if (pkg.id === 'budget') return 'budget';
+    if (!pkg) return 'standard';
+    // 1. Explicit category from the dashboard editor
+    var cat = String(pkg.category || '').trim().toLowerCase();
+    if (cat) {
+        if (cat === 'budget')    return 'budget';
+        if (cat === 'standard')  return 'standard';
+        if (cat === 'deluxe')    return 'deluxe';
+        if (cat === 'luxury')    return 'luxury';
+        if (cat === 'royal')     return 'royal';
+        if (cat === 'honeymoon') return 'honeymoon';
+    }
+    // 2. Name-based heuristic for un-tagged packages
+    var name = String(pkg.name || '').toLowerCase();
+    if (/honeymoon/.test(name))                  return 'honeymoon';
+    if (/royal/.test(name))                      return 'royal';
+    if (/luxury|premium|5[\s-]?star/.test(name)) return 'luxury';
+    if (/deluxe/.test(name))                     return 'deluxe';
+    if (/budget|backpack|saver|economy/.test(name)) return 'budget';
+    // 3. Legacy id mapping
+    if (pkg.id === 'test')      return 'budget';
+    if (pkg.id === 'budget')    return 'budget';
     if (pkg.id === 'honeymoon') return 'honeymoon';
-    if (pkg.id === 'luxury') return 'premium';
-    if (pkg.id === 'standard') return 'standard';
+    if (pkg.id === 'luxury')    return 'luxury';
+    if (pkg.id === 'standard')  return 'standard';
+    // 4. Fallback
     return 'standard';
+}
+
+// Display label + colour for the category pill on each public card.
+// Pure helpers — kept in script.js so the renderer below can reach them
+// without a separate util file.
+function pkgCategoryLabel(slug) {
+    return ({
+        budget:    'Budget',
+        standard:  'Standard',
+        deluxe:    'Deluxe',
+        luxury:    'Luxury',
+        royal:     'Royal',
+        honeymoon: 'Honeymoon'
+    }[slug] || 'Standard');
+}
+function pkgCategoryColor(slug) {
+    return ({
+        budget:    '#3498db',
+        standard:  '#0d7a8a',
+        deluxe:    '#16a085',
+        luxury:    '#9b59b6',
+        royal:     '#d4ac0d',
+        honeymoon: '#e74c3c'
+    }[slug] || '#0d7a8a');
 }
 function pkgHotelCategory(pkg) {
     return ({ budget: 3, standard: 3, luxury: 5, honeymoon: 4, test: 3 }[pkg.id] || 3);
@@ -133,11 +192,24 @@ function sortPackages(arr) {
 }
 
 function updateTabCounts(packages) {
-    const counts = { all: 0, budget: 0, honeymoon: 0, premium: 0, standard: 0 };
+    // Phase 1.4 — counts for the six new category pills (plus the
+    // legacy 'premium' alias kept for back-compat with any cached
+    // index.html that still uses it).
+    const counts = {
+        all: 0,
+        budget: 0,
+        standard: 0,
+        deluxe: 0,
+        luxury: 0,
+        royal: 0,
+        honeymoon: 0,
+        premium: 0      // legacy alias = sum of luxury + royal
+    };
     packages.filter(p => p.visible !== false).forEach(p => {
         counts.all += 1;
         const c = pkgCategory(p);
         if (counts[c] != null) counts[c] += 1;
+        if (c === 'luxury' || c === 'royal') counts.premium += 1;
     });
     Object.keys(counts).forEach(k => {
         const el = document.querySelector(`[data-count="${k}"]`);
@@ -179,10 +251,16 @@ function renderSitePackages() {
             : (pkg.id === 'standard' ? 'Deal of the day' : (pkg.id === 'luxury' ? 'AD Premium' : ''));
         const tagClass = isSoldOut ? 'mmt-card-tag mmt-card-tag-soldout' : 'mmt-card-tag';
 
+        // Phase 1.3 — category pill on every card
+        const catSlug  = pkgCategory(pkg);
+        const catLabel = pkgCategoryLabel(catSlug);
+        const catColor = pkgCategoryColor(catSlug);
+
         return `
-        <div class="mmt-card${isSoldOut ? ' mmt-card-soldout' : ''}" data-pkgid="${pkg.id}" data-name="${pkg.id}">
+        <div class="mmt-card${isSoldOut ? ' mmt-card-soldout' : ''}" data-pkgid="${pkg.id}" data-name="${pkg.id}" data-category="${catSlug}">
             <div class="mmt-card-img" data-nav="${pkg.id}" style="background-image:url('${pkg.image}');">
                 ${tag ? `<span class="${tagClass}">${tag}</span>` : ''}
+                <span class="mmt-cat-pill" style="background:${catColor};">${catLabel}</span>
                 <span class="mmt-more-options">${perks.length} More Options Available</span>
             </div>
             <div class="mmt-card-body">
