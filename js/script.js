@@ -1034,6 +1034,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Search button (top navy bar) — captures search criteria
+    // ── Phase 3 — MMT-style hero search ─────────────────────────
+    // Default the travel date to today + 30 days so the field is never empty
+    // when a visitor lands on the homepage. Pre-applies any existing query
+    // string (?from=…&date=…&adults=…&children=…&category=…) so a search
+    // result URL can be shared / bookmarked.
+    (function initMmtSearchDefaults() {
+        const dateEl = document.getElementById('mmtDate');
+        if (dateEl && !dateEl.value) {
+            const d = new Date();
+            d.setDate(d.getDate() + 30);
+            dateEl.value = d.toISOString().slice(0, 10);
+        }
+        // Min date = today (no past trips)
+        if (dateEl) dateEl.min = new Date().toISOString().slice(0, 10);
+
+        // Read query params and hydrate fields. Honoured: from, date, adults,
+        // children, category. Unknown values are quietly ignored.
+        let params;
+        try { params = new URLSearchParams(location.search); } catch (e) { return; }
+        const setVal = (id, v) => {
+            if (v == null || v === '') return;
+            const el = document.getElementById(id);
+            if (!el) return;
+            // For <select>, only set if the option exists
+            if (el.tagName === 'SELECT') {
+                const has = Array.prototype.some.call(el.options, o => o.value === v);
+                if (has) el.value = v;
+            } else {
+                el.value = v;
+            }
+        };
+        setVal('mmtFrom',     params.get('from'));
+        setVal('mmtDate',     params.get('date'));
+        setVal('mmtAdults',   params.get('adults'));
+        setVal('mmtChildren', params.get('children'));
+        const cat = (params.get('category') || '').toLowerCase();
+        if (cat) {
+            setVal('mmtCategory', cat);
+            // Apply to mmtState immediately so the first render filters
+            const allowed = ['all', 'budget', 'standard', 'deluxe', 'luxury', 'royal', 'honeymoon'];
+            if (allowed.indexOf(cat) >= 0) {
+                mmtState.cat = cat;
+                document.querySelectorAll('#mmtTabs .mmt-tab').forEach(t => {
+                    t.classList.toggle('active', t.dataset.cat === cat);
+                });
+            }
+        }
+    })();
+
     const mmtSearchBtn = document.getElementById('mmtSearchBtn');
     if (mmtSearchBtn) {
         mmtSearchBtn.addEventListener('click', () => {
@@ -1041,11 +1090,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const dateEl = document.getElementById('mmtDate');
             const adultsEl = document.getElementById('mmtAdults');
             const childrenEl = document.getElementById('mmtChildren');
+            const categoryEl = document.getElementById('mmtCategory');
 
             const from = fromEl ? fromEl.value.trim() : '';
             const date = dateEl ? dateEl.value : '';
             const adults = adultsEl ? parseInt(adultsEl.value, 10) : 2;
             const children = childrenEl ? parseInt(childrenEl.value, 10) : 0;
+            const category = categoryEl ? (categoryEl.value || 'all').toLowerCase() : 'all';
 
             if (!from) {
                 alert('Please enter your travelling-from city.');
@@ -1060,20 +1111,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Persist search context for downstream use (booking/customize flow)
             window.searchContext = {
-                from, to: 'Andaman', date, adults, children,
+                from, to: 'Andaman', date, adults, children, category,
                 totalPersons: adults + children
             };
             try { sessionStorage.setItem('searchContext', JSON.stringify(window.searchContext)); } catch (e) {}
 
             // GA4 — search event
             try {
-                window.Analytics && window.Analytics.search(`${from} → Andaman | ${date} | ${adults}A${children}C`);
+                window.Analytics && window.Analytics.search(`${from} → Andaman | ${date} | ${adults}A${children}C | ${category}`);
             } catch (e) {}
 
-            // Reset to ALL and refresh, then scroll into view
-            mmtState.cat = 'all';
+            // Push the search params to the URL so the result is shareable
+            // and survives reload. We use replaceState so the back button
+            // still goes to wherever the visitor came from.
+            try {
+                const next = new URLSearchParams();
+                if (from)     next.set('from', from);
+                if (date)     next.set('date', date);
+                if (adults)   next.set('adults', String(adults));
+                if (children) next.set('children', String(children));
+                if (category && category !== 'all') next.set('category', category);
+                const qs = next.toString();
+                history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + '#packages');
+            } catch (e) {}
+
+            // Apply category filter and refresh, then scroll into view
+            mmtState.cat = category || 'all';
             document.querySelectorAll('#mmtTabs .mmt-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.cat === 'all');
+                t.classList.toggle('active', t.dataset.cat === mmtState.cat);
             });
             renderSitePackages();
             const grid = document.getElementById('packagesGrid');

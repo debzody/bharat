@@ -450,6 +450,21 @@
                             <option value="4">4 Children</option>
                         </select>
                     </div>
+                    <!-- Phase 3: Category picker — mirrors the dashboard editor and the
+                         filter pills below the hero. SEARCH applies it via mmtState.cat
+                         and pushes it as ?category= so the filter survives reload/share. -->
+                    <div class="mmt-field">
+                        <span class="mmt-field-label">Category</span>
+                        <select class="mmt-field-value" id="mmtCategory">
+                            <option value="all" selected>Any</option>
+                            <option value="budget">Budget</option>
+                            <option value="standard">Standard</option>
+                            <option value="deluxe">Deluxe</option>
+                            <option value="luxury">Luxury</option>
+                            <option value="royal">Royal</option>
+                            <option value="honeymoon">Honeymoon</option>
+                        </select>
+                    </div>
                 </div>
                 <button class="mmt-search-btn" id="mmtSearchBtn">SEARCH</button>
             </div>
@@ -1208,7 +1223,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/auth.js?v=16"></script>
     <script src="js/cities.js?v=18"></script>
-    <script src="js/script.js?v=31"></script>
+    <script src="js/script.js?v=32"></script>
     <script src="js/live-chat.js?v=8"></script>
     <script src="js/security.js?v=2"></script>
     <script src="js/user-menu.js?v=14"></script>
