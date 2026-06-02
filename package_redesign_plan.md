@@ -44,7 +44,18 @@ Cache-busters bumped: `js/script.js?v=31`, `css/mmt.css?v=29`, `js/dashboard.js?
 
 **Open issue (carried into Phase 2):** existing packages in Firestore have no `category` field. They still group correctly because of the name-based heuristic in `pkgCategory()` (`/honeymoon/i → 'honeymoon'` etc.), but the dashboard editor's Category dropdown will show "— Choose —" until an admin saves each card. The Phase 4 backfill script will fix this in one shot.
 
-### Phase 2 · MMT-style itinerary editor (~3–4 hours)
+### Phase 2 · MMT-style itinerary editor (~3–4 hours) — DEFERRED
+
+> **Status (after this session):** Architecture finalised, code-attempt aborted mid-write. Reverted cleanly; nothing in Firestore changed. Resume in a fresh session — instructions below.
+
+**Why deferred:** the diff size needed to land the typed-block editor exceeded the safe replace_in_file window twice in a row (the tool truncated mid-template-literal, leaving unterminated strings). Two reverts were necessary to get back to a working state. The code is **understood**; what's needed is a tighter, multi-file approach next session.
+
+**Architecture decided this session (sticky for next session):**
+
+* **Additive schema, not replacement.** Each `day` gets an optional `blocks[]` array alongside the existing `activities[]`. When `blocks[]` is non-empty, the public renderer shows the MMT-style typed timeline. When empty, it falls back to the legacy `activities[]` plain list. **This is critical** — it means existing packages keep working with zero migration risk, and admins can opt-in per-day.
+* **Block types (final list):** `activity · transfer · hotel · sightseeing · meal · flight · hotel-checkout`.
+* **Field schema (final, per type):** see attempted `js/itinerary-blocks.js` in the aborted commit. Schema lives in one constant (`BLOCK_FIELDS`) so the public renderer in `package.html` can read the same definitions.
+* **Editor module strategy:** ship as a **separate file** `js/itinerary-blocks.js` (~250 lines, self-contained module), loaded from `dashboard.html`. Exposes `window.IteBlocks.wire(rootEl, dayObj, onChange)`. `js/dashboard.js → buildDayCard()` only needs a 5-line edit (insert `<div data-day-blocks>` markup + call `IteBlocks.wire`). This keeps the giant template literal in dashboard.js untouched and avoids the truncation bug entirely.
 
 This is the big one. The existing `#itineraryEditor` overlay (admin-only, opened via the green pencil button) currently writes `pkg.itinerary` as a free-text string. We replace it with a structured editor.
 
