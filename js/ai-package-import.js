@@ -384,9 +384,14 @@
                             '</select>'
                         ) +
                         row('Rating (0-5)', '<input type="number" min="0" max="5" step="0.1" data-f="rating" value="' + escHtml(fields.rating || 4.5) + '">') +
-                        row('Inclusions', '<textarea rows="3" data-f="inclusions">' + escHtml((fields.inclusions || []).join('\n')) + '</textarea>') +
-                        row('Exclusions', '<textarea rows="2" data-f="exclusions">' + escHtml((fields.exclusions || []).join('\n')) + '</textarea>') +
-                        row('Places visited', '<textarea rows="2" data-f="places">' + escHtml((fields.places || []).join(', ')) + '</textarea>') +
+                        // Inclusions / Exclusions / Places — line-by-line editors so the
+                        // admin can add/remove each item with a + / trash button instead
+                        // of editing comma-separated blob text. Wired below via
+                        // window.IteListEditors.wireStringList. Plain DIVs here; the
+                        // editor injects the row inputs and Add buttons.
+                        row('Inclusions', '<div class="ite-list-host" data-f-list="inclusions"></div>') +
+                        row('Exclusions', '<div class="ite-list-host" data-f-list="exclusions"></div>') +
+                        row('Places visited', '<div class="ite-list-host" data-f-list="places"></div>') +
                         '<div class="aipkg-itin"><h4>Day-by-Day Itinerary</h4><div id="aipkgItinList"></div></div>' +
                     '</div>' +
                 '</div>' +
@@ -399,6 +404,58 @@
 
         // Render itinerary editor
         renderItinerary(modal, fields.itinerary || []);
+
+        // ── Wire line-by-line editors for Inclusions / Exclusions / Places ──
+        // Each editor manages its own draft array; savePackage() reads
+        // back from these via modal.__listState below. Falls back to a
+        // simple textarea if window.IteListEditors isn't loaded (it
+        // ships in dashboard.html alongside this file, so this is just
+        // belt-and-braces in case of a load-order regression).
+        var listState = {
+            inclusions: (fields.inclusions || []).slice(),
+            exclusions: (fields.exclusions || []).slice(),
+            places:     (fields.places     || []).slice()
+        };
+        modal.__listState = listState;
+
+        if (window.IteListEditors && typeof window.IteListEditors.wireStringList === 'function') {
+            var wire = window.IteListEditors.wireStringList;
+            wire(
+                modal.querySelector('[data-f-list="inclusions"]'),
+                function () { return listState.inclusions; },
+                function (a) { listState.inclusions = a; },
+                { placeholder: 'e.g. Daily breakfast', addLabel: 'Add Inclusion' }
+            );
+            wire(
+                modal.querySelector('[data-f-list="exclusions"]'),
+                function () { return listState.exclusions; },
+                function (a) { listState.exclusions = a; },
+                { placeholder: 'e.g. Airfare', addLabel: 'Add Exclusion' }
+            );
+            wire(
+                modal.querySelector('[data-f-list="places"]'),
+                function () { return listState.places; },
+                function (a) { listState.places = a; },
+                { placeholder: 'e.g. Port Blair', addLabel: 'Add Place' }
+            );
+        } else {
+            // Fallback: replace each host with a comma-separated <textarea>
+            // so the admin can still edit something even if the editor lib
+            // is missing. savePackage() handles both shapes via __listState.
+            ['inclusions', 'exclusions', 'places'].forEach(function (key) {
+                var host = modal.querySelector('[data-f-list="' + key + '"]');
+                if (!host) return;
+                var ta = document.createElement('textarea');
+                ta.rows = 3;
+                ta.value = (listState[key] || []).join('\n');
+                ta.style.width = '100%';
+                ta.addEventListener('input', function () {
+                    listState[key] = String(ta.value || '').split(/\r?\n|,/).map(function (s) { return s.trim(); }).filter(Boolean);
+                });
+                host.innerHTML = '';
+                host.appendChild(ta);
+            });
+        }
 
         modal.querySelector('.aipkg-close').addEventListener('click', function () { modal.remove(); });
         modal.querySelector('.aipkg-cancel').addEventListener('click', function () { modal.remove(); });
@@ -442,7 +499,15 @@
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating…';
         function val(f){var el=modal.querySelector('[data-f="'+f+'"]');return el?el.value:'';}
-        function lines(f){return String(val(f)||'').split(/\r?\n|,/).map(function(s){return s.trim();}).filter(Boolean);}
+        // Pull list-editor state (inclusions / exclusions / places)
+        // from the modal's __listState bag — populated by the wire
+        // helpers in showPreviewModal(). Empty arrays are fine.
+        var ls = modal.__listState || {};
+        function listOf(key) {
+            var arr = ls[key];
+            if (!Array.isArray(arr)) return [];
+            return arr.map(function (s) { return String(s == null ? '' : s).trim(); }).filter(Boolean);
+        }
         var itinerary=[];
         modal.querySelectorAll('.aipkg-day').forEach(function(row,i){
             var t=(row.querySelector('.aipkg-day-title')||{}).value||'';
@@ -461,9 +526,9 @@
             duration:String(val('duration')||'').trim(),
             category:String(val('category')||'').trim(),
             rating:Math.max(0,Math.min(5,Number(val('rating')||4.5))),
-            inclusions:lines('inclusions'),
-            exclusions:lines('exclusions'),
-            places:lines('places'),
+            inclusions:listOf('inclusions'),
+            exclusions:listOf('exclusions'),
+            places:listOf('places'),
             itinerary:itinerary,
             image:imageUrl,
             visible:true,
