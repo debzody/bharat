@@ -145,11 +145,32 @@
     return btn;
   }
 
+  function summarize(b) {
+    if (!b) return '';
+    if (b.type === 'meal') {
+      var s = b.label || 'Meal';
+      if (b.place) s += ' — ' + b.place;
+      return s;
+    }
+    if (b.type === 'hotel-checkout') {
+      return b.place ? ('Checkout — ' + b.place) : 'Checkout';
+    }
+    if (b.type === 'hotel') {
+      return b.title || b.address || 'Hotel';
+    }
+    if (b.type === 'flight') {
+      return b.title || 'Flight';
+    }
+    return b.title || '';
+  }
+
   function buildCard(blocks, idx, refresh, onChange) {
     var b = blocks[idx];
     var m = meta(b.type);
     var card = document.createElement('div');
     card.className = 'ite-block-card ite-block-' + b.type;
+    // Persist collapsed state per-block (in-memory, doesn't save to data)
+    if (b.__collapsed) card.classList.add('is-collapsed');
 
     // Header — type pill + actions
     var head = document.createElement('div');
@@ -157,18 +178,47 @@
 
     var typeSpan = document.createElement('span');
     typeSpan.className = 'ite-block-type';
-    typeSpan.innerHTML = '<i class="fas ' + m.icon + '"></i> ' + escHtml(m.label);
+    var summary = summarize(b);
+    typeSpan.innerHTML =
+      '<i class="fas ' + m.icon + '"></i> ' +
+      '<span class="ite-block-type-label">' + escHtml(m.label) + '</span>' +
+      (summary ? ' <span class="ite-block-type-summary">— ' + escHtml(summary) + '</span>' : '');
+    // Click on the header label area toggles collapse too
+    typeSpan.style.cursor = 'pointer';
+    typeSpan.title = 'Click to collapse / expand';
+    typeSpan.addEventListener('click', function () {
+      b.__collapsed = !b.__collapsed;
+      card.classList.toggle('is-collapsed', !!b.__collapsed);
+      updateCollapseBtn();
+    });
     head.appendChild(typeSpan);
 
     var actions = document.createElement('div');
     actions.className = 'ite-block-actions';
-    actions.appendChild(makeAction('fa-chevron-up', 'Move up', idx === 0, function () {
+
+    // Collapse / expand toggle
+    var collapseBtn = makeAction('fa-chevron-down', 'Collapse / expand', false, function () {
+      b.__collapsed = !b.__collapsed;
+      card.classList.toggle('is-collapsed', !!b.__collapsed);
+      updateCollapseBtn();
+    });
+    collapseBtn.classList.add('btn-block-collapse');
+    function updateCollapseBtn() {
+      var icon = collapseBtn.querySelector('i');
+      if (!icon) return;
+      icon.className = 'fas ' + (b.__collapsed ? 'fa-chevron-right' : 'fa-chevron-down');
+      collapseBtn.title = b.__collapsed ? 'Expand' : 'Collapse';
+    }
+    updateCollapseBtn();
+    actions.appendChild(collapseBtn);
+
+    actions.appendChild(makeAction('fa-arrow-up', 'Move up', idx === 0, function () {
       if (idx === 0) return;
       var t = blocks[idx - 1]; blocks[idx - 1] = blocks[idx]; blocks[idx] = t;
       if (typeof onChange === 'function') onChange();
       refresh();
     }));
-    actions.appendChild(makeAction('fa-chevron-down', 'Move down', idx >= blocks.length - 1, function () {
+    actions.appendChild(makeAction('fa-arrow-down', 'Move down', idx >= blocks.length - 1, function () {
       if (idx >= blocks.length - 1) return;
       var t = blocks[idx + 1]; blocks[idx + 1] = blocks[idx]; blocks[idx] = t;
       if (typeof onChange === 'function') onChange();
@@ -188,7 +238,27 @@
     body.className = 'ite-block-body';
     var fields = BLOCK_FIELDS[b.type] || [];
     fields.forEach(function (f) {
-      body.appendChild(buildField(b, f, onChange));
+      body.appendChild(buildField(b, f, function () {
+        // Update header summary live when title-ish fields change
+        if (f.k === 'title' || f.k === 'place' || f.k === 'label' || f.k === 'address') {
+          var newSummary = summarize(b);
+          var summarySpan = typeSpan.querySelector('.ite-block-type-summary');
+          if (newSummary) {
+            if (summarySpan) {
+              summarySpan.textContent = '— ' + newSummary;
+            } else {
+              var span = document.createElement('span');
+              span.className = 'ite-block-type-summary';
+              span.textContent = '— ' + newSummary;
+              typeSpan.appendChild(document.createTextNode(' '));
+              typeSpan.appendChild(span);
+            }
+          } else if (summarySpan) {
+            summarySpan.remove();
+          }
+        }
+        if (typeof onChange === 'function') onChange();
+      }));
     });
     card.appendChild(body);
     return card;
