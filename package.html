@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=3">
+    <link rel="stylesheet" href="css/package.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
@@ -477,7 +477,7 @@ function renderPage(pkg) {
             <div class="pkg-tweak-fields">
                 <label class="pkg-tweak-field">
                     <span>Travelling from</span>
-                    <input type="text" id="ttFrom" placeholder="e.g. Bangalore" autocomplete="off">
+                    <select id="ttFrom" data-cities data-default="Bangalore (Bengaluru)"></select>
                 </label>
                 <label class="pkg-tweak-field">
                     <span>Travel date</span>
@@ -504,20 +504,8 @@ function renderPage(pkg) {
                         <option value="4">4</option>
                     </select>
                 </label>
-                <label class="pkg-tweak-field">
-                    <span>Category</span>
-                    <select id="ttCategory">
-                        <option value="all">Any</option>
-                        <option value="budget">Budget</option>
-                        <option value="standard">Standard</option>
-                        <option value="deluxe">Deluxe</option>
-                        <option value="luxury">Luxury</option>
-                        <option value="royal">Royal</option>
-                        <option value="honeymoon">Honeymoon</option>
-                    </select>
-                </label>
                 <button type="button" class="pkg-tweak-btn" id="ttSearchBtn">
-                    <i class="fas fa-search"></i> Update search
+                    <i class="fas fa-rotate"></i> Update price
                 </button>
             </div>
         </div>
@@ -758,7 +746,10 @@ function renderPage(pkg) {
     if (lightbox) lightbox.addEventListener('click', () => { lightbox.style.display = 'none'; });
 
     // ── Phase 3 Option B — wire the "Tweak this trip" widget ───
-    wireTweakTrip(pkg);
+    // Logic now lives in js/package-tweak-trip.js (loaded just above).
+    if (window.PkgTweakTrip && typeof window.PkgTweakTrip.wire === 'function') {
+        window.PkgTweakTrip.wire(pkg);
+    }
 }
 
 // Phase 3 Option B — hydrate the inline trip-tweaker with whatever the
@@ -1196,6 +1187,9 @@ loadPackage().then(() => {
 </style>
 
 <!-- gallery.js exposes window.GalleryStore for the hydration above -->
+<!-- Phase 3 Option B — cities list + tweak-trip widget logic -->
+<script src="js/cities.js?v=18"></script>
+<script src="js/package-tweak-trip.js?v=1"></script>
 <script src="js/gallery.js?v=3"></script>
 <script src="js/live-chat.js?v=8"></script>
 <script src="js/security.js?v=2"></script>
