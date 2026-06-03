@@ -1889,8 +1889,47 @@ textarea.ite-block-field-input {
     grid-column: 1 / -1;
 }
 
+/* ── Collapsible state ─────────────────────────────────────── */
+.ite-block-card.is-collapsed .ite-block-body {
+    display: none;
+}
+.ite-block-card.is-collapsed {
+    padding-bottom: .35rem;
+}
+.ite-block-type-summary {
+    color: #5a6877;
+    font-weight: 400;
+    font-size: .82rem;
+    margin-left: .25rem;
+}
+.ite-block-card.is-collapsed .ite-block-type-summary {
+    color: #2c3e50;
+    font-weight: 500;
+}
+.btn-block-collapse {
+    transition: transform .15s ease;
+}
+
 @media (max-width: 700px) {
     .ite-block-body { grid-template-columns: 1fr; }
+    .ite-block-type-summary {
+        display: block;
+        margin-left: 0;
+        margin-top: .15rem;
+        font-size: .75rem;
+    }
+}
+
+/* Dark themes — keep summary readable */
+body.theme-hacker .ite-block-type-summary,
+body.theme-midnight .ite-block-type-summary,
+body.theme-cyberpunk .ite-block-type-summary {
+    color: rgba(255, 255, 255, 0.65);
+}
+body.theme-hacker .ite-block-card.is-collapsed .ite-block-type-summary,
+body.theme-midnight .ite-block-card.is-collapsed .ite-block-type-summary,
+body.theme-cyberpunk .ite-block-card.is-collapsed .ite-block-type-summary {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* Hacker / dark-theme overrides — mirror the rest of dashboard.css */
