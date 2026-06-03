@@ -731,3 +731,130 @@ select.mmt-field-value option {
 .bookings-empty-inline i{font-size:2.4rem;color:#0d7a8a;opacity:.55;margin-bottom:.5rem}
 .bookings-empty-inline h3{margin:.4rem 0 .3rem;color:#0d2c3a}
 @media(max-width:600px){.bookings-grid{grid-template-columns:1fr}}
+
+/* ── Combined Travellers picker (replaces separate Adults + Kids selects) ──
+   Trigger looks identical to a regular .mmt-field-value so it lines up
+   inside the .mmt-search-fields grid; the popup floats below it on a
+   higher z-index. Hidden #mmtAdults / #mmtChildren <input>s are
+   updated by js/script.js so the rest of the search/booking pipeline
+   keeps working unchanged. */
+.mmt-field-travellers { position: relative; }
+.mmt-travellers-trigger {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.mmt-travellers-trigger i { font-size: .7rem; color: #5a6877; flex-shrink: 0; }
+.mmt-field-travellers.is-open .mmt-travellers-trigger i { transform: rotate(180deg); }
+
+.mmt-travellers-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(10, 31, 68, .15);
+    padding: .9rem 1rem;
+    min-width: 280px;
+    width: max-content;
+    max-width: 90vw;
+}
+.mmt-travellers-pop[hidden] { display: none; }
+
+.mmt-trv-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .55rem 0;
+}
+.mmt-trv-row + .mmt-trv-row { border-top: 1px dashed #eef0f3; }
+.mmt-trv-text { display: flex; flex-direction: column; }
+.mmt-trv-text strong {
+    font-size: .92rem;
+    font-weight: 700;
+    color: #0d2c3a;
+    line-height: 1.2;
+}
+.mmt-trv-text small {
+    font-size: .75rem;
+    color: #7a8b96;
+    margin-top: .15rem;
+}
+
+.mmt-trv-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+}
+.mmt-trv-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid #cfdde1;
+    background: #fff;
+    color: #0d7a8a;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .12s, border-color .12s, color .12s, opacity .12s;
+}
+.mmt-trv-btn:hover:not(:disabled) {
+    background: #0d7a8a;
+    color: #fff;
+    border-color: #0d7a8a;
+}
+.mmt-trv-btn:disabled { opacity: .35; cursor: not-allowed; }
+.mmt-trv-num {
+    min-width: 22px;
+    text-align: center;
+    font-weight: 700;
+    font-size: .95rem;
+    color: #0d2c3a;
+}
+
+.mmt-trv-foot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: .5rem;
+    padding-top: .5rem;
+    border-top: 1px solid #f0f3f5;
+}
+.mmt-trv-done {
+    background: #0d7a8a;
+    color: #fff;
+    border: none;
+    padding: .42rem 1.1rem;
+    border-radius: 6px;
+    font: inherit;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .12s;
+}
+.mmt-trv-done:hover { background: #0a5a68; }
+
+/* Mobile: pop opens full-width below the trigger */
+@media (max-width: 600px) {
+    .mmt-travellers-pop {
+        left: 0;
+        right: 0;
+        min-width: 0;
+        max-width: 100%;
+    }
+}

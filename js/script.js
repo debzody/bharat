@@ -1083,6 +1083,103 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     })();
 
+    // ── Combined Travellers picker (Adults 12y+ / Children <12) ──
+    // Replaces the previous separate <select>s on the homepage hero.
+    // Maintains the hidden #mmtAdults / #mmtChildren mirrors so the
+    // SEARCH handler + URL prefill logic keeps working unchanged.
+    (function wireTravellersPicker() {
+        const field    = document.getElementById('mmtTravellersField');
+        const trigger  = document.getElementById('mmtTravellersTrigger');
+        const pop      = document.getElementById('mmtTravellersPop');
+        const txt      = document.getElementById('mmtTravellersText');
+        const adultsIn = document.getElementById('mmtAdults');
+        const childrIn = document.getElementById('mmtChildren');
+        const adultsNm = document.getElementById('mmtTrvAdultsNum');
+        const childrNm = document.getElementById('mmtTrvChildrenNum');
+        const doneBtn  = document.getElementById('mmtTrvDone');
+        if (!field || !trigger || !pop || !adultsIn || !childrIn) return;
+
+        const MAX_ADULTS   = 9;
+        const MAX_CHILDREN = 6;
+
+        function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n | 0)); }
+        function getCounts() {
+            return {
+                adults:   clamp(parseInt(adultsIn.value, 10) || 0, 1, MAX_ADULTS),
+                children: clamp(parseInt(childrIn.value, 10) || 0, 0, MAX_CHILDREN)
+            };
+        }
+        function render() {
+            const c = getCounts();
+            adultsIn.value = c.adults;
+            childrIn.value = c.children;
+            if (adultsNm) adultsNm.textContent = c.adults;
+            if (childrNm) childrNm.textContent = c.children;
+
+            // Visible label — "2 Adults" or "2 Adults, 1 Child"
+            let label = c.adults + ' Adult' + (c.adults === 1 ? '' : 's');
+            if (c.children > 0) {
+                label += ', ' + c.children + ' Child' + (c.children === 1 ? '' : 'ren');
+            }
+            if (txt) txt.textContent = label;
+
+            // Disable +/- when at limits
+            pop.querySelectorAll('.mmt-trv-btn').forEach(btn => {
+                const target = btn.dataset.target;
+                const act    = btn.dataset.act;
+                const cur    = target === 'adults' ? c.adults : c.children;
+                const lo     = target === 'adults' ? 1 : 0;
+                const hi     = target === 'adults' ? MAX_ADULTS : MAX_CHILDREN;
+                btn.disabled = (act === 'dec' && cur <= lo) || (act === 'inc' && cur >= hi);
+            });
+        }
+
+        function open() {
+            pop.hidden = false;
+            field.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+        function close() {
+            pop.hidden = true;
+            field.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+        function toggle() { pop.hidden ? open() : close(); }
+
+        trigger.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            toggle();
+        });
+        pop.addEventListener('click', function (ev) { ev.stopPropagation(); });
+        document.addEventListener('click', function (ev) {
+            if (pop.hidden) return;
+            if (!field.contains(ev.target)) close();
+        });
+        document.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Escape' && !pop.hidden) close();
+        });
+
+        pop.querySelectorAll('.mmt-trv-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const target = btn.dataset.target;
+                const act    = btn.dataset.act;
+                const c      = getCounts();
+                if (target === 'adults') {
+                    c.adults = clamp(c.adults + (act === 'inc' ? 1 : -1), 1, MAX_ADULTS);
+                    adultsIn.value = c.adults;
+                } else if (target === 'children') {
+                    c.children = clamp(c.children + (act === 'inc' ? 1 : -1), 0, MAX_CHILDREN);
+                    childrIn.value = c.children;
+                }
+                render();
+            });
+        });
+
+        if (doneBtn) doneBtn.addEventListener('click', close);
+
+        render();
+    })();
+
     const mmtSearchBtn = document.getElementById('mmtSearchBtn');
     if (mmtSearchBtn) {
         mmtSearchBtn.addEventListener('click', () => {

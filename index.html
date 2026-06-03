@@ -267,7 +267,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css?v=56">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/mmt.css?v=29">
+    <link rel="stylesheet" href="css/mmt.css?v=30">
     <link rel="stylesheet" href="css/flights.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -422,33 +422,51 @@
                         <select class="mmt-field-value" id="mmtFrom" data-cities data-default="Bangalore (Bengaluru)"></select>
                     </div>
                     <div class="mmt-field">
-                        <span class="mmt-field-label">Going To</span>
-                        <input class="mmt-field-value" id="mmtTo" type="text" value="Andaman" readonly>
-                    </div>
-                    <div class="mmt-field">
                         <span class="mmt-field-label">Travel Date</span>
                         <input class="mmt-field-value" id="mmtDate" type="date">
                     </div>
-                    <div class="mmt-field">
-                        <span class="mmt-field-label">Adults</span>
-                        <select class="mmt-field-value" id="mmtAdults">
-                            <option value="1">1 Adult</option>
-                            <option value="2" selected>2 Adults</option>
-                            <option value="3">3 Adults</option>
-                            <option value="4">4 Adults</option>
-                            <option value="5">5 Adults</option>
-                            <option value="6">6 Adults</option>
-                        </select>
-                    </div>
-                    <div class="mmt-field">
-                        <span class="mmt-field-label">Kids</span>
-                        <select class="mmt-field-value" id="mmtChildren">
-                            <option value="0" selected>0 Children</option>
-                            <option value="1">1 Child</option>
-                            <option value="2">2 Children</option>
-                            <option value="3">3 Children</option>
-                            <option value="4">4 Children</option>
-                        </select>
+                    <!-- Travellers — combined Adults (12y+) + Children (under 12) picker.
+                         Click opens a popup with two counters; the visible value
+                         reads e.g. "2 Adults, 1 Child". No infants. The hidden
+                         #mmtAdults / #mmtChildren inputs keep the rest of the
+                         search/booking flow working unchanged. -->
+                    <div class="mmt-field mmt-field-travellers" id="mmtTravellersField">
+                        <span class="mmt-field-label">Travellers</span>
+                        <button type="button" class="mmt-field-value mmt-travellers-trigger" id="mmtTravellersTrigger" aria-haspopup="dialog" aria-expanded="false">
+                            <span id="mmtTravellersText">2 Adults</span>
+                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        <div class="mmt-travellers-pop" id="mmtTravellersPop" role="dialog" aria-label="Select travellers" hidden>
+                            <div class="mmt-trv-row">
+                                <div class="mmt-trv-text">
+                                    <strong>Adults</strong>
+                                    <small>12 yrs &amp; above</small>
+                                </div>
+                                <div class="mmt-trv-counter">
+                                    <button type="button" class="mmt-trv-btn" data-act="dec" data-target="adults" aria-label="Decrease adults">−</button>
+                                    <span class="mmt-trv-num" id="mmtTrvAdultsNum">2</span>
+                                    <button type="button" class="mmt-trv-btn" data-act="inc" data-target="adults" aria-label="Increase adults">+</button>
+                                </div>
+                            </div>
+                            <div class="mmt-trv-row">
+                                <div class="mmt-trv-text">
+                                    <strong>Children</strong>
+                                    <small>Under 12 yrs</small>
+                                </div>
+                                <div class="mmt-trv-counter">
+                                    <button type="button" class="mmt-trv-btn" data-act="dec" data-target="children" aria-label="Decrease children">−</button>
+                                    <span class="mmt-trv-num" id="mmtTrvChildrenNum">0</span>
+                                    <button type="button" class="mmt-trv-btn" data-act="inc" data-target="children" aria-label="Increase children">+</button>
+                                </div>
+                            </div>
+                            <div class="mmt-trv-foot">
+                                <button type="button" class="mmt-trv-done" id="mmtTrvDone">Done</button>
+                            </div>
+                        </div>
+                        <!-- Hidden numeric mirrors so the existing search /
+                             booking pipeline keeps reading adults+children. -->
+                        <input type="hidden" id="mmtAdults" value="2">
+                        <input type="hidden" id="mmtChildren" value="0">
                     </div>
                     <!-- Phase 3: Category picker — mirrors the dashboard editor and the
                          filter pills below the hero. SEARCH applies it via mmtState.cat
@@ -1223,7 +1241,7 @@
     <script src="js/toast.js?v=1"></script>
     <script src="js/auth.js?v=16"></script>
     <script src="js/cities.js?v=18"></script>
-    <script src="js/script.js?v=32"></script>
+    <script src="js/script.js?v=33"></script>
     <script src="js/live-chat.js?v=8"></script>
     <script src="js/security.js?v=2"></script>
     <script src="js/user-menu.js?v=14"></script>
