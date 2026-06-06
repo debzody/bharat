@@ -300,22 +300,15 @@
             var imgPreview = document.createElement('div');
             imgPreview.className = 'il-act-image-preview';
 
-            var urlLbl = document.createElement('label');
-            urlLbl.className = 'il-act-field';
-            var urlSpan = document.createElement('span');
-            urlSpan.textContent = 'Image URL';
+            // Lightweight stand-in for the (now-removed) URL <input>.
+            // Other handlers below still reference urlInput.value when an
+            // upload completes or the image is cleared, so we keep a
+            // detached element to satisfy those reads/writes without
+            // adding a visible field. Admins manage the cover image
+            // exclusively via the Upload button + the ×/restore tiles.
             var urlInput = document.createElement('input');
-            urlInput.type = 'text';
-            urlInput.placeholder = 'https://... (or click Upload)';
+            urlInput.type = 'hidden';
             urlInput.value = act.imageUrl || '';
-            urlInput.addEventListener('input', function () {
-                act.imageUrl = urlInput.value;
-                if (!urlInput.value) act.imagePublicId = '';
-                writeFromObjs(arr);
-                paintPreview();
-            });
-            urlLbl.appendChild(urlSpan);
-            urlLbl.appendChild(urlInput);
 
             var ctlRow = document.createElement('div');
             ctlRow.className = 'il-act-image-controls';
@@ -408,7 +401,6 @@
             ctlRow.appendChild(statusEl);
 
             body.appendChild(imgPreview);
-            body.appendChild(urlLbl);
             body.appendChild(ctlRow);
 
             // ── Auto-picked carousel manager ──────────────────────
