@@ -522,11 +522,58 @@
         init();
     }
 
+    /* ── Public: AI text generator for the package editor ──────
+       Called by js/itinerary-list-editors.js when the admin
+       clicks ✨ AI Fill next to a description textarea. Resolves
+       to the generated text (string), or rejects with a friendly
+       Error message that the caller can show in a toast.
+
+       Input options:
+         { kind:    'activity' | 'day' | 'package' | 'free',
+           title:   "Visit Cellular Jail National Memorial",
+           context: { packageName?, dayTitle?, dayNumber? },
+           prompt:  "<override default — used when kind='free'>" }
+       ────────────────────────────────────────────────────────── */
+    async function generateText(opts) {
+        if (!isConfigured()) {
+            throw new Error('AI assistant is not configured (window.AI_ASSISTANT_WORKER_URL is missing).');
+        }
+        const token = await getIdToken();
+        if (!token) {
+            throw new Error('You need to be signed in as admin to use AI Fill.');
+        }
+
+        const body = {
+            kind:    String((opts && opts.kind) || 'activity'),
+            title:   String((opts && opts.title) || ''),
+            context: (opts && opts.context) || {},
+            prompt:  String((opts && opts.prompt) || '')
+        };
+        if (!body.title && !body.prompt) {
+            throw new Error('Need a title (or prompt) to generate from.');
+        }
+
+        const res = await fetch(workerUrl() + '/generate-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type':  'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+            throw new Error(data.error || ('AI request failed (HTTP ' + res.status + ')'));
+        }
+        return String(data.text || '').trim();
+    }
+
     // Public surface for testing / manual triggers from console.
     window.AIAssistant = {
         isConfigured,
         summarize:    summarizeIfPossible,
         suggestReply: (email) => suggestReply(email, document.createElement('button')),
-        runReport:    runDailyReport
+        runReport:    runDailyReport,
+        generateText: generateText
     };
 })();

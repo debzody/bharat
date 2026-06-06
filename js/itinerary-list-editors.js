@@ -204,11 +204,20 @@
             if (!startOpen) body.classList.add('is-collapsed');
             else toggleBtn.classList.add('is-open');
 
-            // Description
+            // Description (with optional ✨ AI Fill button)
             var descLbl = document.createElement('label');
             descLbl.className = 'il-act-field';
+
+            // Header row: "Description" label on the left, ✨ AI Fill on the right.
+            // The button is only added when window.AIAssistant.generateText is
+            // available (i.e. the dashboard has the ai-assistant Worker
+            // configured) — keeps the UI clean for setups without AI.
+            var descHead = document.createElement('div');
+            descHead.className = 'il-act-field-head';
             var descSpan = document.createElement('span');
             descSpan.textContent = 'Description';
+            descHead.appendChild(descSpan);
+
             var descInput = document.createElement('textarea');
             descInput.rows = 2;
             descInput.placeholder = 'Optional short description shown on the public page';
@@ -217,7 +226,67 @@
                 act.desc = descInput.value;
                 writeFromObjs(arr);
             });
-            descLbl.appendChild(descSpan);
+
+            // ✨ AI Fill button — generates a 1-2 sentence description from
+            // the activity title using the ai-assistant Worker. Disabled
+            // when the title is empty (otherwise the AI has nothing to
+            // describe). Fires only on click — no auto-fill that could burn
+            // the Gemini quota on every keystroke.
+            if (window.AIAssistant && typeof window.AIAssistant.generateText === 'function') {
+                var aiBtn = document.createElement('button');
+                aiBtn.type = 'button';
+                aiBtn.className = 'btn-il-ai';
+                aiBtn.title = 'Generate description with AI (based on the activity title)';
+                aiBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> AI Fill';
+                aiBtn.addEventListener('click', function () {
+                    var t = (titleInput && titleInput.value || '').trim();
+                    if (!t) {
+                        if (window.showToast) window.showToast('Type the activity title first, then click AI Fill.', 'info');
+                        else alert('Type the activity title first, then click AI Fill.');
+                        if (titleInput) titleInput.focus();
+                        return;
+                    }
+                    var orig = aiBtn.innerHTML;
+                    aiBtn.disabled = true;
+                    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Thinking…';
+                    var ctx = {};
+                    try {
+                        if (typeof opts.getPackageName === 'function') ctx.packageName = String(opts.getPackageName() || '');
+                        if (typeof opts.getDayTitle    === 'function') ctx.dayTitle    = String(opts.getDayTitle()    || '');
+                        if (typeof opts.getDayNumber   === 'function') ctx.dayNumber   = Number(opts.getDayNumber()   || 0);
+                    } catch (_) {}
+                    window.AIAssistant.generateText({
+                        kind:    'activity',
+                        title:   t,
+                        context: ctx
+                    }).then(function (text) {
+                        if (text) {
+                            descInput.value = text;
+                            // Trigger the same input event the textarea fires
+                            // when the user types, so writeFromObjs() runs and
+                            // the data is persisted.
+                            act.desc = text;
+                            writeFromObjs(arr);
+                            try { descInput.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+                            // Keep the body open so the result is immediately visible
+                            body.classList.remove('is-collapsed');
+                            toggleBtn.classList.add('is-open');
+                            if (window.showToast) window.showToast('AI description added — feel free to edit.', 'success');
+                        } else if (window.showToast) {
+                            window.showToast('AI returned an empty response — try again.', 'warning');
+                        }
+                    }).catch(function (err) {
+                        if (window.showToast) window.showToast('AI Fill failed: ' + (err.message || err), 'error');
+                        else alert('AI Fill failed: ' + (err.message || err));
+                    }).finally(function () {
+                        aiBtn.disabled = false;
+                        aiBtn.innerHTML = orig;
+                    });
+                });
+                descHead.appendChild(aiBtn);
+            }
+
+            descLbl.appendChild(descHead);
             descLbl.appendChild(descInput);
             body.appendChild(descLbl);
 

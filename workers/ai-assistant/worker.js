@@ -65,6 +65,9 @@ export default {
             if (request.method === 'POST' && url.pathname === '/extract-package') {
                 return await handleExtractPackage(request, env);
             }
+            if (request.method === 'POST' && url.pathname === '/generate-text') {
+                return await handleGenerateText(request, env);
+            }
             // Public (unauthenticated) endpoint — sends a branded
             // password-reset email via Brevo so it doesn't go to spam.
             // Anti-enumeration + per-IP rate limit live inside the handler.
@@ -430,4 +433,96 @@ function sanitiseItinerary(arr) {
         title:   String((d && d.title) || '').slice(0, 120).trim(),
         details: String((d && d.details) || '').slice(0, 600).trim()
     })).filter(d => d.title || d.details);
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * /generate-text — short marketing/description copy generator.
+ *
+ * Body:
+ *   {
+ *     kind:    'activity' | 'day' | 'package' | 'free',
+ *     title:   "Visit Cellular Jail National Memorial",
+ *     context: { packageName, dayTitle, dayNumber } (optional),
+ *     prompt:  "<override the default — used when kind = 'free'>"
+ *   }
+ *
+ * Response: { ok: true, text: "...generated description..." }
+ *
+ * Used by the dashboard's package editor (js/itinerary-list-editors.js)
+ * — admins click ✨ AI Fill next to a description textarea and the
+ * worker writes a 1-2 sentence customer-facing description for that
+ * day or activity.
+ * ══════════════════════════════════════════════════════════ */
+async function handleGenerateText(request, env) {
+    await requireAdmin(request, env);
+    const body = await request.json().catch(() => ({}));
+
+    const kind   = String(body.kind   || 'activity').toLowerCase();
+    const title  = String(body.title  || '').slice(0, 200).trim();
+    const ctx    = body.context || {};
+    const pkgName    = String(ctx.packageName || '').slice(0, 120).trim();
+    const dayTitle   = String(ctx.dayTitle    || '').slice(0, 200).trim();
+    const dayNumber  = Number(ctx.dayNumber)  || 0;
+    const customP    = String(body.prompt     || '').slice(0, 1500).trim();
+
+    if (!title && !customP) {
+        throw new HttpError(400, 'title or prompt required');
+    }
+
+    // Build a focused prompt per "kind". Output is always plain
+    // text (1-2 sentences for activities, 2-3 for days, 3-4 for
+    // packages). No markdown, no quotes, no headings — the value
+    // drops directly into a textarea.
+    let prompt = '';
+    if (customP) {
+        prompt = customP + '\n\nReturn only the description text — no quotes, no markdown, no headings.';
+    } else if (kind === 'day') {
+        prompt =
+`Write a concise, evocative 2-3 sentence description for Day ${dayNumber || ''} of an Andaman Islands holiday itinerary.
+
+Day title: "${title}"
+${pkgName ? 'Package: ' + pkgName : ''}
+
+Tone: warm and inviting, written for a customer who's choosing this trip. Mention what they'll experience and how it'll feel — but don't invent specific hotel names, ferry timings, or prices. Use Indian English. ~30-50 words.
+
+Return only the description text — no quotes, no markdown, no headings.`;
+    } else if (kind === 'package') {
+        prompt =
+`Write a punchy 3-4 sentence package description for a customer browsing Andaman Islands holidays.
+
+Package: "${title}"
+${pkgName ? 'Internal name: ' + pkgName : ''}
+
+Tone: warm, confident, slightly aspirational — but factual. Mention the kinds of experiences (beaches, ferries, scuba, sunsets) without inventing specifics like prices, hotel names, or ferry timings. Use Indian English. ~50-80 words.
+
+Return only the description text — no quotes, no markdown, no headings.`;
+    } else {
+        // 'activity' — the most common case (used in the day-by-day
+        // activity rows of the package editor).
+        prompt =
+`Write a concise, evocative 1-2 sentence description for this activity in an Andaman Islands holiday itinerary.
+
+Activity: "${title}"
+${dayTitle ? 'Part of day: ' + dayTitle : ''}
+${pkgName  ? 'Package: ' + pkgName : ''}
+
+Tone: warm and inviting, written for a customer choosing this trip. Mention what makes the activity special and what the visitor will see/feel. Don't invent prices, hotel names, or ferry timings. Use Indian English. ~15-35 words.
+
+Return only the description text — no quotes, no markdown, no headings.`;
+    }
+
+    const { text } = await callGemini(env, prompt, {
+        json: false,
+        maxTokens: kind === 'package' ? 220 : (kind === 'day' ? 180 : 120),
+        temperature: 0.65
+    });
+
+    // Strip leading/trailing whitespace + any quotes the model may have
+    // wrapped around the response despite our instructions.
+    let out = String(text || '').trim();
+    out = out.replace(/^["'`“‘]+|["'`”’]+$/g, '').trim();
+    // Collapse runs of newlines (textareas in the editor are typically 2-3 rows)
+    out = out.replace(/\n{2,}/g, '\n').trim();
+
+    return jsonResponse(env, request, { ok: true, text: out });
 }
