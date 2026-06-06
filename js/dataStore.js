@@ -272,20 +272,35 @@
         'honeymoon-4a-2026': 29500,
         'royal-4b-2026':     29500
     };
-    // The (code) marker can appear anywhere after the keyword in the
-    // package name, e.g. "Royal Package (4B) — 2026". The regex below
-    // matches "<keyword>...(<code>)" with arbitrary text in between.
+    // Match either:
+    //   (a) the explicit (code) marker — e.g. "Royal Package (4B) — 2026"
+    //   (b) the category + duration combo — e.g. "Economy Package 5N/6D — 2026"
+    //   (c) bare keywords for honeymoon/royal as a final fallback
+    // First match wins (rules are evaluated top-to-bottom).
     const PDF_PRICE_BY_NAME_RE = [
-        { re: /honeymoon[\s\S]*\(\s*4a\s*\)/i, price: 29500 },
-        { re: /royal[\s\S]*\(\s*4b\s*\)/i,     price: 29500 },
-        { re: /economy[\s\S]*\(\s*5a\s*\)/i,   price: 15500 },
-        { re: /standard[\s\S]*\(\s*5b\s*\)/i,  price: 18500 },
-        { re: /deluxe[\s\S]*\(\s*5c\s*\)/i,    price: 20500 },
-        { re: /premium[\s\S]*\(\s*5d\s*\)/i,   price: 22500 },
-        { re: /economy[\s\S]*\(\s*6a\s*\)/i,   price: 17500 },
-        { re: /standard[\s\S]*\(\s*6b\s*\)/i,  price: 20500 },
-        { re: /deluxe[\s\S]*\(\s*6c\s*\)/i,    price: 22500 },
-        { re: /premium[\s\S]*\(\s*6d\s*\)/i,   price: 24500 }
+        // (a) explicit code marker
+        { re: /honeymoon[\s\S]*\(\s*4a\s*\)/i,                              price: 29500 },
+        { re: /royal[\s\S]*\(\s*4b\s*\)/i,                                  price: 29500 },
+        { re: /economy[\s\S]*\(\s*5a\s*\)/i,                                price: 15500 },
+        { re: /standard[\s\S]*\(\s*5b\s*\)/i,                               price: 18500 },
+        { re: /deluxe[\s\S]*\(\s*5c\s*\)/i,                                 price: 20500 },
+        { re: /premium[\s\S]*\(\s*5d\s*\)/i,                                price: 22500 },
+        { re: /economy[\s\S]*\(\s*6a\s*\)/i,                                price: 17500 },
+        { re: /standard[\s\S]*\(\s*6b\s*\)/i,                               price: 20500 },
+        { re: /deluxe[\s\S]*\(\s*6c\s*\)/i,                                 price: 22500 },
+        { re: /premium[\s\S]*\(\s*6d\s*\)/i,                                price: 24500 },
+        // (b) category + duration  ("5N/6D" or "5N6D" or "5 N / 6 D" etc.)
+        { re: /economy[\s\S]*5\s*n\s*\/?\s*6\s*d/i,                        price: 15500 },
+        { re: /standard[\s\S]*5\s*n\s*\/?\s*6\s*d/i,                       price: 18500 },
+        { re: /deluxe[\s\S]*5\s*n\s*\/?\s*6\s*d/i,                         price: 20500 },
+        { re: /premium[\s\S]*5\s*n\s*\/?\s*6\s*d/i,                        price: 22500 },
+        { re: /economy[\s\S]*6\s*n\s*\/?\s*7\s*d/i,                        price: 17500 },
+        { re: /standard[\s\S]*6\s*n\s*\/?\s*7\s*d/i,                       price: 20500 },
+        { re: /deluxe[\s\S]*6\s*n\s*\/?\s*7\s*d/i,                         price: 22500 },
+        { re: /premium[\s\S]*6\s*n\s*\/?\s*7\s*d/i,                        price: 24500 },
+        // (c) bare keyword fallback for the two specials (4N/5D)
+        { re: /honeymoon/i,                                                       price: 29500 },
+        { re: /royal/i,                                                           price: 29500 }
     ];
     function _pdfPriceFor(pkg) {
         if (!pkg) return null;
