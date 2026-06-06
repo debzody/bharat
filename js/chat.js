@@ -40,7 +40,7 @@
         if (/honeymoon|couple|romantic|anniversary|wedding/.test(q))
             return '💑 Our **Honeymoon Paradise** (5N/6D, ₹24,999) is perfect for couples!\n\nIncludes: Sea-view suite, candlelight beach dinner, couple spa, sunset cruise & professional photoshoot. Book now! 🌅';
         if (/luxury|premium|5 star|five star|best|vip/.test(q))
-            return '✨ **Luxury Andaman Retreat** (6N/7D, ₹28,999):\n• 5-star beachfront resort\n• Private yacht transfers\n• All meals included\n• Advanced PADI scuba diving\n• Daily spa treatments\n• Personal concierge 24/7';
+            return '✨ **Luxury Andaman Retreat** (6N/7D, ₹28,999):\n• 5-star beachfront resort\n• Private yacht transfers\n• Breakfast & Dinner included (lunch excluded)\n• Advanced PADI scuba diving\n• Daily spa treatments\n• Personal concierge 24/7';
         if (/budget|cheap|affordable|economy|low cost/.test(q))
             return '🌊 **Budget Andaman Escape** (4N/5D, ₹15,999/person):\n• Port Blair + Havelock Island\n• Hotel accommodation\n• Ferry transfers\n• Daily breakfast\n• Cellular Jail & Ross Island tour\n\nGreat value for an amazing trip!';
         if (/standard|mid|normal|medium/.test(q))
@@ -58,9 +58,9 @@
         if (/duration|days|nights|how long|long/.test(q))
             return '📅 Package durations:\n• Budget: **4 Nights / 5 Days**\n• Standard: **6 Nights / 7 Days**\n• Luxury: **6 Nights / 7 Days**\n• Honeymoon: **5 Nights / 6 Days**\n\nCustom durations available on request!';
         if (/include|inclus|what.*get|cover/.test(q))
-            return '✅ **All packages include:**\n• Hotel accommodation\n• Ferry transfers\n• Daily breakfast\n• Airport pickup & drop\n\n**Extras by package:**\n• Standard: Scuba diving\n• Luxury: All meals + spa + yacht\n• Honeymoon: Candlelight dinners + photoshoot';
+            return '✅ **All packages include:**\n• Hotel accommodation\n• Ferry transfers\n• Daily breakfast\n• Airport pickup & drop\n\n**Extras by package:**\n• Standard: Scuba diving\n• Deluxe / Premium / Royal: Breakfast & Dinner (lunch excluded) + spa + yacht\n• Honeymoon: Candlelight dinners + photoshoot';
         if (/exclude|not include|extra|additional/.test(q))
-            return '❌ **Generally NOT included:**\n• Airfare to Port Blair\n• Lunch & dinner (Budget/Standard)\n• Personal expenses\n• Travel insurance\n• Extra water sports\n\nContact us for custom add-ons!';
+            return '❌ **Generally NOT included:**\n• Airfare to Port Blair\n• Lunch (Deluxe / Premium / Royal include only Breakfast & Dinner)\n• Lunch & dinner (Budget — breakfast only)\n• Personal expenses\n• Travel insurance\n• Extra water sports\n\nContact us for custom add-ons!';
         if (/contact|phone|email|call|reach|whatsapp|support/.test(q))
             return '📞 **Contact Us:**\n• Phone: +91 88801 95191 / +91 94341 25698\n• Email: info@andamanvoyages.in\n  · Bookings: booking@andamanvoyages.in\n  · Enquiries: enquiries@andamanvoyages.in\n  · Cancellations: cancellation@andamanvoyages.in\n• Hours: Mon–Sat, 9am–7pm IST\n\nWe\'d love to plan your dream trip! 🌴';
         if (/cancel|refund|policy/.test(q))
