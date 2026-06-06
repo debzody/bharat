@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=17">
+    <link rel="stylesheet" href="css/package.css?v=18">
     <!-- Lato + Poppins — Lato matches MMT's heading typography; Poppins
          remains for legacy components. Pacifico kept for any decorative use. -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700;900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -817,13 +817,25 @@ function renderPage(pkg) {
                                             if (window.ItineraryImagePicker &&
                                                 typeof window.ItineraryImagePicker.forActivityMulti === 'function') {
                                                 var picked = window.ItineraryImagePicker
-                                                    .forActivityMulti(act.title || '', 5);
+                                                    .forActivityMulti(act.title || '', 8);
                                                 picked.forEach(function (p) {
                                                     if (carouselImgs.indexOf(p) === -1) carouselImgs.push(p);
                                                 });
                                             } else if (window.ItineraryImagePicker) {
                                                 var single = window.ItineraryImagePicker.forActivity(act.title || '');
                                                 if (single && carouselImgs.indexOf(single) === -1) carouselImgs.push(single);
+                                            }
+                                            // ── Filter out photos the admin removed from the
+                                            //    dashboard editor. `act.excludedImages` is an
+                                            //    array of URLs the admin explicitly hid; we
+                                            //    strip them here so the public page never
+                                            //    shows them. Matched on the bare path so
+                                            //    encoded vs raw URLs both work.
+                                            var excluded = Array.isArray(act.excludedImages) ? act.excludedImages : [];
+                                            if (excluded.length) {
+                                                carouselImgs = carouselImgs.filter(function (src) {
+                                                    return excluded.indexOf(src) === -1;
+                                                });
                                             }
                                             // Cap to 5 photos — keeps the carousel tidy
                                             carouselImgs = carouselImgs.slice(0, 5);

@@ -2618,3 +2618,82 @@ body.theme-cyberpunk .il-act-body {
         padding: .25rem .55rem;
     }
 }
+
+/* ── Activity carousel manager (admin-side photo deletion) ─────
+ *   Lets admins remove individual auto-picked Unsplash photos from
+ *   the public package page's activity carousel. Hidden photos are
+ *   greyed out with a "restore" button; visible ones (the first 5)
+ *   show a red "×" to hide them.
+ *  ───────────────────────────────────────────────────────────── */
+.il-act-carousel-mgr {
+    margin-top: 0.4rem;
+}
+.il-act-carousel-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+.il-act-carousel-tile {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid #e3e8ef;
+    background: #f0f3f5;
+    transition: border-color 0.15s, opacity 0.15s;
+}
+.il-act-carousel-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.il-act-carousel-tile.is-overflow {
+    /* Photos beyond the first 5 visible — admin can still hide
+     * them, but visitors won't see them anyway. Lightly muted. */
+    opacity: 0.55;
+    border-style: dashed;
+}
+.il-act-carousel-tile.is-excluded {
+    /* Hidden photos — visibly greyed out with strikethrough overlay */
+    opacity: 0.35;
+    border-color: #c0392b;
+    border-style: dashed;
+}
+.il-act-carousel-tile.is-excluded::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(192,57,43,0.18);
+    pointer-events: none;
+}
+.il-act-carousel-tile button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(20,20,20,0.78);
+    color: #fff;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.15s, transform 0.1s;
+}
+.il-act-carousel-tile button:hover {
+    background: #c0392b;
+    transform: scale(1.08);
+}
+.il-act-carousel-tile .il-act-carousel-restore {
+    background: rgba(13,122,138,0.92);
+}
+.il-act-carousel-tile .il-act-carousel-restore:hover {
+    background: #0d7a8a;
+}
