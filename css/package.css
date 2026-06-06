@@ -974,6 +974,125 @@ body {
     gap: 0.4rem !important;
 }
 
+/* ── Activity-card carousel ───────────────────────────────────
+ *  Replaces the single static thumbnail. Cover image on top,
+ *  thumbnail strip below. Click a thumb (or the prev/next chevrons)
+ *  to swap the cover image. Stable image set, lazy-loaded.
+ * ─────────────────────────────────────────────────────────── */
+.timeline-activities li.ta-rich .ta-carousel {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    background: #f0f3f5;
+    border-radius: 6px;
+    overflow: hidden;
+    align-self: start;
+}
+.timeline-activities li.ta-rich .ta-carousel-main {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: #cfd9df;
+    overflow: hidden;
+}
+.timeline-activities li.ta-rich .ta-carousel-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.18s ease;
+}
+.timeline-activities li.ta-rich .ta-carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    color: #1c2b48;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    transition: opacity 0.18s ease, background-color 0.15s ease;
+    padding: 0;
+}
+.timeline-activities li.ta-rich .ta-carousel:hover .ta-carousel-nav,
+.timeline-activities li.ta-rich .ta-carousel:focus-within .ta-carousel-nav {
+    opacity: 1;
+}
+.timeline-activities li.ta-rich .ta-carousel-nav:hover {
+    background: #fff;
+}
+.timeline-activities li.ta-rich .ta-carousel-prev { left: 6px; }
+.timeline-activities li.ta-rich .ta-carousel-next { right: 6px; }
+.timeline-activities li.ta-rich .ta-carousel-count {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    pointer-events: none;
+}
+.timeline-activities li.ta-rich .ta-carousel-count i { font-size: 0.62rem; }
+
+.timeline-activities li.ta-rich .ta-thumbs {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.3rem;
+    background: #f8f9fa;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.timeline-activities li.ta-rich .ta-thumbs::-webkit-scrollbar { height: 4px; }
+.timeline-activities li.ta-rich .ta-thumbs::-webkit-scrollbar-thumb {
+    background: #cfd9df;
+    border-radius: 2px;
+}
+.timeline-activities li.ta-rich .ta-thumb {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    background: #e8eef2;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.timeline-activities li.ta-rich .ta-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.timeline-activities li.ta-rich .ta-thumb:hover {
+    border-color: #0d7a8a;
+}
+.timeline-activities li.ta-rich .ta-thumb.is-active {
+    border-color: #008cff;
+    transform: scale(1.04);
+}
+@media (max-width: 600px) {
+    .timeline-activities li.ta-rich .ta-thumb { width: 38px; height: 38px; }
+    .timeline-activities li.ta-rich .ta-carousel-nav { opacity: 1; }
+}
+
 /* ── Inclusions / Exclusions ── */
 .incl-grid {
     display: grid;

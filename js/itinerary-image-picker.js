@@ -122,8 +122,64 @@
         return forActivity(parts.join(' '));
     }
 
+    /**
+     * Pick MULTIPLE images for an activity — used to build a small
+     * carousel inside each activity card on the public package page.
+     * Returns up to `count` distinct image URLs picked from the same
+     * destination folder when a folder match is found, otherwise
+     * falls back to a small set of generic beach photos.
+     *
+     * Stable: the same title always returns the same set in the
+     * same order so the page doesn't reshuffle between renders.
+     */
+    function forActivityMulti(title, count) {
+        count = Math.max(1, Math.min(8, parseInt(count, 10) || 5));
+        var t = String(title || '').toLowerCase().trim();
+        var out = [];
+
+        if (t) {
+            // Step 1 — destination match: pick `count` distinct shots
+            // from that folder, starting at hash-derived index and
+            // wrapping around if needed (so day plans with the same
+            // destination still feel varied between activities).
+            for (var i = 0; i < MAP.length; i++) {
+                var entry = MAP[i];
+                var hit = false;
+                for (var j = 0; j < entry.kw.length; j++) {
+                    if (t.indexOf(entry.kw[j]) !== -1) { hit = true; break; }
+                }
+                if (!hit) continue;
+
+                var max = Math.min(count, entry.count);
+                var start = hash(t) % entry.count;
+                for (var k = 0; k < max; k++) {
+                    var num = ((start + k) % entry.count) + 1;
+                    out.push('images/' + entry.folder + '/' + entry.folder + '-' + num + '.jpg');
+                }
+                return out;
+            }
+        }
+
+        // Step 2 — theme + fallback: lean on the single-image picker
+        // for the first slot and pad with generic beach photos.
+        var first = forActivity(title);
+        if (first) out.push(first);
+        var beaches = ['images/beach1.jpg', 'images/beach2.jpg', 'images/beach3.jpg', 'images/beach4.jpg',
+                       'images/neil1.jpg', 'images/neil2.jpg', 'images/neil4.jpg', 'images/neil6.jpg',
+                       'images/ross2.jpg', 'images/ross3.jpg'];
+        // Rotate the fallback list deterministically by the title hash
+        var rotate = t ? (hash(t) % beaches.length) : 0;
+        for (var b = 0; b < beaches.length && out.length < count; b++) {
+            var idx = (rotate + b) % beaches.length;
+            var url = beaches[idx];
+            if (out.indexOf(url) === -1) out.push(url);
+        }
+        return out;
+    }
+
     window.ItineraryImagePicker = {
         forActivity: forActivity,
+        forActivityMulti: forActivityMulti,
         forDay: forDay
     };
 })();
