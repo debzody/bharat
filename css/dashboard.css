@@ -2697,3 +2697,184 @@ body.theme-cyberpunk .il-act-body {
 .il-act-carousel-tile .il-act-carousel-restore:hover {
     background: #0d7a8a;
 }
+
+/* ── "Pick from Gallery" button (activity editor) ─────────────
+ *   Sits next to the Upload button in the activity image
+ *   controls row. Same compact pill styling as Upload but with
+ *   a teal outline so admins can tell the two actions apart at
+ *   a glance.
+ *  ───────────────────────────────────────────────────────────── */
+.btn-il-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    background: #fff;
+    color: #0d7a8a;
+    border: 1px solid #0d7a8a;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, transform 0.1s;
+}
+.btn-il-pick:hover {
+    background: #e8f8f5;
+    transform: translateY(-1px);
+}
+.btn-il-pick:active { transform: none; }
+
+/* ── Gallery picker modal ─────────────────────────────────────
+ *   Full-screen lightbox that lists every gallery photo as a
+ *   clickable thumbnail. Search bar in the header lets admins
+ *   filter by title / category / place. Click a tile → modal
+ *   closes and the chosen item bubbles up via the callback to
+ *   the activity editor (which sets it as the cover image).
+ *  ───────────────────────────────────────────────────────────── */
+.ite-gallery-picker {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 32, 39, 0.72);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 1rem;
+}
+.ite-gallery-picker.open { display: flex; }
+.ite-gallery-picker .igp-card {
+    width: 100%;
+    max-width: 1100px;
+    max-height: 88vh;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.32);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.ite-gallery-picker .igp-head {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.25rem;
+    border-bottom: 1px solid #e3e8ef;
+    background: linear-gradient(135deg, #0d7a8a, #16a085);
+    color: #fff;
+}
+.ite-gallery-picker .igp-head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+.ite-gallery-picker .igp-search {
+    flex: 1;
+    padding: 0.5rem 0.85rem;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.95);
+    color: #1c2b48;
+    font-family: inherit;
+    font-size: 0.92rem;
+    min-width: 0;
+}
+.ite-gallery-picker .igp-search:focus {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+}
+.ite-gallery-picker .igp-close {
+    background: rgba(255,255,255,.18);
+    border: 0;
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.ite-gallery-picker .igp-close:hover {
+    background: rgba(255,255,255,.32);
+}
+.ite-gallery-picker .igp-body {
+    overflow-y: auto;
+    padding: 1rem 1.25rem 1.25rem;
+    background: #f7f9fb;
+}
+.ite-gallery-picker .igp-status,
+.ite-gallery-picker .igp-empty {
+    text-align: center;
+    color: #5a6877;
+    padding: 1.5rem 0;
+    font-size: 0.92rem;
+}
+.ite-gallery-picker .igp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+.ite-gallery-picker .igp-tile {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 2px solid #e3e8ef;
+    border-radius: 10px;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+    text-align: left;
+    font-family: inherit;
+}
+.ite-gallery-picker .igp-tile:hover {
+    border-color: #0d7a8a;
+    box-shadow: 0 6px 18px rgba(13,122,138,0.15);
+    transform: translateY(-2px);
+}
+.ite-gallery-picker .igp-tile img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+    background: #eef3f5;
+}
+.ite-gallery-picker .igp-tile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.55rem 0.75rem;
+    color: #1c2b48;
+    font-size: 0.85rem;
+    line-height: 1.35;
+}
+.ite-gallery-picker .igp-tile-meta strong {
+    font-weight: 700;
+    word-break: break-word;
+}
+.ite-gallery-picker .igp-tile-meta small {
+    color: #5a6877;
+    font-size: 0.75rem;
+    word-break: break-word;
+}
+
+@media (max-width: 600px) {
+    .ite-gallery-picker .igp-head {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.7rem 0.85rem;
+    }
+    .ite-gallery-picker .igp-head h3 {
+        flex: 1 1 100%;
+        font-size: 0.95rem;
+    }
+    .ite-gallery-picker .igp-search { font-size: 0.88rem; }
+    .ite-gallery-picker .igp-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.55rem;
+    }
+}
