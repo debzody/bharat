@@ -15,6 +15,59 @@ function getInclIcon(inc) {
     return INCL_ICONS[inc] || 'fa-check';
 }
 
+// ── Meal-plan resolver — single source of truth for the homepage cards ──
+// Mirrors the tier mapping in js/checkout.js so the meal plan shown on
+// the package card is identical to the one locked in at /checkout.
+//
+//   Economy / Budget / Standard  ->  Breakfast, Lunch & Dinner
+//   Deluxe / Premium / Royal /
+//   Luxury                       ->  Breakfast & Dinner (lunch excluded)
+//   Honeymoon / customised /
+//   anything else                ->  Breakfast only
+function pkgMealPlan(pkg) {
+    var key = String(pkg && pkg.id || '').toLowerCase();
+    var nm  = String(pkg && pkg.name || '').toLowerCase();
+    var cat = String(pkg && pkg.category || '').toLowerCase();
+
+    var ID_ALL3 = ['budget','economy','standard',
+                   '5a','5b','6a','6b',
+                   '5n6d-5a','5n6d-5b','6n7d-6a','6n7d-6b'];
+    if (ID_ALL3.indexOf(key) >= 0
+        || /\b(budget|economy|standard)\b/.test(nm)
+        || /\b(budget|economy|standard)\b/.test(cat)) {
+        return 'Breakfast, Lunch & Dinner';
+    }
+
+    var ID_BD = ['deluxe','premium','royal','luxury',
+                 '5c','5d','6c','6d','4b',
+                 '5n6d-5c','5n6d-5d','6n7d-6c','6n7d-6d',
+                 'royal-4b-2026'];
+    if (ID_BD.indexOf(key) >= 0
+        || /^(deluxe|premium|royal|luxury)/.test(key)
+        || /(^|-)(5c|5d|6c|6d|4b)(-|$)/.test(key)
+        || /\b(deluxe|premium|royal|luxury)\b/.test(nm)
+        || /\b(deluxe|premium|royal|luxury)\b/.test(cat)) {
+        return 'Breakfast & Dinner';
+    }
+
+    return 'Breakfast only';
+}
+
+// Build the inclusion list shown on the card. Always prepends the
+// resolved meal plan so the customer sees what meals are included
+// at a glance — even when the admin's inclusions[] doesn't include
+// a meal entry. We then dedupe so an existing meal-style entry
+// (e.g. "Breakfast, Lunch & Dinner") doesn't appear twice.
+function pkgCardInclusions(pkg) {
+    var meal = pkgMealPlan(pkg);
+    var src  = Array.isArray(pkg && pkg.inclusions) ? pkg.inclusions.slice() : [];
+    // Strip any pre-existing meal-style inclusion so we control the wording
+    var filtered = src.filter(function (i) {
+        return !/breakfast|lunch|dinner|all meals/i.test(String(i || ''));
+    });
+    return [meal].concat(filtered);
+}
+
 // Hard-coded defaults — used only if both jsonbin.io AND the repo file fail
 const DEFAULT_PACKAGES = [
     { id:'budget',    name:'Budget Andaman Escape',    desc:'4N/5D | Port Blair + Havelock | Basic Hotels + Ferries', price:15999, rating:4.2, image:'images/beach1.jpg', inclusions:['Hotels','Ferries','Breakfast'], visible:true },
@@ -242,7 +295,10 @@ function renderSitePackages() {
         const days = dur + 1;
         const route = pkgRoute(pkg);
         const perks = pkgPerks(pkg);
-        const incl = (pkg.inclusions || []).slice(0, 6);
+        // Always-visible meal plan + any package inclusions (deduped).
+        // pkgCardInclusions() prepends the resolved meal plan so every
+        // card consistently shows what meals are included on the trip.
+        const incl = pkgCardInclusions(pkg).slice(0, 6);
         const totalPrice = isTest ? pkg.price : pkg.price * 2;
         const emi = Math.round(pkg.price / 6);
         // Sold-out always wins as the headline tag.
