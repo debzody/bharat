@@ -114,6 +114,121 @@
         return out;
     }
 
+    // ── Gallery picker modal (shared singleton) ───────────────
+    //   Reusable lightbox-style modal that lists every photo from
+    //   /gallery (Firestore) and calls back with the chosen item.
+    //   Lazy-creates the DOM on first call; subsequent opens just
+    //   re-show the modal and re-bind the callback.
+    var galleryPickerCache = null;
+    function openGalleryPicker(onPick) {
+        var modal = document.getElementById('iteGalleryPickerModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'iteGalleryPickerModal';
+            modal.className = 'ite-gallery-picker';
+            modal.innerHTML =
+                '<div class="igp-card">' +
+                    '<div class="igp-head">' +
+                        '<h3><i class="fas fa-images"></i> Pick a photo from the gallery</h3>' +
+                        '<input type="text" class="igp-search" placeholder="Filter by title / category / place…">' +
+                        '<button type="button" class="igp-close" aria-label="Close">' +
+                            '<i class="fas fa-times"></i>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="igp-body">' +
+                        '<p class="igp-status">Loading gallery…</p>' +
+                        '<div class="igp-grid"></div>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(modal);
+            // Backdrop click closes
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) modal.classList.remove('open');
+            });
+            modal.querySelector('.igp-close').addEventListener('click', function () {
+                modal.classList.remove('open');
+            });
+        }
+
+        var statusEl = modal.querySelector('.igp-status');
+        var grid     = modal.querySelector('.igp-grid');
+        var search   = modal.querySelector('.igp-search');
+
+        // Cache the loaded gallery for the session — opening the
+        // picker on every activity row would otherwise re-hit Firestore.
+        function render(items, term) {
+            grid.innerHTML = '';
+            var t = String(term || '').toLowerCase().trim();
+            var filtered = !t ? items : items.filter(function (it) {
+                return [it.title, it.caption, it.category, it.place, it.packageRef]
+                    .some(function (v) { return String(v || '').toLowerCase().indexOf(t) !== -1; });
+            });
+            if (!filtered.length) {
+                grid.innerHTML = '<p class="igp-empty">No matching photos.</p>';
+                return;
+            }
+            var esc = function (s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+                });
+            };
+            filtered.forEach(function (it) {
+                var tile = document.createElement('button');
+                tile.type = 'button';
+                tile.className = 'igp-tile';
+                tile.title = it.title || '(untitled)';
+                tile.innerHTML =
+                    '<img src="' + esc(it.thumbUrl || it.url) + '" alt="" loading="lazy">' +
+                    '<span class="igp-tile-meta">' +
+                        '<strong>' + (esc(it.title) || '(untitled)') + '</strong>' +
+                        (it.category || it.place
+                            ? '<small>' + esc([it.category, it.place].filter(Boolean).join(' · ')) + '</small>'
+                            : '') +
+                    '</span>';
+                tile.addEventListener('click', function () {
+                    modal.classList.remove('open');
+                    if (typeof onPick === 'function') onPick(it);
+                });
+                grid.appendChild(tile);
+            });
+        }
+
+        function load() {
+            if (galleryPickerCache) {
+                statusEl.style.display = 'none';
+                render(galleryPickerCache, search.value);
+                return;
+            }
+            if (!window.GalleryStore || typeof window.GalleryStore.loadGalleryItems !== 'function') {
+                statusEl.textContent = 'Gallery loader is not available on this page.';
+                statusEl.style.color = '#c0392b';
+                return;
+            }
+            statusEl.textContent = 'Loading gallery…';
+            statusEl.style.color = '#5a6877';
+            statusEl.style.display = '';
+            window.GalleryStore.loadGalleryItems().then(function (items) {
+                galleryPickerCache = items || [];
+                statusEl.style.display = 'none';
+                render(galleryPickerCache, search.value);
+            }).catch(function (err) {
+                console.error('Gallery picker: failed to load', err);
+                statusEl.textContent = 'Failed to load gallery: ' + (err && err.message || err);
+                statusEl.style.color = '#c0392b';
+            });
+        }
+
+        // Re-bind search every open (the cached items might be different
+        // — though in practice they're the same per page-load).
+        search.value = '';
+        search.oninput = function () {
+            if (galleryPickerCache) render(galleryPickerCache, search.value);
+        };
+
+        modal.classList.add('open');
+        load();
+    }
+
     function wireActivityList(rootEl, day, opts) {
         if (!rootEl) return;
         opts = opts || {};
@@ -319,6 +434,30 @@
             uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload';
             uploadBtn.title = 'Upload an image (Cloudinary)';
 
+            // ── "Pick from Gallery" button ───────────────────
+            //   Opens a modal listing every photo already in the
+            //   gallery (Firestore /gallery collection) so admins
+            //   can re-use existing assets instead of uploading
+            //   the same image twice. Click a thumbnail → it
+            //   becomes this activity's cover image.
+            var pickBtn = document.createElement('button');
+            pickBtn.type = 'button';
+            pickBtn.className = 'btn-il-pick';
+            pickBtn.innerHTML = '<i class="fas fa-images"></i> Pick from Gallery';
+            pickBtn.title = 'Choose an existing photo from the gallery';
+            pickBtn.addEventListener('click', function () {
+                openGalleryPicker(function (item) {
+                    if (!item) return;
+                    act.imageUrl = item.url || item.thumbUrl || '';
+                    act.imagePublicId = item.publicId || item.id || '';
+                    urlInput.value = act.imageUrl;
+                    writeFromObjs(arr);
+                    statusEl.textContent = '\u2713 Picked from gallery.';
+                    statusEl.style.color = '#0d7a8a';
+                    paintPreview();
+                });
+            });
+
             var fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
@@ -397,6 +536,7 @@
             });
 
             ctlRow.appendChild(uploadBtn);
+            ctlRow.appendChild(pickBtn);
             ctlRow.appendChild(fileInput);
             ctlRow.appendChild(statusEl);
 
