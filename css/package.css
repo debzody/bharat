@@ -677,95 +677,76 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
- * v50 — Day plan refresh — colourful day-header card with banner
- * image, title, description, and "INCLUDED" pill row. Lifts the
- * visual hierarchy so each day reads at a glance.
+ * v51 — MMT-style compact day header — thin pill row instead of
+ * the huge banner image. Mirrors MMT's "Day 1 · Port Blair ·
+ * INCLUDED: 1 Hotel · 1 Transfer · 4 Activities" inline row.
  * ───────────────────────────────────────────────────────────── */
 .pd-day-card {
-    background: #fff;
-    border: 1px solid #e3e8ef;
-    border-radius: 14px;
-    overflow: hidden;
-    margin: 0 0 1rem;
-    box-shadow: 0 4px 14px rgba(10, 31, 68, 0.06);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    margin: 0 0 0.6rem;
+    box-shadow: none;
 }
-.pd-day-banner {
-    position: relative;
-    height: 140px;
-    background-size: cover;
-    background-position: center;
-    background-color: #cfe6ed;
-}
-.pd-day-banner::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(13,122,138,0.55) 0%, rgba(13,122,138,0.10) 60%, rgba(0,0,0,0) 100%);
-}
-.pd-day-tag {
-    position: absolute;
-    top: 0.85rem;
-    left: 0.85rem;
-    z-index: 1;
-    background: #fff;
-    color: #0d7a8a;
-    padding: 0.32rem 0.85rem;
-    border-radius: 999px;
-    font-size: 0.74rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-}
+/* Hide the big banner image — MMT-style is a thin inline row */
+.pd-day-banner { display: none; }
+.pd-day-tag { display: none; }
 .pd-day-headbody {
-    padding: 0.95rem 1.15rem 1.05rem;
-}
-.pd-day-title {
-    font-size: 1.18rem;
-    font-weight: 800;
-    color: #1c2b48;
-    margin: 0 0 0.35rem;
-    line-height: 1.3;
-}
-.pd-day-desc {
-    margin: 0 0 0.65rem;
-    color: #5a6877;
-    font-size: 0.92rem;
-    line-height: 1.55;
-}
-.pd-day-included {
+    padding: 0;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
     flex-wrap: wrap;
-    padding-top: 0.55rem;
-    border-top: 1px dashed #e3e8ef;
+    gap: 0.55rem;
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+}
+.pd-day-title {
+    font-family: 'Lato', 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #fff;
+    background: #ff7e1c;
+    padding: 0.25rem 0.85rem;
+    border-radius: 999px;
+    margin: 0;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    /* Insert "Day N · " prefix is handled in the markup */
+}
+.pd-day-desc { display: none; }
+.pd-day-included {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    padding: 0;
+    border: 0;
 }
 .pd-day-included-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #4a4a4a;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 .pd-day-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
-    color: #a04000;
-    border: 1px solid #fbe1b6;
-    padding: 0.32rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.78rem;
+    gap: 0.3rem;
+    background: transparent;
+    color: #4a4a4a;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.84rem;
     font-weight: 700;
 }
 .pd-day-pill i {
-    color: #d97706;
+    color: #4a4a4a;
     font-size: 0.78rem;
-}
-@media (max-width: 600px) {
-    .pd-day-banner { height: 110px; }
-    .pd-day-title { font-size: 1.05rem; }
 }
 
 .timeline-activities {
@@ -796,56 +777,60 @@ body {
     flex-shrink: 0;
 }
 
-/* ── Rich activity rows (with description / picture from AI Fill or
- *    the dashboard editor). Inspired by leading travel-agency layouts:
- *    image on the LEFT, header on top with the type label + duration,
- *    title/description on the right. The whole card is a <details>
- *    so visitors can collapse it on long itineraries.
+/* ── Rich activity rows — MMT-style compact layout ────────────
+ *  Each row is a <details> with a tiny header (ACTIVITY · 2hrs ·
+ *  Port Blair + chevron). Closed by default → tap to expand and
+ *  see image + description. Mirrors MMT's information-dense
+ *  itinerary so the page reads like a holiday plan, not a brochure.
  */
 .timeline-activities li.ta-rich {
     display: block;
     padding: 0;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 6px;
     border: 1px solid #e3e8ef;
-    border-left: 4px solid #0d7a8a;
+    border-left: 0;
     overflow: hidden;
     transition: box-shadow .15s, border-color .15s;
+    margin: 0;
 }
 .timeline-activities li.ta-rich:hover {
-    box-shadow: 0 4px 14px rgba(10,31,68,0.08);
     border-color: #cfd9df;
-    border-left-color: #0d7a8a;
 }
-.timeline-activities li.ta-rich .ta-details {
-    padding: 0;
-}
+.timeline-activities li.ta-rich .ta-details { padding: 0; }
 .timeline-activities li.ta-rich summary {
     list-style: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    padding: 0.65rem 0.95rem 0.5rem;
-    font-weight: 700;
-    color: #4a4a4a;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    /* Tighter padding — MMT shows roughly 0.55rem 0.85rem */
+    padding: 0.6rem 0.85rem;
+    font-family: 'Lato', 'Poppins', sans-serif;
+    font-weight: 800;
+    color: #1c2b48;
+    font-size: 0.84rem;
+    text-transform: none;
+    letter-spacing: 0;
     user-select: none;
+    border-bottom: 0;
+    background: #fff;
+}
+.timeline-activities li.ta-rich .ta-details[open] summary {
     border-bottom: 1px solid #f0f3f5;
 }
 .timeline-activities li.ta-rich summary::-webkit-details-marker { display: none; }
 .timeline-activities li.ta-rich summary::marker { display: none; content: ''; }
 .timeline-activities li.ta-rich summary .ta-tag-icon {
-    color: #4a4a4a;
-    font-size: 0.95rem;
+    color: #1c2b48;
+    font-size: 0.9rem;
 }
 .timeline-activities li.ta-rich summary .ta-tag-label {
     color: #1c2b48;
     font-weight: 800;
     font-size: 0.82rem;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 .timeline-activities li.ta-rich summary .ta-tag-meta {
     color: #5a6877;
@@ -855,8 +840,8 @@ body {
     letter-spacing: 0;
 }
 .timeline-activities li.ta-rich summary .ta-tag-sep {
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
     border-radius: 50%;
     background: #c8d0d8;
     flex-shrink: 0;
@@ -867,27 +852,29 @@ body {
     color: #5a6877;
     font-size: 0.7rem;
     transition: transform 0.18s ease;
-}
-.timeline-activities li.ta-rich .ta-details[open] summary .ta-caret {
+    /* Default state (closed) — chevron points down (caret-up icon flipped) */
     transform: rotate(180deg);
 }
-/* Body — image on the left, content on the right (large screens).
-   Stacks on mobile so the image always sits on top of the text. */
+.timeline-activities li.ta-rich .ta-details[open] summary .ta-caret {
+    transform: rotate(0deg);
+}
+/* Body — MMT layout: smaller image on the LEFT, tight info on right. */
 .timeline-activities li.ta-rich .ta-body {
-    padding: 0.85rem 1rem 1rem;
+    padding: 0.7rem 0.85rem 0.85rem;
     display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 1rem;
-    align-items: stretch;
+    grid-template-columns: 200px 1fr;
+    gap: 0.9rem;
+    align-items: start;
     color: #2c3e50;
-    font-size: 0.92rem;
+    font-size: 0.88rem;
+    background: #fff;
 }
 .timeline-activities li.ta-rich .ta-body.ta-no-img {
     grid-template-columns: 1fr;
 }
 .timeline-activities li.ta-rich .ta-img {
     margin: 0;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
     background: #f0f3f5;
     align-self: start;
@@ -895,47 +882,55 @@ body {
 .timeline-activities li.ta-rich .ta-img img {
     display: block;
     width: 100%;
-    height: 155px;
+    height: 120px;
     object-fit: cover;
 }
 .timeline-activities li.ta-rich .ta-content {
     display: flex;
     flex-direction: column;
-    gap: .35rem;
+    gap: 0.3rem;
     min-width: 0;
 }
 .timeline-activities li.ta-rich .ta-title {
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-family: 'Lato', 'Poppins', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 800;
     color: #1c2b48;
     line-height: 1.35;
     margin: 0;
 }
 .timeline-activities li.ta-rich .ta-desc {
     margin: 0;
-    line-height: 1.55;
-    color: #444;
-    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #4a4a4a;
+    font-size: 0.85rem;
 }
 .timeline-activities li.ta-rich .ta-time {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.82rem;
+    gap: 0.35rem;
+    font-size: 0.78rem;
     color: #5a6877;
-    margin-top: 0.2rem;
+    margin-top: 0.15rem;
+    font-weight: 600;
 }
 .timeline-activities li.ta-rich .ta-time i {
     color: #5a6877;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
 }
 @media (max-width: 600px) {
     .timeline-activities li.ta-rich .ta-body {
         grid-template-columns: 1fr;
+        padding: 0.6rem 0.75rem 0.75rem;
     }
     .timeline-activities li.ta-rich .ta-img img {
-        height: 180px;
+        height: 160px;
     }
+}
+
+/* MMT-style spacing between activity rows — much tighter than before */
+.timeline-activities {
+    gap: 0.4rem !important;
 }
 
 /* ── Inclusions / Exclusions ── */

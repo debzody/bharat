@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=11">
+    <link rel="stylesheet" href="css/package.css?v=12">
     <!-- Lato + Poppins — Lato matches MMT's heading typography; Poppins
          remains for legacy components. Pacifico kept for any decorative use. -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700;900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -762,15 +762,13 @@ function renderPage(pkg) {
                                                 ? '<span class="ta-time"><i class="far fa-clock"></i> ' + timeBits.join(' · ') + '</span>'
                                                 : '';
 
-                                            // Default-open whenever the activity has any content
-                                            // beyond a bare title (description, image, duration,
-                                            // time-of-day or place). For plain titles only, the
-                                            // card still renders but collapses by default to keep
-                                            // the day plan compact.
-                                            var hasExtra = !!(descTxt || imgUrl || dur || tod || place);
+                                            // MMT-style: collapsed by default. Visitor taps the
+                                            // header (ACTIVITY · 2hrs · Port Blair) to expand and
+                                            // see the image + description. Keeps the day plan
+                                            // information-dense, like leading travel agencies.
                                             return (
                                                 '<li class="ta-rich">' +
-                                                  '<details class="ta-details"' + (hasExtra ? ' open' : '') + '>' +
+                                                  '<details class="ta-details">' +
                                                     '<summary>' + headerBits.join('') + '</summary>' +
                                                     '<div class="ta-body' + (imgUrl ? '' : ' ta-no-img') + '">' +
                                                       (imgUrl ? '<div class="ta-img"><img src="' + imgUrl + '" alt="' + title + '" loading="lazy" decoding="async"></div>' : '') +
