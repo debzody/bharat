@@ -20,8 +20,25 @@
     // ── Keyword → image-folder map ───────────────────────────
     // The first matching keyword wins. Order matters: more specific
     // first ("cellular jail" before "jail"), generic last.
+    //
+    // The `transport` folder is a small library of stock photos for
+    // travel logistics (flights, cruises, hotels) — used when an
+    // activity title talks about getting to / staying somewhere
+    // rather than visiting a specific Andaman landmark. Each entry's
+    // `prefix` lets us map the same folder to different file
+    // prefixes (flight-1.jpg, cruise-1.jpg, hotel-1.jpg).
     var MAP = [
-        // Specific landmarks / activities
+        // ── Travel logistics (flights / cruises / hotels) ─────
+        //    Listed FIRST so they win over the generic Andaman
+        //    destination matches below — e.g. "Flight to Port Blair"
+        //    should show a plane shot, not a beach.
+        { kw: ['flight', 'airplane', 'aircraft', 'plane', 'airline', 'boarding', 'air india', 'indigo', 'spicejet', 'vistara'],
+                                                                                                folder: 'transport', prefix: 'flight', count: 4 },
+        { kw: ['cruise', 'cruise ship', 'cruise liner', 'ocean liner'],                          folder: 'transport', prefix: 'cruise', count: 4 },
+        { kw: ['hotel', 'resort', 'check-in', 'check in', 'check-out', 'check out', 'lobby',
+               'suite', 'villa', 'room service', 'overnight stay', 'accommodation'],             folder: 'transport', prefix: 'hotel',  count: 4 },
+
+        // ── Specific Andaman landmarks / activities ───────────
         { kw: ['cellular jail', 'kala pani', 'sound show', 'light show', 'national memorial'],     folder: 'port-blair',     count: 14 },
         { kw: ['ross island', 'ross & smith'],                                                     folder: 'ross-island',    count: 8  },
         { kw: ['smith island', 'natural sandbar'],                                                 folder: 'smith-island',   count: 6  },
@@ -36,13 +53,17 @@
     ];
 
     // ── Theme map for keywords that should pick a beach/sea-themed
-    //    fallback when no specific destination is mentioned.
+    //    fallback when no specific destination is mentioned. Now
+    //    that the MAP above has dedicated flight/cruise/hotel folders
+    //    these THEME entries are kept only for activities that don't
+    //    match anything in MAP (e.g. "ferry boat ride" still falls
+    //    through to neil1.jpg here because the MAP "cruise" branch
+    //    doesn't list "ferry").
     var THEME = [
         { kw: ['scuba',   'snorkel', 'coral', 'reef', 'underwater', 'sea walk', 'glass bottom'], file: 'images/beach2.jpg' },
         { kw: ['sunset',  'sunrise', 'sun down', 'cocktail'],                                    file: 'images/beach4.jpg' },
-        { kw: ['ferry',   'boat',    'cruise',  'yacht',  'speedboat',   'jet ski'],             file: 'images/neil1.jpg' },
-        { kw: ['hotel',   'resort',  'check-in','check in','room',       'suite', 'villa'],      file: 'images/beach3.jpg' },
-        { kw: ['airport', 'transfer','pickup',  'drop',    'arrival',    'departure'],           file: 'images/beach1.jpg' },
+        { kw: ['ferry',   'boat',    'yacht',   'speedboat',   'jet ski'],                       file: 'images/transport/cruise-1.jpg' },
+        { kw: ['airport', 'transfer','pickup',  'drop',    'arrival',    'departure'],           file: 'images/transport/flight-1.jpg' },
         { kw: ['breakfast','dinner', 'lunch',   'meal',    'bbq',        'barbecue'],            file: 'images/beach3.jpg' },
         { kw: ['spa',     'massage', 'wellness','yoga'],                                          file: 'images/neil6.jpg' },
         { kw: ['photo',   'shoot',   'camera'],                                                  file: 'images/beach2.jpg' },
@@ -84,9 +105,15 @@
             var entry = MAP[i];
             for (var j = 0; j < entry.kw.length; j++) {
                 if (t.indexOf(entry.kw[j]) !== -1) {
-                    // Pick a stable image number 1..count for this title
+                    // Pick a stable image number 1..count for this title.
+                    // Some folders (e.g. /images/transport) host several
+                    // file families so we honour an explicit `prefix`
+                    // when one is set (flight-N.jpg, cruise-N.jpg, …);
+                    // otherwise the file prefix falls back to the folder
+                    // name (port-blair-N.jpg, neil-N.jpg, …).
                     var num = (hash(t) % entry.count) + 1;
-                    return 'images/' + entry.folder + '/' + entry.folder + '-' + num + '.jpg';
+                    var pref = entry.prefix || entry.folder;
+                    return 'images/' + entry.folder + '/' + pref + '-' + num + '.jpg';
                 }
             }
         }
@@ -152,9 +179,10 @@
 
                 var max = Math.min(count, entry.count);
                 var start = hash(t) % entry.count;
+                var pref = entry.prefix || entry.folder;
                 for (var k = 0; k < max; k++) {
                     var num = ((start + k) % entry.count) + 1;
-                    out.push('images/' + entry.folder + '/' + entry.folder + '-' + num + '.jpg');
+                    out.push('images/' + entry.folder + '/' + pref + '-' + num + '.jpg');
                 }
                 return out;
             }
