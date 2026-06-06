@@ -1540,3 +1540,153 @@ body {
     .pkg-tweak-sub { width: 100%; margin-left: 0; }
     .pkg-tweak-fields { grid-template-columns: 1fr; }
 }
+
+/* ── Day Plan layout — MMT-style left sidebar + scrolling
+ *  right column. The sidebar shows the "N DAY PLAN" pill, a
+ *  "Day Plan" heading, and a vertical dotted timeline of the
+ *  travel dates. The active day pill is filled dark; the rest
+ *  are light grey dots connected by a dashed line. The whole
+ *  sidebar is ALWAYS expanded (never collapsed) and sticks to
+ *  the top of the viewport while the visitor scrolls through
+ *  the day cards on the right.
+ *  ─────────────────────────────────────────────────────────── */
+.pd-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin-top: 0.5rem;
+}
+.pd-sidebar {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    background: #fff;
+    border-right: 1px solid #e3e8ef;
+    padding: 0.5rem 1rem 1rem 0;
+    /* ALWAYS expanded — never collapsed on any viewport */
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+.pdsb-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    background: #fff;
+    color: #008cff;
+    border: 1.5px solid #b9dcff;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    margin-bottom: 1rem;
+}
+.pdsb-pill i { font-size: 0.7rem; }
+.pdsb-heading {
+    font-family: 'Lato', 'Poppins', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1c2b48;
+    margin: 0 0 0.85rem;
+}
+.pdsb-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+/* Dashed connecting line behind the dots */
+.pdsb-list::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 14px;
+    bottom: 14px;
+    width: 0;
+    border-left: 2px dashed #cfd9df;
+    z-index: 0;
+}
+.pdsb-item {
+    position: relative;
+    margin: 0;
+    z-index: 1;
+}
+.pdsb-item a {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.45rem 0.75rem 0.45rem 0;
+    color: #5a6877;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 999px;
+    transition: background-color 0.15s, color 0.15s;
+}
+.pdsb-item a:hover {
+    background: #f4f7fa;
+    color: #1c2b48;
+}
+.pdsb-dot {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #cfd9df;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #cfd9df;
+}
+.pdsb-date {
+    font-family: 'Lato', 'Poppins', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+/* Active state — filled dark pill (matches screenshot) */
+.pdsb-item.is-active a {
+    background: #2c3e50;
+    color: #fff;
+    padding-left: 0.5rem;
+}
+.pdsb-item.is-active .pdsb-dot {
+    background: #fff;
+    box-shadow: 0 0 0 1px #2c3e50;
+}
+.pdsb-item.is-active .pdsb-date {
+    color: #fff;
+    font-weight: 700;
+}
+
+/* The right (scrolling) column — timeline + content */
+.pd-main {
+    min-width: 0;
+}
+
+/* Mobile: stack the sidebar above the timeline. Sidebar is still
+ * always-expanded (no collapse toggle); just sits inline. */
+@media (max-width: 900px) {
+    .pd-layout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .pd-sidebar {
+        position: static;
+        border-right: 0;
+        border-bottom: 1px solid #e3e8ef;
+        padding: 0.5rem 0 1rem;
+        max-height: none;
+        overflow: visible;
+    }
+    .pdsb-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+    .pdsb-list::before { display: none; }
+    .pdsb-item a {
+        padding: 0.35rem 0.7rem;
+        background: #f4f7fa;
+        border-radius: 999px;
+    }
+    .pdsb-item.is-active a { background: #2c3e50; }
+}
