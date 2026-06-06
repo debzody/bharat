@@ -94,17 +94,23 @@
             title: String(a.title || ''),
             desc: a.desc || '',
             imageUrl: a.imageUrl || '',
-            imagePublicId: a.imagePublicId || ''
+            imagePublicId: a.imagePublicId || '',
+            // List of auto-picked Unsplash URLs the admin has hidden from the
+            // public carousel. We round-trip this so removals stick across
+            // saves. Stored as a plain array of strings.
+            excludedImages: Array.isArray(a.excludedImages) ? a.excludedImages.slice() : []
         };
     }
     function objToAct(o) {
         if (!o) return '';
-        var hasExtra = !!(o.desc || o.imageUrl);
+        var hasExclusions = Array.isArray(o.excludedImages) && o.excludedImages.length > 0;
+        var hasExtra = !!(o.desc || o.imageUrl || hasExclusions);
         if (!hasExtra) return o.title || '';
         var out = { title: o.title || '' };
         if (o.desc) out.desc = o.desc;
         if (o.imageUrl) out.imageUrl = o.imageUrl;
         if (o.imagePublicId) out.imagePublicId = o.imagePublicId;
+        if (hasExclusions) out.excludedImages = o.excludedImages.slice();
         return out;
     }
 
@@ -404,6 +410,109 @@
             body.appendChild(imgPreview);
             body.appendChild(urlLbl);
             body.appendChild(ctlRow);
+
+            // ── Auto-picked carousel manager ──────────────────────
+            //   Shows the same Unsplash photos that the public package
+            //   page uses for this activity's carousel. Each thumb has
+            //   a "×" button that adds the photo URL to
+            //   `act.excludedImages` so it disappears from the live
+            //   site. Removed photos can be brought back via the
+            //   "Restore removed photos" button.
+            var carouselWrap = document.createElement('div');
+            carouselWrap.className = 'il-act-field il-act-carousel-mgr';
+            var carouselHead = document.createElement('div');
+            carouselHead.className = 'il-act-field-head';
+            var carouselSpan = document.createElement('span');
+            carouselSpan.textContent = 'Auto-picked carousel photos';
+            carouselHead.appendChild(carouselSpan);
+            var restoreBtn = document.createElement('button');
+            restoreBtn.type = 'button';
+            restoreBtn.className = 'btn-il-ai';
+            restoreBtn.title = 'Restore all removed carousel photos';
+            restoreBtn.innerHTML = '<i class="fas fa-rotate-left"></i> Restore removed';
+            restoreBtn.addEventListener('click', function () {
+                act.excludedImages = [];
+                writeFromObjs(arr);
+                paintCarousel();
+            });
+            carouselHead.appendChild(restoreBtn);
+            carouselWrap.appendChild(carouselHead);
+
+            var carouselGrid = document.createElement('div');
+            carouselGrid.className = 'il-act-carousel-grid';
+            var carouselNote = document.createElement('p');
+            carouselNote.className = 'il-act-carousel-note';
+            carouselNote.style.cssText = 'margin:.4rem 0 0;font-size:.78rem;color:#5a6877;';
+            carouselWrap.appendChild(carouselGrid);
+            carouselWrap.appendChild(carouselNote);
+            body.appendChild(carouselWrap);
+
+            function getAutoCarouselImgs() {
+                var imgs = [];
+                if (act.imageUrl) imgs.push(act.imageUrl);
+                if (window.ItineraryImagePicker &&
+                    typeof window.ItineraryImagePicker.forActivityMulti === 'function') {
+                    var picked = window.ItineraryImagePicker
+                        .forActivityMulti(act.title || '', 8);
+                    picked.forEach(function (p) {
+                        if (imgs.indexOf(p) === -1) imgs.push(p);
+                    });
+                } else if (window.ItineraryImagePicker) {
+                    var single = window.ItineraryImagePicker.forActivity(act.title || '');
+                    if (single && imgs.indexOf(single) === -1) imgs.push(single);
+                }
+                return imgs;
+            }
+
+            function paintCarousel() {
+                carouselGrid.innerHTML = '';
+                var allImgs = getAutoCarouselImgs();
+                if (!allImgs.length) {
+                    carouselGrid.innerHTML = '<p class="il-empty" style="margin:.3rem 0;">' +
+                        'Type an activity title above to see the auto-picked photos here.</p>';
+                    carouselNote.textContent = '';
+                    return;
+                }
+                var excluded = Array.isArray(act.excludedImages) ? act.excludedImages : [];
+                var visible = allImgs.filter(function (s) { return excluded.indexOf(s) === -1; });
+                var shown = visible.slice(0, 5);
+                allImgs.forEach(function (src) {
+                    var isExcluded = excluded.indexOf(src) !== -1;
+                    var isOverflow = !isExcluded && shown.indexOf(src) === -1;
+                    var tile = document.createElement('div');
+                    tile.className = 'il-act-carousel-tile' +
+                        (isExcluded ? ' is-excluded' : '') +
+                        (isOverflow ? ' is-overflow' : '');
+                    tile.innerHTML =
+                        '<img src="' + encodeURI(src) + '" alt="" loading="lazy">' +
+                        (isExcluded
+                            ? '<button type="button" class="il-act-carousel-restore" title="Bring this photo back"><i class="fas fa-rotate-left"></i></button>'
+                            : '<button type="button" class="il-act-carousel-remove" title="Hide this photo from the public carousel"><i class="fas fa-times"></i></button>');
+                    var btn = tile.querySelector('button');
+                    btn.addEventListener('click', function () {
+                        if (!Array.isArray(act.excludedImages)) act.excludedImages = [];
+                        if (isExcluded) {
+                            // Restore: remove from excludedImages
+                            act.excludedImages = act.excludedImages.filter(function (s) { return s !== src; });
+                        } else {
+                            // Hide: append to excludedImages (de-dupe)
+                            if (act.excludedImages.indexOf(src) === -1) act.excludedImages.push(src);
+                        }
+                        writeFromObjs(arr);
+                        paintCarousel();
+                    });
+                    carouselGrid.appendChild(tile);
+                });
+                carouselNote.textContent = 'Showing ' + Math.min(shown.length, 5) +
+                    ' of ' + visible.length + ' photo' + (visible.length === 1 ? '' : 's') +
+                    ' on the public page' +
+                    (excluded.length ? ' · ' + excluded.length + ' hidden' : '') + '.';
+            }
+            paintCarousel();
+
+            // When the title changes the auto-picked photos change too —
+            // refresh the manager so admins see what visitors will see.
+            titleInput.addEventListener('input', paintCarousel);
 
             function paintPreview() {
                 if (act.imageUrl) {
