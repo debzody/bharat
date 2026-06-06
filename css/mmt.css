@@ -977,3 +977,53 @@ body.theme-cyberpunk .mmt-incl-list li {
 .mmt-results.view-grid .mmt-incl-list {
     grid-template-columns: 1fr;
 }
+
+/* ───────────────────────────────────────────────────────────
+ * v42 compact: tighten the price column so it doesn't dwarf the
+ * card body. Reduces vertical padding and the gaps between the
+ * Starting-From label, strikethrough, big price and fineprint.
+ * ─────────────────────────────────────────────────────────── */
+.mmt-card-price {
+    padding: .55rem .75rem .65rem;
+    gap: .15rem;
+}
+.mmt-price-from {
+    font-size: .65rem;
+    letter-spacing: .03em;
+    margin-bottom: -.05rem;
+}
+.mmt-price-strike {
+    font-size: .82rem;
+    margin-top: 0;
+    line-height: 1;
+}
+.mmt-price-row {
+    margin-top: .05rem;
+    line-height: 1;
+}
+.mmt-price-amt {
+    font-size: 1.35rem;
+    line-height: 1.05;
+}
+.mmt-price-fineprint {
+    font-size: .68rem;
+    margin-top: 0;
+    line-height: 1.2;
+}
+.mmt-card-cta {
+    margin-top: .35rem;
+    padding: .5rem 1rem;
+    font-size: .78rem;
+}
+.mmt-card-cta-secondary {
+    margin-top: .25rem;
+    padding: .42rem 1rem;
+    font-size: .72rem;
+}
+/* In grid view (3-up cards) shrink even further so the price column
+   doesn't add a tall empty stretch under the inclusion list. */
+.mmt-results.view-grid .mmt-card-price {
+    padding: .55rem .85rem .85rem;
+    gap: .1rem;
+}
+.mmt-results.view-grid .mmt-price-amt { font-size: 1.25rem; }

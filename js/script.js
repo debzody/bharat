@@ -41,7 +41,7 @@ async function loadAndRenderSitePackages() {
 
 // ── MMT-style listing helpers ───────────────────────────────────
 // Active filter / tab / sort state (module-scoped)
-const mmtState = { cat: 'all', sort: 'popular', dur: [], budget: [], hotel: [], theme: [] };
+const mmtState = { cat: 'all', sort: 'price-asc', dur: [], budget: [], hotel: [], theme: [] };
 
 // Derived helpers from a package
 function pkgDuration(pkg) {
