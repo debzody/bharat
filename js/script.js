@@ -146,19 +146,23 @@ function pkgCategory(pkg) {
     // 1. Explicit category from the dashboard editor
     var cat = String(pkg.category || '').trim().toLowerCase();
     if (cat) {
-        if (cat === 'budget')    return 'budget';
+        if (cat === 'budget' || cat === 'economy') return 'budget';
         if (cat === 'standard')  return 'standard';
         if (cat === 'deluxe')    return 'deluxe';
+        if (cat === 'premium')   return 'premium';
         if (cat === 'luxury')    return 'luxury';
         if (cat === 'royal')     return 'royal';
         if (cat === 'honeymoon') return 'honeymoon';
     }
     // 2. Name-based heuristic for un-tagged packages
+    // Order matters: more-specific keywords first so "Premium" doesn't
+    // get swallowed by the generic luxury/5-star branch.
     var name = String(pkg.name || '').toLowerCase();
     if (/honeymoon/.test(name))                  return 'honeymoon';
     if (/royal/.test(name))                      return 'royal';
-    if (/luxury|premium|5[\s-]?star/.test(name)) return 'luxury';
+    if (/premium/.test(name))                    return 'premium';
     if (/deluxe/.test(name))                     return 'deluxe';
+    if (/luxury|5[\s-]?star/.test(name))         return 'luxury';
     if (/budget|backpack|saver|economy/.test(name)) return 'budget';
     // 3. Legacy id mapping
     if (pkg.id === 'test')      return 'budget';
@@ -178,6 +182,7 @@ function pkgCategoryLabel(slug) {
         budget:    'Budget',
         standard:  'Standard',
         deluxe:    'Deluxe',
+        premium:   'Premium',
         luxury:    'Luxury',
         royal:     'Royal',
         honeymoon: 'Honeymoon'
@@ -188,6 +193,7 @@ function pkgCategoryColor(slug) {
         budget:    '#3498db',
         standard:  '#0d7a8a',
         deluxe:    '#16a085',
+        premium:   '#8e44ad',
         luxury:    '#9b59b6',
         royal:     '#d4ac0d',
         honeymoon: '#e74c3c'
