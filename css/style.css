@@ -709,12 +709,42 @@ footer{
 .dest-card--lg .dest-card__title{font-size:2.2rem}
 .dest-card__meta{display:flex;align-items:center;gap:.6rem;margin-top:.4rem;font-size:.82rem;opacity:.92;flex-wrap:wrap}
 .dest-card__meta .pill{background:rgba(255,255,255,.2);backdrop-filter:blur(8px);padding:.2rem .6rem;border-radius:999px;font-weight:600;font-size:.72rem}
-.dest-card[data-dest="havelock"]::before{background-image:url('../images/beach2.jpg')}
-.dest-card[data-dest="neil"]::before{background-image:url('../images/neil2.jpg')}
-.dest-card[data-dest="portblair"]::before{background-image:url('../images/ross2.jpg')}
-.dest-card[data-dest="baratang"]::before{background-image:url('../images/beach3.jpg')}
-.dest-card[data-dest="diglipur"]::before{background-image:url('../images/neil4.jpg')}
-.dest-card[data-dest="rosssmith"]::before{background-image:url('../images/ross3.jpg')}
+/* ── Destination tile background images.
+   Each card pulls a representative photo from the corresponding
+   images/<folder>/ batch downloaded from Unsplash. Using local
+   files (not Cloudinary) so the homepage paints fast and works
+   offline / behind ad-blockers. ────────────────────────────── */
+.dest-card[data-dest="havelock"]::before  {background-image:url('../images/havelock/havelock-1.jpg')}
+.dest-card[data-dest="neil"]::before      {background-image:url('../images/neil/neil-1.jpg')}
+.dest-card[data-dest="portblair"]::before {background-image:url('../images/port-blair/port-blair-1.jpg')}
+.dest-card[data-dest="baratang"]::before  {background-image:url('../images/baratang/baratang-5.jpg')}
+.dest-card[data-dest="limestone"]::before {background-image:url('../images/limestone-cave/limestone-cave-6.jpg')}
+.dest-card[data-dest="jarawa"]::before    {background-image:url('../images/jarawa/jarawa-7.jpg')}
+.dest-card[data-dest="diglipur"]::before  {background-image:url('../images/diglipur/diglipur-1.jpg')}
+.dest-card[data-dest="little"]::before    {background-image:url('../images/little-andaman/little-andaman-1.jpg')}
+.dest-card[data-dest="ross"]::before      {background-image:url('../images/ross-island/ross-island-1.jpg')}
+.dest-card[data-dest="smith"]::before     {background-image:url('../images/smith-island/smith-island-1.jpg')}
+
+/* "View photos →" hint shown at the bottom of each destination card.
+   Hidden on mobile (cards are smaller) so we don't crowd the title. */
+.dest-card__cta{
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    margin-top:.6rem;
+    padding:.3rem .7rem;
+    background:rgba(255,255,255,.18);
+    backdrop-filter:blur(8px);
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:600;
+    color:#fff;
+    opacity:0;
+    transform:translateY(4px);
+    transition:opacity .2s, transform .2s;
+}
+.dest-card:hover .dest-card__cta{opacity:1;transform:translateY(0)}
+.dest-card--lg .dest-card__cta{font-size:.85rem}
 @media(max-width:680px){
   .dest-section{padding:3rem 1rem}
   .dest-card{grid-column:span 12 !important;min-height:200px}
