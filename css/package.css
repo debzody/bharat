@@ -244,6 +244,65 @@ body {
     flex-shrink: 0;
 }
 
+/* ── Rich activity rows (with description / picture from AI Fill or
+ *    the dashboard editor). The plain <li> still renders a simple
+ *    chevron + text; rich rows use a <details> so they can collapse,
+ *    and we default-open them whenever the writer added extras. */
+.timeline-activities li.ta-rich {
+    display: block;
+    padding: 0;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #0d7a8a;
+    overflow: hidden;
+}
+.timeline-activities li.ta-rich .ta-details {
+    padding: 0;
+}
+.timeline-activities li.ta-rich summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.92rem;
+    user-select: none;
+}
+.timeline-activities li.ta-rich summary::-webkit-details-marker { display: none; }
+.timeline-activities li.ta-rich summary::marker { display: none; content: ''; }
+.timeline-activities li.ta-rich summary .ta-caret {
+    color: #0d7a8a;
+    font-size: 0.78rem;
+    transition: transform 0.18s ease;
+}
+.timeline-activities li.ta-rich .ta-details[open] summary .ta-caret {
+    transform: rotate(90deg);
+}
+.timeline-activities li.ta-rich .ta-body {
+    padding: 0.1rem 0.95rem 0.75rem 1.85rem;
+    color: #555;
+    font-size: 0.9rem;
+}
+.timeline-activities li.ta-rich .ta-desc {
+    margin: 0 0 0.6rem;
+    line-height: 1.55;
+}
+.timeline-activities li.ta-rich .ta-img {
+    margin: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 360px;
+}
+.timeline-activities li.ta-rich .ta-img img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
 /* ── Inclusions / Exclusions ── */
 .incl-grid {
     display: grid;
