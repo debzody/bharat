@@ -1,6 +1,67 @@
 /* Package Detail Page */
 * { box-sizing: border-box; }
 
+/* ── Thin top brand bar override (package page only) ───────────
+ *  The shared .topbar styles in style.css are tuned for the homepage
+ *  — taller logo, big brand text, generous padding. On the package
+ *  page we want a slimmer, information-dense bar so the itinerary
+ *  details get more vertical real-estate. We override only the
+ *  numbers; all hover/animation effects from style.css carry over. */
+/* On the package page the body is light grey, so the homepage's
+ * translucent glass-look topbar would read as "ghosted". We make
+ * the bar opaque, override --tb-h so it's slimmer, and pull the
+ * floating margins in so it reads as a thin solid header. */
+.pkg-topbar.topbar {
+    --tb-h: 56px;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 56px !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    background: rgba(20,20,20,0.96) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18) !important;
+    padding: 0 1.25rem !important;
+}
+.pkg-topbar .topbar-logo img {
+    height: 36px !important;
+    border-radius: 8px !important;
+}
+.pkg-topbar .brand-text {
+    line-height: 1.1;
+}
+.pkg-topbar .brand-line1 {
+    font-size: 0.95rem !important;
+}
+.pkg-topbar .brand-line2 {
+    font-size: 0.7rem !important;
+}
+.pkg-topbar .topnav {
+    gap: 0.15rem !important;
+}
+.pkg-topbar .topnav-item {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.78rem !important;
+}
+.pkg-topbar .topnav-item i {
+    font-size: 0.9rem !important;
+}
+.pkg-topbar .topbar-contact {
+    font-size: 0.78rem;
+}
+.pkg-topbar .topbar-phone,
+.pkg-topbar .topbar-email {
+    padding: 0.3rem 0.55rem !important;
+    font-size: 0.78rem !important;
+}
+/* Hide email on tighter widths so the nav fits */
+@media (max-width: 1180px) {
+    .pkg-topbar .topbar-email { display: none; }
+}
+/* Below the homepage breakpoint, the shared styles already collapse
+ * the nav into the hamburger menu — we just leave that behaviour. */
+
 body {
     margin: 0;
     /* MMT-style typography stack — Lato is the primary face for headings &

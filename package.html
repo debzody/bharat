@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=15">
+    <link rel="stylesheet" href="css/package.css?v=16">
     <!-- Lato + Poppins — Lato matches MMT's heading typography; Poppins
          remains for legacy components. Pacifico kept for any decorative use. -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700;900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -135,21 +135,50 @@
 </head>
 <body>
 
-    <!-- Minimal Navbar -->
-    <header style="position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(20,20,20,0.96);backdrop-filter:blur(10px);">
-        <nav style="display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;max-width:1400px;margin:0 auto;">
-            <a href="/" style="text-decoration:none;display:flex;align-items:center;">
-                <img src="images/logo-white.png" alt="Bharat Transport & Tourism" style="height:58px;width:auto;object-fit:contain;">
+    <!-- ── Top Brand Bar with Inline Icon Nav (matches homepage) ── -->
+    <header class="topbar pkg-topbar">
+        <a href="/" class="topbar-logo" style="text-decoration:none">
+            <img src="images/logo-white.png" alt="Bharat Transport and Tourism logo">
+            <span class="brand-text"><span class="brand-line1">Bharat Transport &amp; Tourism</span><span class="brand-line2">Andaman Specialists</span></span>
+        </a>
+        <nav class="topnav" id="topnav">
+            <a href="/#home" class="topnav-item">
+                <i class="fas fa-home"></i><span>Home</span>
             </a>
-            <div style="display:flex;gap:1rem;align-items:center;">
-                <a href="/#packages" style="color:rgba(255,255,255,0.8);text-decoration:none;font-size:0.9rem;"><i class="fas fa-suitcase"></i> All Packages</a>
-                <a href="/" id="navAuthLink" style="color:#fff;background:#0d7a8a;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;font-size:0.88rem;font-weight:600;">Login</a>
-            </div>
+            <a href="/#packages" class="topnav-item active">
+                <i class="fas fa-suitcase-rolling"></i><span>Packages</span>
+            </a>
+            <a href="/flights" class="topnav-item">
+                <i class="fas fa-plane"></i><span>Flights</span>
+            </a>
+            <a href="/customize" class="topnav-item"><i class="fas fa-sliders-h"></i><span>Customize</span></a>
+            <a href="/cabs" class="topnav-item">
+                <i class="fas fa-taxi"></i><span>Cabs</span>
+            </a>
+            <a href="/gallery" class="topnav-item">
+                <i class="fas fa-images"></i><span>Gallery</span>
+            </a>
+            <a href="/dashboard" class="topnav-item">
+                <i class="fas fa-th-large"></i><span>Dashboard</span>
+            </a>
+            <a href="javascript:void(0)" id="signUpNavLink" class="topnav-item">
+                <i class="fas fa-user-plus"></i><span>Sign Up</span>
+            </a>
+            <a href="/" id="authLink" class="topnav-item topnav-cta">
+                <i class="fas fa-sign-in-alt"></i><span>Login</span>
+            </a>
         </nav>
+        <div class="topbar-contact">
+            <a href="tel:+918880195191" class="topbar-phone"><i class="fas fa-phone-alt"></i> <span>+91 88801 95191</span></a>
+            <a href="mailto:booking@andamanvoyages.in" class="topbar-email" title="Email us to book"><i class="fas fa-envelope"></i> <span>booking@andamanvoyages.in</span></a>
+        </div>
+        <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
     </header>
 
-    <!-- Content rendered by JS -->
-    <div id="pageContent" style="padding-top:64px;">
+    <!-- Content rendered by JS — top padding clears the fixed thin topbar (56px) -->
+    <div id="pageContent" style="padding-top:56px;">
         <div class="pkg-loading">
             <i class="fas fa-spinner fa-spin"></i>
             <p>Loading package details…</p>
