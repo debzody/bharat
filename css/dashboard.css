@@ -2338,3 +2338,212 @@ body.theme-cyberpunk .ite-img-btn {
     color: #e6eef8;
     border-color: rgba(255, 255, 255, .22);
 }
+
+/* ───────────────────────────────────────────────────────────
+ * Activity-row editor (js/itinerary-list-editors.js → wireActivityList)
+ * Title row + collapsible body with description, image URL,
+ * upload button and preview. Mirrors the look of .il-list / .il-row.
+ * ─────────────────────────────────────────────────────────── */
+.il-act-row {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding: .55rem .6rem;
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+}
+.il-act-head {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+.il-act-head .il-act-title-input {
+    flex: 1;
+    min-width: 0;
+    padding: .42rem .65rem;
+    border: 1px solid #cfd9df;
+    border-radius: 6px;
+    font: inherit;
+    font-size: .88rem;
+    color: #2c3e50;
+    background: #fff;
+}
+.il-act-head .il-act-title-input:focus {
+    outline: none;
+    border-color: #0d7a8a;
+    box-shadow: 0 0 0 3px rgba(13, 122, 138, .15);
+}
+.il-act-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    flex-shrink: 0;
+}
+.btn-il-toggle {
+    background: #fff;
+    border: 1px solid #cfd9df;
+    color: #5a6877;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .12s, border-color .12s, color .12s, transform .15s;
+}
+.btn-il-toggle:hover {
+    background: #eef6f8;
+    border-color: #0d7a8a;
+    color: #0d7a8a;
+}
+.btn-il-toggle.is-open i {
+    transform: rotate(90deg);
+}
+.btn-il-toggle i {
+    transition: transform .15s;
+}
+
+/* Collapsible body */
+.il-act-body {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+    padding: .15rem 0 .1rem 0;
+    border-top: 1px dashed #e3e8ef;
+    margin-top: .1rem;
+}
+.il-act-body.is-collapsed {
+    display: none;
+}
+
+/* Field block (label + input/textarea, stacked) */
+.il-act-field {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+.il-act-field > span {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #5a6877;
+}
+.il-act-field > input,
+.il-act-field > textarea {
+    padding: .42rem .65rem;
+    border: 1px solid #cfd9df;
+    border-radius: 6px;
+    font: inherit;
+    font-size: .88rem;
+    color: #2c3e50;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+.il-act-field > textarea {
+    min-height: 56px;
+    resize: vertical;
+}
+.il-act-field > input:focus,
+.il-act-field > textarea:focus {
+    outline: none;
+    border-color: #0d7a8a;
+    box-shadow: 0 0 0 3px rgba(13, 122, 138, .15);
+}
+
+/* Image controls row (upload button + status text) */
+.il-act-image-controls {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.btn-il-upload {
+    background: #fff;
+    border: 1px solid #cfd9df;
+    color: #2c3e50;
+    padding: .35rem .7rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    transition: background .12s, border-color .12s, color .12s;
+}
+.btn-il-upload:hover {
+    background: #eef6f8;
+    border-color: #0d7a8a;
+    color: #0d7a8a;
+}
+.il-act-image-status {
+    font-size: .78rem;
+    color: #5a6877;
+}
+
+/* Image preview thumb */
+.il-act-image-preview {
+    margin: 0;
+}
+.il-act-image-preview img {
+    display: block;
+    max-width: 180px;
+    max-height: 120px;
+    border-radius: 6px;
+    border: 1px solid #e3e8ef;
+    object-fit: cover;
+}
+.il-act-image-preview .il-act-noimg {
+    font-size: .78rem;
+    color: #99a3ad;
+    font-style: italic;
+}
+
+/* Dark-theme variants */
+body.theme-hacker .il-act-row,
+body.theme-midnight .il-act-row,
+body.theme-cyberpunk .il-act-row {
+    background: rgba(255, 255, 255, .04);
+    border-color: rgba(255, 255, 255, .12);
+}
+body.theme-hacker .il-act-head .il-act-title-input,
+body.theme-midnight .il-act-head .il-act-title-input,
+body.theme-cyberpunk .il-act-head .il-act-title-input,
+body.theme-hacker .il-act-field > input,
+body.theme-midnight .il-act-field > input,
+body.theme-cyberpunk .il-act-field > input,
+body.theme-hacker .il-act-field > textarea,
+body.theme-midnight .il-act-field > textarea,
+body.theme-cyberpunk .il-act-field > textarea {
+    background: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .15);
+    color: #e6edf3;
+}
+body.theme-hacker .il-act-field > span,
+body.theme-midnight .il-act-field > span,
+body.theme-cyberpunk .il-act-field > span,
+body.theme-hacker .il-act-image-status,
+body.theme-midnight .il-act-image-status,
+body.theme-cyberpunk .il-act-image-status {
+    color: #b0b8c1;
+}
+body.theme-hacker .btn-il-toggle,
+body.theme-midnight .btn-il-toggle,
+body.theme-cyberpunk .btn-il-toggle,
+body.theme-hacker .btn-il-upload,
+body.theme-midnight .btn-il-upload,
+body.theme-cyberpunk .btn-il-upload {
+    background: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .15);
+    color: #d6dde4;
+}
+body.theme-hacker .il-act-body,
+body.theme-midnight .il-act-body,
+body.theme-cyberpunk .il-act-body {
+    border-top-color: rgba(255, 255, 255, .12);
+}
