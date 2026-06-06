@@ -1955,9 +1955,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 <label>Description</label>
                 <input type="text" class="pkg-input" value="${escHtml(day.desc||'')}" placeholder="Short description of the day">
             </div>
+            <!-- Activities — line-by-line list editor with per-row
+                 description + image upload (collapsed by default).
+                 Logic in js/itinerary-list-editors.js. -->
             <div class="pkg-edit-row">
-                <label>Activities <small>(one per line)</small></label>
-                <textarea class="pkg-input pkg-textarea" rows="5" placeholder="Airport pickup&#10;Hotel check-in&#10;City tour"></textarea>
+                <label>Activities <small>(one per row · click ⌃ for description / image)</small></label>
+                <div class="ite-act-list-host" data-act-list></div>
             </div>
             <!-- Per-day gallery: uses gallery collection. Photos uploaded
                  here get packageRef = pkg.id and dayNumber = day.day so
@@ -1987,9 +1990,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="ite-blocks-list"></div>
             </div>
         `;
-        // Set textarea value directly (avoids HTML entity issues)
-        el.querySelector('textarea').value = (day.activities || []).join('\n');
-
         // Bind events
         el.querySelector('.btn-del-day').addEventListener('click', () => window._iteDeleteDay(pkgIdx, dayIdx));
         el.querySelector('input[placeholder*="Arrival"]').addEventListener('input', function() {
@@ -1998,9 +1998,29 @@ document.addEventListener('DOMContentLoaded', function () {
         el.querySelector('input[placeholder*="Short"]').addEventListener('input', function() {
             packagesData[pkgIdx].days[dayIdx].desc = this.value;
         });
-        el.querySelector('textarea').addEventListener('input', function() {
-            packagesData[pkgIdx].days[dayIdx].activities = this.value.split('\n').map(s => s.trim()).filter(Boolean);
-        });
+
+        // Wire the activity list editor (replaces the legacy
+        // newline-separated textarea). Each activity can be a plain
+        // string (legacy) or an object { title, desc, imageUrl } —
+        // the editor preserves the simple string shape until the user
+        // fills in extras, so old packages keep their old payload.
+        if (window.IteListEditors && typeof window.IteListEditors.wireActivityList === 'function') {
+            const actHost = el.querySelector('[data-act-list]');
+            if (actHost) {
+                window.IteListEditors.wireActivityList(actHost, day, {
+                    uploadDefaults: function (d) {
+                        const pkg = packagesData[pkgIdx];
+                        return {
+                            title:      (pkg && pkg.name ? pkg.name + ' — Day ' + d.day : 'Day ' + d.day),
+                            category:   '',
+                            date:       new Date().toISOString().slice(0, 10),
+                            place:      '',
+                            packageRef: pkg && (pkg.id || pkg.name) || ''
+                        };
+                    }
+                });
+            }
+        }
 
         // ── Day-gallery wiring ────────────────────────────
         const stripEl  = el.querySelector('.ite-day-gallery-strip');
@@ -2459,12 +2479,16 @@ document.addEventListener('DOMContentLoaded', function () {
                             </select>
                         </div>
                         <div class="pkg-edit-row">
-                            <label>Highlights <small>(comma-separated)</small></label>
-                            <input id="ite-highlights" type="text" class="pkg-input" placeholder="e.g. Radhanagar Beach, Cellular Jail">
+                            <label>Highlights <small>(one per row)</small></label>
+                            <div id="ite-highlights" class="ite-list-host"></div>
                         </div>
                         <div class="pkg-edit-row">
-                            <label>Exclusions <small>(comma-separated)</small></label>
-                            <input id="ite-exclusions" type="text" class="pkg-input" placeholder="e.g. Airfare, Lunch, Travel Insurance">
+                            <label>Inclusions <small>(one per row)</small></label>
+                            <div id="ite-inclusions" class="ite-list-host"></div>
+                        </div>
+                        <div class="pkg-edit-row">
+                            <label>Exclusions <small>(one per row)</small></label>
+                            <div id="ite-exclusions" class="ite-list-host"></div>
                         </div>
                     </div>
                 </div>
@@ -2483,8 +2507,25 @@ document.addEventListener('DOMContentLoaded', function () {
         durSel.value = pkg.duration || '';
         // If no match, fall back to first option
         if (!durSel.value) durSel.selectedIndex = 0;
-        document.getElementById('ite-highlights').value = (pkg.highlights || []).join(', ');
-        document.getElementById('ite-exclusions').value = (pkg.exclusions || []).join(', ');
+
+        // Wire the line-by-line list editors for Highlights / Inclusions /
+        // Exclusions. Logic lives in js/itinerary-list-editors.js. Each
+        // editor reads/writes directly to the corresponding pkg field.
+        if (window.IteListEditors && typeof window.IteListEditors.wireStringList === 'function') {
+            const wire = window.IteListEditors.wireStringList;
+            wire(document.getElementById('ite-highlights'),
+                () => packagesData[pkgIdx].highlights,
+                (a) => { packagesData[pkgIdx].highlights = a; },
+                { placeholder: 'e.g. Radhanagar Beach', addLabel: 'Add Highlight' });
+            wire(document.getElementById('ite-inclusions'),
+                () => packagesData[pkgIdx].inclusions,
+                (a) => { packagesData[pkgIdx].inclusions = a; },
+                { placeholder: 'e.g. Daily breakfast', addLabel: 'Add Inclusion' });
+            wire(document.getElementById('ite-exclusions'),
+                () => packagesData[pkgIdx].exclusions,
+                (a) => { packagesData[pkgIdx].exclusions = a; },
+                { placeholder: 'e.g. Airfare', addLabel: 'Add Exclusion' });
+        }
 
         // Bind overview fields — duration change also syncs day cards
         document.getElementById('ite-duration').addEventListener('change', function() {
@@ -2515,12 +2556,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             renderIteDaysContainer(pkgIdx);
         });
-        document.getElementById('ite-highlights').addEventListener('input', function() {
-            packagesData[pkgIdx].highlights = this.value.split(',').map(s => s.trim()).filter(Boolean);
-        });
-        document.getElementById('ite-exclusions').addEventListener('input', function() {
-            packagesData[pkgIdx].exclusions = this.value.split(',').map(s => s.trim()).filter(Boolean);
-        });
+        // Highlights / Inclusions / Exclusions are now wired by
+        // IteListEditors.wireStringList above (line-by-line editor).
+        // The legacy comma-separated input listeners have been removed.
 
         // Add day button
         document.getElementById('ite-add-day-btn').addEventListener('click', () => window._iteAddDay(pkgIdx));
