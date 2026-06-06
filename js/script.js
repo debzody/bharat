@@ -265,7 +265,7 @@ function renderSitePackages() {
             </div>
             <div class="mmt-card-body">
                 <div class="mmt-card-title-row">
-                    <h3 class="mmt-card-title" data-nav="${pkg.id}">${pkg.name}</h3>
+                    <h3 class="mmt-card-title" data-nav="${pkg.id}">${pkg.name.replace(/\s*\(\s*[0-9]+\s*[a-zA-Z]\s*\)\s*/g, " ").replace(/\s+/g, " ").replace(/\s+—/g, " —").trim()}</h3><!-- mmt-card-title-clean -->
                     <span class="mmt-card-duration">${dur}N/${days}D</span>
                 </div>
                 <div class="mmt-route">

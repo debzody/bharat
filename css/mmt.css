@@ -910,8 +910,11 @@ select.mmt-field-value option {
 }
 .mmt-incl-list li span {
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    word-break: break-word;
 }
 
 .mmt-price-from {
@@ -964,4 +967,13 @@ body.theme-hacker .mmt-incl-list li,
 body.theme-midnight .mmt-incl-list li,
 body.theme-cyberpunk .mmt-incl-list li {
     color: #e6edf3;
+}
+
+
+/* Grid-card narrow inclusion list — when the card sits in a 3-up grid
+   the body column is ~280px wide, so a 2-col inclusion grid wraps each
+   item to 2 ellipsised lines. Drop to a single column there so each
+   inclusion gets the full width. */
+.mmt-results.view-grid .mmt-incl-list {
+    grid-template-columns: 1fr;
 }
