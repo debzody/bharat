@@ -358,16 +358,29 @@ function renderSitePackages() {
         const catLabel = pkgCategoryLabel(catSlug);
         const catColor = pkgCategoryColor(catSlug);
 
+        // Split inclusions into two columns. Pad the meal-plan row to the
+        // bottom so transfers/hotels/activities sit in the top rows like
+        // the MMT-style design. We also derive a clean "X Activities"
+        // line when the package has an activities count we can compute.
+        const inclTwo = incl.slice(0, 5);
+        // Public title (cleaned up) and total price for the bottom strip
+        const cleanTitle = pkg.name
+            .replace(/\s*\(\s*[0-9]+\s*[a-zA-Z]\s*\)\s*/g, ' ')
+            .replace(/\s+—/g, ' —')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const totalTwo = (!isTest && pkg.price > 0) ? pkg.price * 2 : 0;
+
         return `
         <div class="mmt-card${isSoldOut ? ' mmt-card-soldout' : ''}" data-pkgid="${pkg.id}" data-name="${pkg.id}" data-category="${catSlug}">
             <div class="mmt-card-img" data-nav="${pkg.id}" style="background-image:url('${pkg.image}');">
                 ${tag ? `<span class="${tagClass}">${tag}</span>` : ''}
                 <span class="mmt-cat-pill" style="background:${catColor};">${catLabel}</span>
-                <span class="mmt-more-options">${perks.length} More Options Available</span>
+                ${perks.length ? `<span class="mmt-more-options">${perks.length} More Options Available</span>` : ''}
             </div>
             <div class="mmt-card-body">
                 <div class="mmt-card-title-row">
-                    <h3 class="mmt-card-title" data-nav="${pkg.id}">${pkg.name.replace(/\s*\(\s*[0-9]+\s*[a-zA-Z]\s*\)\s*/g, " ").replace(/\s+/g, " ").replace(/\s+—/g, " —").trim()}</h3><!-- mmt-card-title-clean -->
+                    <h3 class="mmt-card-title" data-nav="${pkg.id}">${cleanTitle}</h3>
                     <span class="mmt-card-duration">${dur}N/${days}D</span>
                 </div>
                 <div class="mmt-route">
@@ -379,9 +392,9 @@ function renderSitePackages() {
                     <span class="mmt-amen" title="Transfers"><i class="fas fa-car-side"></i></span>
                     <span class="mmt-amen" title="Meals"><i class="fas fa-utensils"></i></span>
                 </div>
-                ${incl.length ? `
+                ${inclTwo.length ? `
                 <ul class="mmt-incl-list">
-                    ${incl.slice(0, 3).map(i => `<li><i class="fas fa-check-circle"></i><span>${i}</span></li>`).join('')}
+                    ${inclTwo.map(i => `<li><span>${i}</span></li>`).join('')}
                 </ul>` : ''}
                 ${perks.length ? `
                 <div class="mmt-perks">
@@ -389,15 +402,23 @@ function renderSitePackages() {
                 </div>` : ''}
             </div>
             <div class="mmt-card-price">
-                ${tag === 'Deal of the day' ? `<div class="mmt-price-tagline">Specially Curated For You</div>` : ''}
-                ${pkg.price >= 20000 ? `<div class="mmt-price-emi">No Cost EMI at <strong>₹${emi.toLocaleString()}</strong>/month</div>` : ''}
-                ${!isTest ? `<div class="mmt-price-from">Starting From</div>` : ''}
-                ${!isTest ? `<div class="mmt-price-strike">₹${(Math.round((pkg.price * 1.18) / 100) * 100).toLocaleString()}</div>` : ''}
-                <div class="mmt-price-row">
-                    <span class="mmt-price-amt">₹${Number(pkg.price).toLocaleString()}</span>
-                    <span class="mmt-price-per">${isTest ? '/test' : '/person'}</span>
-                </div>
-                ${!isTest ? `<div class="mmt-price-fineprint">Per Person on twin sharing</div>` : ''}
+                ${tag === 'Deal of the day'
+                    ? `<div class="mmt-price-offer-row">
+                         <span class="mmt-price-offer-label">Limited Time Offer</span>
+                         <span class="mmt-price-offer-amt">
+                            <strong>₹${Number(pkg.price).toLocaleString()}</strong><span>${isTest ? '/test' : '/person'}</span>
+                            ${totalTwo ? `<small>Total Price ₹${totalTwo.toLocaleString()}</small>` : ''}
+                         </span>
+                       </div>`
+                    : `${pkg.price >= 20000 ? `<div class="mmt-price-emi">No Cost EMI at <strong>₹${emi.toLocaleString()}</strong>/month</div>` : ''}
+                       ${!isTest ? `<div class="mmt-price-from">Starting From</div>` : ''}
+                       ${!isTest ? `<div class="mmt-price-strike">₹${(Math.round((pkg.price * 1.18) / 100) * 100).toLocaleString()}</div>` : ''}
+                       <div class="mmt-price-row">
+                           <span class="mmt-price-amt">₹${Number(pkg.price).toLocaleString()}</span>
+                           <span class="mmt-price-per">${isTest ? '/test' : '/person'}</span>
+                       </div>
+                       ${!isTest ? `<div class="mmt-price-fineprint">Per Person on twin sharing</div>` : ''}`
+                }
                 ${isSoldOut
                     ? `<button class="mmt-card-cta mmt-card-cta-soldout" data-action="enquire" data-pkg="${pkg.id}">
                          <i class="fas fa-times-circle"></i> Sold Out — Notify Me

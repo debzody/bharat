@@ -411,15 +411,17 @@ select.mmt-field-value option {
 }
 .mmt-card-tag {
   position: absolute;
-  top: 0;
-  left: 0;
-  background: linear-gradient(90deg, #6f3afa 0%, #8e6cf5 100%);
-  color: #fff;
-  padding: 0.35rem 0.9rem;
+  top: 0.7rem;
+  left: 0.7rem;
+  background: #fff;
+  color: #6f3afa;
+  padding: 0.32rem 0.75rem;
   font-size: 0.72rem;
   font-weight: 700;
-  border-radius: 0 0 8px 0;
-  letter-spacing: 0.5px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border: 1px solid rgba(111,58,250,0.18);
 }
 .mmt-more-options {
   position: absolute;
@@ -887,33 +889,44 @@ select.mmt-field-value option {
 }
 .mmt-amen i { display: block; }
 
+/* Two-column inclusion list — plain bullet dots, no icons.
+   Matches the MMT screenshot: "• Intercity Car Transfers / • 4 Star Hotels"
+   The dot is rendered with ::before so the JS can pass plain strings. */
 .mmt-incl-list {
     list-style: none;
-    margin: .25rem 0 0;
-    padding: 0;
+    margin: .35rem 0 0;
+    padding: .65rem 0 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: .25rem .9rem;
+    gap: .35rem 1rem;
+    border-top: 1px solid var(--mmt-line);
 }
 .mmt-incl-list li {
     display: flex;
-    align-items: center;
-    gap: .35rem;
-    font-size: .82rem;
-    color: var(--mmt-text);
-    line-height: 1.35;
-}
-.mmt-incl-list li i {
-    color: #16a085;
+    align-items: flex-start;
+    gap: .45rem;
     font-size: .85rem;
-    flex-shrink: 0;
+    color: #5a6877;
+    line-height: 1.4;
+    font-weight: 500;
 }
+.mmt-incl-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #8a98a8;
+    margin-top: 0.55em;
+}
+/* Hide any inline <i> the legacy markup may still emit */
+.mmt-incl-list li i { display: none; }
 .mmt-incl-list li span {
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.3;
+    line-height: 1.4;
     word-break: break-word;
 }
 
@@ -1027,3 +1040,112 @@ body.theme-cyberpunk .mmt-incl-list li {
     gap: .1rem;
 }
 .mmt-results.view-grid .mmt-price-amt { font-size: 1.25rem; }
+
+/* ───────────────────────────────────────────────────────────
+ * v50 — MMT-style "Deal of the day" card refresh.
+ * Matches the customer-supplied screenshot: white pill tag, plain
+ * bullet inclusions, teal-coloured perks with check marks, and a
+ * grey "Limited Time Offer" footer strip with the price on the right.
+ * ─────────────────────────────────────────────────────────── */
+
+/* Perks — green checks aligned with the inclusion list. Visible in
+   BOTH grid and list views (older CSS hid them in grid view). */
+.mmt-perks {
+    margin-top: .55rem;
+    padding-top: 0;
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.mmt-perk {
+    font-size: .9rem;
+    color: #0d7a8a;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.mmt-perk i {
+    color: #0d7a8a;
+    font-size: .78rem;
+    font-weight: 700;
+}
+.mmt-results.view-grid .mmt-perks { display: flex; }
+
+/* "Limited Time Offer" footer strip — replaces the centred price
+   column when the card has the "Deal of the day" tag. Sits inside
+   .mmt-card-price as a single grey rounded-corner block. */
+.mmt-price-offer-row {
+    width: 100%;
+    background: #f1f4f8;
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .85rem;
+    margin-bottom: .55rem;
+}
+.mmt-price-offer-label {
+    font-size: .92rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+.mmt-price-offer-amt {
+    text-align: right;
+    line-height: 1.2;
+    display: flex;
+    flex-direction: column;
+}
+.mmt-price-offer-amt strong {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1c2b48;
+    letter-spacing: -.5px;
+}
+.mmt-price-offer-amt span {
+    font-size: .78rem;
+    color: #5a6877;
+    font-weight: 500;
+    margin-left: .15rem;
+}
+.mmt-price-offer-amt small {
+    font-size: .75rem;
+    color: #7a8b96;
+    font-weight: 400;
+    margin-top: .15rem;
+    display: block;
+}
+/* When the offer row is present the price column should align the
+   strip + buttons full-width (not centred small block). */
+.mmt-card-price:has(.mmt-price-offer-row) {
+    align-items: stretch;
+    text-align: left;
+    background: #fff;
+    padding: .9rem 1rem 1rem;
+}
+
+/* Hide the "AD Premium"-style small grey badge on top-right when not
+   needed — the screenshot doesn't show it. We keep the markup so admins
+   can re-enable from JS later. */
+.mmt-more-options { display: none; }
+
+/* Title row — let the title truncate to a single line on narrow cards
+   so the "5N/6D" badge always stays visible on the right. */
+.mmt-card-title {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+}
+.mmt-card-duration {
+    background: #fff;
+    color: #2196f3;
+    border: 1.5px solid #2196f3;
+    font-size: .78rem;
+    padding: .25rem .55rem;
+    border-radius: 6px;
+    letter-spacing: .3px;
+}
