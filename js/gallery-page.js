@@ -33,6 +33,20 @@
     let lbIndex = 0;
     let activeCat = 'all';
 
+    // Read deep-link params:
+    //   ?category=<exact-category-name> → pre-select that filter chip
+    //   ?place=<exact-place-name>       → pre-select chip whose
+    //                                     category matches the place
+    // Both are case-insensitive. Used by the "Where do you want to wake
+    // up?" section on the homepage to deep-link straight into a filtered
+    // gallery view (e.g. /gallery?category=Havelock+Island).
+    let initialFilterRequest = '';
+    try {
+        const params = new URLSearchParams(location.search);
+        initialFilterRequest =
+            (params.get('category') || params.get('place') || '').trim();
+    } catch (e) {}
+
     // Restore user preferences
     try {
         const savedGroup = localStorage.getItem('galleryGroupBy');
@@ -126,18 +140,45 @@
     // ── filter chips ───────────────────────────────────────────
     function renderFilters(cats) {
         filtersEl.innerHTML = '';
+
+        // If the URL asked for a specific category/place, look for a
+        // matching chip (case-insensitive) so we can mark it active
+        // instead of "All".
+        const want = (initialFilterRequest || '').toLowerCase();
+        let matched = '';
+        if (want) {
+            for (const c of cats) {
+                if (String(c).toLowerCase() === want) { matched = c; break; }
+            }
+        }
+
         const allChip = document.createElement('button');
-        allChip.className = 'gallery-chip active';
+        allChip.className = 'gallery-chip' + (matched ? '' : ' active');
         allChip.dataset.cat = 'all';
         allChip.textContent = 'All';
         filtersEl.appendChild(allChip);
         cats.forEach(cat => {
             const chip = document.createElement('button');
-            chip.className = 'gallery-chip';
+            chip.className = 'gallery-chip' + (matched === cat ? ' active' : '');
             chip.dataset.cat = cat;
             chip.textContent = cat;
             filtersEl.appendChild(chip);
         });
+
+        // Sync the activeCat module-state so the first applyFiltersAndRender()
+        // call uses the URL-requested filter.
+        activeCat = matched || 'all';
+
+        // If matched, scroll the chip into view (helps on mobile where
+        // the chip strip might overflow horizontally).
+        if (matched) {
+            try {
+                const activeEl = filtersEl.querySelector('.gallery-chip.active');
+                if (activeEl && activeEl.scrollIntoView) {
+                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            } catch (e) {}
+        }
     }
 
     if (filtersEl) {

@@ -265,7 +265,7 @@
         ]
     }
     </script>
-    <link rel="stylesheet" href="css/style.css?v=56">
+    <link rel="stylesheet" href="css/style.css?v=57">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
     <link rel="stylesheet" href="css/mmt.css?v=33">
     <link rel="stylesheet" href="css/flights.css?v=3">
@@ -611,22 +611,129 @@
         </div>
     </section>
 
-    <!-- ═══ DESTINATIONS — visual island picker ═══════════════════════ -->
+    <!-- ═══ DESTINATIONS — visual island picker ═══════════════════════
+         Each card deep-links to /gallery?category=<tag> so a click takes
+         the visitor straight to a filtered gallery view (powered by the
+         URL-param logic in js/gallery-page.js — first reads ?category /
+         ?place, matches a chip case-insensitively, scrolls into view).
+         Categories must exactly match the values written by
+         tools/bulk-gallery-upload.html. ─────────────────────────────── -->
     <section id="destinations" class="dest-section">
         <header class="m-section-head">
             <div>
                 <div class="m-eyebrow">Destinations</div>
                 <h2 class="m-title">Where do you want to <em>wake up</em>?</h2>
-                <p class="m-sub">Six islands, six personalities. Build your trip around the ones that match your mood.</p>
+                <p class="m-sub">Ten destinations, ten personalities. Click any island to see its photo collection.</p>
             </div>
         </header>
         <div class="dest-grid">
-            <a href="#packages" class="dest-card dest-card--lg" data-dest="havelock"><div><h3 class="dest-card__title">Havelock Island</h3><div class="dest-card__meta"><span class="pill">Most Popular</span><span><i class="fas fa-water"></i> Radhanagar Beach (Asia's #7)</span></div></div></a>
-            <a href="#packages" class="dest-card dest-card--md" data-dest="neil"><div><h3 class="dest-card__title">Neil Island</h3><div class="dest-card__meta"><span class="pill">Quiet &amp; Slow</span><span><i class="fas fa-leaf"></i> Natural bridge &amp; coral</span></div></div></a>
-            <a href="#packages" class="dest-card dest-card--md" data-dest="portblair"><div><h3 class="dest-card__title">Port Blair</h3><div class="dest-card__meta"><span class="pill">History</span><span><i class="fas fa-monument"></i> Cellular Jail capital</span></div></div></a>
-            <a href="#packages" class="dest-card dest-card--sm" data-dest="baratang"><div><h3 class="dest-card__title">Baratang</h3><div class="dest-card__meta"><span class="pill">Day Trip</span></div></div></a>
-            <a href="#packages" class="dest-card dest-card--sm" data-dest="diglipur"><div><h3 class="dest-card__title">Diglipur</h3><div class="dest-card__meta"><span class="pill">Off-beat</span></div></div></a>
-            <a href="#packages" class="dest-card dest-card--sm" data-dest="rosssmith"><div><h3 class="dest-card__title">Ross &amp; Smith</h3><div class="dest-card__meta"><span class="pill">Twin Islands</span></div></div></a>
+            <!-- Row 1: hero card + two medium -->
+            <a href="/gallery?category=Havelock%20Island" class="dest-card dest-card--lg" data-dest="havelock">
+                <div>
+                    <h3 class="dest-card__title">Havelock Island</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Most Popular</span>
+                        <span><i class="fas fa-water"></i> Radhanagar Beach (Asia's #7)</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+            <a href="/gallery?category=Neil%20Island" class="dest-card dest-card--md" data-dest="neil">
+                <div>
+                    <h3 class="dest-card__title">Neil Island</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Quiet &amp; Slow</span>
+                        <span><i class="fas fa-leaf"></i> Natural bridge &amp; coral</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+            <a href="/gallery?category=Port%20Blair" class="dest-card dest-card--md" data-dest="portblair">
+                <div>
+                    <h3 class="dest-card__title">Port Blair</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">History</span>
+                        <span><i class="fas fa-monument"></i> Cellular Jail capital</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+
+            <!-- Row 2: three small -->
+            <a href="/gallery?category=Baratang" class="dest-card dest-card--sm" data-dest="baratang">
+                <div>
+                    <h3 class="dest-card__title">Baratang</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Day Trip</span>
+                        <span><i class="fas fa-tree"></i> Mangrove creek</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+            <a href="/gallery?category=Limestone%20Cave" class="dest-card dest-card--sm" data-dest="limestone">
+                <div>
+                    <h3 class="dest-card__title">Limestone Cave</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Wonder</span>
+                        <span><i class="fas fa-mountain"></i> Stalactite formations</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+            <a href="/gallery?category=Jarawa%20Reserve" class="dest-card dest-card--sm" data-dest="jarawa">
+                <div>
+                    <h3 class="dest-card__title">Jarawa Reserve</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Forest Drive</span>
+                        <span><i class="fas fa-leaf"></i> Tribal reserve</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+
+            <!-- Row 3: two medium -->
+            <a href="/gallery?category=Diglipur" class="dest-card dest-card--md" data-dest="diglipur">
+                <div>
+                    <h3 class="dest-card__title">Diglipur</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Off-beat</span>
+                        <span><i class="fas fa-mountain"></i> Saddle Peak</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+            <a href="/gallery?category=Little%20Andaman" class="dest-card dest-card--md" data-dest="little">
+                <div>
+                    <h3 class="dest-card__title">Little Andaman</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Surfer's Paradise</span>
+                        <span><i class="fas fa-water"></i> White Surf Falls</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+
+            <!-- Row 4: two small -->
+            <a href="/gallery?category=Ross%20Island" class="dest-card dest-card--sm" data-dest="ross">
+                <div>
+                    <h3 class="dest-card__title">Ross Island</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">British-Era Ruins</span>
+                        <span><i class="fas fa-landmark"></i> Heritage</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
+            <a href="/gallery?category=Smith%20Island" class="dest-card dest-card--sm" data-dest="smith">
+                <div>
+                    <h3 class="dest-card__title">Smith Island</h3>
+                    <div class="dest-card__meta">
+                        <span class="pill">Twin Islands</span>
+                        <span><i class="fas fa-link"></i> Natural sandbar</span>
+                    </div>
+                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+                </div>
+            </a>
         </div>
     </section>
 
