@@ -2017,6 +2017,21 @@ document.addEventListener('DOMContentLoaded', function () {
                             place:      '',
                             packageRef: pkg && (pkg.id || pkg.name) || ''
                         };
+                    },
+                    // Context for the ✨ AI Fill button on each activity's
+                    // description — passed to the ai-assistant Worker so the
+                    // generated copy mentions the right package + day.
+                    getPackageName: function () {
+                        const pkg = packagesData[pkgIdx];
+                        return (pkg && pkg.name) || '';
+                    },
+                    getDayTitle: function () {
+                        const d = packagesData[pkgIdx] && packagesData[pkgIdx].days && packagesData[pkgIdx].days[dayIdx];
+                        return (d && d.title) || '';
+                    },
+                    getDayNumber: function () {
+                        const d = packagesData[pkgIdx] && packagesData[pkgIdx].days && packagesData[pkgIdx].days[dayIdx];
+                        return (d && d.day) || (dayIdx + 1);
                     }
                 });
             }

@@ -2547,3 +2547,74 @@ body.theme-midnight .il-act-body,
 body.theme-cyberpunk .il-act-body {
     border-top-color: rgba(255, 255, 255, .12);
 }
+
+/* ── ✨ AI Fill button on activity description fields ────────────
+   Adds a small purple-gradient button next to the "Description"
+   label on each activity row in the package/day editor. Clicking
+   it asks the ai-assistant Worker to write a 1-2 sentence
+   description from the activity title. See:
+     • js/itinerary-list-editors.js — button injection
+     • js/ai-assistant.js           — generateText() helper
+     • workers/ai-assistant/worker.js — /generate-text endpoint
+   Also styles .il-act-field-head (the row that holds the label and
+   the button on the same line) so the layout doesn't break for
+   non-AI setups (no button → label sits alone, same as before). */
+.il-act-field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.il-act-field-head > span {
+    /* Inherit the label-style from .il-act-field > span; the
+       cascade rule above already handles colour + spacing, but
+       since the span is now a child of .il-act-field-head (not
+       a direct child of .il-act-field), we duplicate the rules. */
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #5a6877;
+}
+.btn-il-ai {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .65rem;
+    background: linear-gradient(135deg, #8e44ad, #3498db);
+    color: #fff;
+    border: 0;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(142, 68, 173, .25);
+    transition: filter .15s, transform .15s, box-shadow .15s;
+    font-family: inherit;
+    line-height: 1;
+}
+.btn-il-ai:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(142, 68, 173, .35);
+}
+.btn-il-ai:active:not(:disabled) {
+    transform: translateY(0);
+}
+.btn-il-ai:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+    filter: grayscale(.3);
+}
+.btn-il-ai i {
+    font-size: .72rem;
+}
+@media (max-width: 600px) {
+    .btn-il-ai {
+        font-size: .68rem;
+        padding: .25rem .55rem;
+    }
+}
