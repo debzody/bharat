@@ -2329,6 +2329,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Expose for reuse by the inline activity-image uploader
+    // (js/itinerary-list-editors.js) so every photo upload — whether
+    // from the day strip OR an activity row — pops the same required-
+    // metadata dialog.
+    if (typeof window !== 'undefined') {
+        window.IteUploadDialog = window.IteUploadDialog || {};
+        window.IteUploadDialog.open = openDayUploadMetaDialog;
+    }
+
+
     // ── Gallery cache + picker (used by per-day gallery) ────────
     // Caches every gallery doc by id so day-thumbs render instantly,
     // and powers the multi-select picker. One Firestore read per
