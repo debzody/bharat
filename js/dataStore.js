@@ -248,6 +248,73 @@
         try { localStorage.setItem(PACKAGES_CACHE_KEY, JSON.stringify(data)); } catch (_) {}
     }
 
+    // ───────────────────────────────────────────────────────────
+    // Price authority — enforce official 2026 PDF cost-sheet values
+    // ───────────────────────────────────────────────────────────
+    // Firestore docs occasionally drift from the printed brochures
+    // in /package/. To make sure visitors always see the price that
+    // matches the published PDF, we run every loaded package through
+    // this normalizer (Firestore, repo file, cache — every path).
+    //
+    // From the verbatim "PACKAGE COST" line in each PDF:
+    //   5A 15500 / 5B 18500 / 5C 20500 / 5D 22500
+    //   6A 17500 / 6B 20500 / 6C 22500 / 6D 24500
+    //   4A Honeymoon 29500 / 4B Royal 29500
+    const PDF_PRICE_BY_ID = {
+        '5A': 15500, '5N6D-5A': 15500,
+        '5B': 18500, '5N6D-5B': 18500,
+        '5C': 20500, '5N6D-5C': 20500,
+        '5D': 22500, '5N6D-5D': 22500,
+        '6A': 17500, '6N7D-6A': 17500,
+        '6B': 20500, '6N7D-6B': 20500,
+        '6C': 22500, '6N7D-6C': 22500,
+        '6D': 24500, '6N7D-6D': 24500,
+        'honeymoon-4a-2026': 29500,
+        'royal-4b-2026':     29500
+    };
+    // The (code) marker can appear anywhere after the keyword in the
+    // package name, e.g. "Royal Package (4B) — 2026". The regex below
+    // matches "<keyword>...(<code>)" with arbitrary text in between.
+    const PDF_PRICE_BY_NAME_RE = [
+        { re: /honeymoon[\s\S]*\(\s*4a\s*\)/i, price: 29500 },
+        { re: /royal[\s\S]*\(\s*4b\s*\)/i,     price: 29500 },
+        { re: /economy[\s\S]*\(\s*5a\s*\)/i,   price: 15500 },
+        { re: /standard[\s\S]*\(\s*5b\s*\)/i,  price: 18500 },
+        { re: /deluxe[\s\S]*\(\s*5c\s*\)/i,    price: 20500 },
+        { re: /premium[\s\S]*\(\s*5d\s*\)/i,   price: 22500 },
+        { re: /economy[\s\S]*\(\s*6a\s*\)/i,   price: 17500 },
+        { re: /standard[\s\S]*\(\s*6b\s*\)/i,  price: 20500 },
+        { re: /deluxe[\s\S]*\(\s*6c\s*\)/i,    price: 22500 },
+        { re: /premium[\s\S]*\(\s*6d\s*\)/i,   price: 24500 }
+    ];
+    function _pdfPriceFor(pkg) {
+        if (!pkg) return null;
+        const id = String(pkg.id || '');
+        if (PDF_PRICE_BY_ID[id] != null) return PDF_PRICE_BY_ID[id];
+        const name = String(pkg.name || pkg.title || '');
+        for (let i = 0; i < PDF_PRICE_BY_NAME_RE.length; i++) {
+            if (PDF_PRICE_BY_NAME_RE[i].re.test(name)) return PDF_PRICE_BY_NAME_RE[i].price;
+        }
+        return null;
+    }
+    function normalizePackagePrices(list) {
+        if (!Array.isArray(list)) return list;
+        return list.map(function (pkg) {
+            const target = _pdfPriceFor(pkg);
+            if (target == null) return pkg;
+            const before = Number(pkg.price);
+            if (before === target) return pkg;
+            const patched = Object.assign({}, pkg, { price: target });
+            if (pkg.pricePerHead != null) patched.pricePerHead = target;
+            if (pkg.pricing && typeof pkg.pricing === 'object') {
+                patched.pricing = Object.assign({}, pkg.pricing);
+                if (pkg.pricing.perPersonDouble != null) patched.pricing.perPersonDouble = target;
+                if (pkg.pricing.perPersonTriple != null) patched.pricing.perPersonTriple = target;
+            }
+            return patched;
+        });
+    }
+
     async function loadFromRepoFile() {
         try {
             const res = await fetch('data/packages.json?t=' + Date.now(), { cache: 'no-store' });
@@ -281,8 +348,9 @@
     async function loadPackages() {
         // 1. Authoritative: Firestore
         try {
-            const data = await loadFromFirestore();
+            let data = await loadFromFirestore();
             if (data && data.length) {
+                data = normalizePackagePrices(data);
                 setCachedPackages(data);
                 return { data, source: 'firestore' };
             }
@@ -290,14 +358,15 @@
             console.warn('Firestore packages read failed; falling back', e);
         }
         // 2. Static fallback file in the repo
-        const repoData = await loadFromRepoFile();
+        let repoData = await loadFromRepoFile();
         if (repoData) {
+            repoData = normalizePackagePrices(repoData);
             setCachedPackages(repoData);
             return { data: repoData, source: 'repo' };
         }
         // 3. Cached
         const cached = getCachedPackages();
-        if (cached) return { data: cached, source: 'cache' };
+        if (cached) return { data: normalizePackagePrices(cached), source: 'cache' };
 
         return { data: null, source: 'none' };
     }
@@ -305,7 +374,7 @@
     async function loadPackagesSWR(onUpdate) {
         const cached = getCachedPackages();
         if (cached && typeof onUpdate === 'function') {
-            try { onUpdate(cached, 'cache'); } catch (_) {}
+            try { onUpdate(normalizePackagePrices(cached), 'cache'); } catch (_) {}
         }
         const fresh = await loadPackages();
         if (fresh.data && typeof onUpdate === 'function') {
