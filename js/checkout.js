@@ -334,9 +334,10 @@
 
     // Resolve the included meal plan for the cart's package tier.
     //
-    //   Budget  / Economy   →  Breakfast + Lunch + Dinner   (all 3 meals)
-    //   Standard / Deluxe / Premium / Luxury / Honeymoon /
-    //   Royal / customised / unknown                        →  Breakfast only
+    //   Economy / Budget / Standard  →  Breakfast + Lunch + Dinner   (all 3 meals)
+    //   Deluxe / Premium / Royal     →  Breakfast & Dinner          (lunch excluded)
+    //   Honeymoon / customised /
+    //   anything else                →  Breakfast only
     //
     // Match is by package id, then by package name (case-insensitive).
     // Plan is fixed by the package — NOT customer-editable — so we render
@@ -344,26 +345,48 @@
     function mealPlanForCart() {
         var key = String(state.cart && state.cart.pkgId || '').toLowerCase();
         var nm  = String(state.cart && state.cart.name  || '').toLowerCase();
+        var cat = String(state.cart && state.cart.category || '').toLowerCase();
 
-        // Whitelist for the all-3-meals tier. We accept any of:
-        //   • id      = "budget" / "economy" / "5A" / "6A" / "5N6D-5A" / "6N7D-6A"
-        //   • name    contains the word "budget" or "economy"
-        //              (e.g. "Economy Package 5N/6D — 2026", "Budget Andaman Escape")
-        var ID_ALL3 = ['budget', 'economy', '5a', '6a', '5n6d-5a', '6n7d-6a'];
-        var idAll3  = ID_ALL3.indexOf(key) >= 0;
-        var nameAll3 = /\b(budget|economy)\b/.test(nm);
-
-        if (idAll3 || nameAll3) {
+        // ── Tier 1: Breakfast + Lunch + Dinner — Economy / Budget / Standard
+        // id matches: budget / economy / standard / 5A / 5B / 6A / 6B (with/without prefix)
+        var ID_ALL3 = ['budget', 'economy', 'standard',
+                       '5a', '5b', '6a', '6b',
+                       '5n6d-5a', '5n6d-5b', '6n7d-6a', '6n7d-6b'];
+        var idAll3   = ID_ALL3.indexOf(key) >= 0;
+        var nameAll3 = /\b(budget|economy|standard)\b/.test(nm);
+        var catAll3  = /\b(budget|economy|standard)\b/.test(cat);
+        if (idAll3 || nameAll3 || catAll3) {
             return {
                 code: 'all',
                 label: 'Breakfast + Lunch + Dinner',
-                note: 'All 3 meals included — Budget & Economy packages only.'
+                note: 'All 3 meals included — Economy / Budget / Standard packages.'
             };
         }
+
+        // ── Tier 2: Breakfast & Dinner (lunch excluded) — Deluxe / Premium / Royal / Luxury
+        // id matches: deluxe / premium / royal / luxury / 5C / 5D / 6C / 6D / 4B / royal-4b-2026 / etc.
+        var ID_BD = ['deluxe', 'premium', 'royal', 'luxury',
+                     '5c', '5d', '6c', '6d', '4b',
+                     '5n6d-5c', '5n6d-5d', '6n7d-6c', '6n7d-6d',
+                     'royal-4b-2026'];
+        var idBD   = ID_BD.indexOf(key) >= 0
+                  || /^(deluxe|premium|royal|luxury)/.test(key)
+                  || /(^|-)(5c|5d|6c|6d|4b)(-|$)/.test(key);
+        var nameBD = /\b(deluxe|premium|royal|luxury)\b/.test(nm);
+        var catBD  = /\b(deluxe|premium|royal|luxury)\b/.test(cat);
+        if (idBD || nameBD || catBD) {
+            return {
+                code: 'bd',
+                label: 'Breakfast & Dinner',
+                note: 'Breakfast & Dinner included (lunch excluded) — Deluxe / Premium / Royal packages.'
+            };
+        }
+
+        // ── Tier 3: Breakfast only — Honeymoon, customised, anything else
         return {
             code: 'breakfast',
             label: 'Breakfast only',
-            note: 'Standard / Deluxe / Premium / Royal / Honeymoon packages include breakfast only.'
+            note: 'Honeymoon & customised packages include breakfast only (additional meals on request).'
         };
     }
 
