@@ -2740,7 +2740,10 @@ body.theme-cyberpunk .il-act-body {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 1100;
+    /* Must beat the .ite-overlay (100000) AND the day-card editor
+     * panels (100001) so the picker is actually visible when the
+     * admin clicks "Pick from Gallery" inside the itinerary editor. */
+    z-index: 100050;
     padding: 1rem;
 }
 .ite-gallery-picker.open { display: flex; }
