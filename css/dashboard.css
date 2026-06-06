@@ -2881,3 +2881,74 @@ body.theme-cyberpunk .il-act-body {
         gap: 0.55rem;
     }
 }
+
+/* ── Gallery photo: hide/show toggle (admin) ───────────────
+ *   Each gallery card gets a "Hide / Show" button next to
+ *   Edit / View / Delete that flips item.hidden in Firestore.
+ *   Hidden cards are visually muted with a "HIDDEN" badge so
+ *   admins can see at a glance which photos visitors won't.
+ *  ─────────────────────────────────────────────────────────── */
+.admin-gallery-card.is-hidden-photo {
+    opacity: 0.55;
+    border: 2px dashed #c0392b !important;
+    background: #fdf2f2;
+}
+.admin-gallery-card.is-hidden-photo .admin-gallery-card-img {
+    filter: grayscale(0.4);
+}
+.agc-hidden-flag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(192,57,43,0.92);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    z-index: 2;
+}
+.admin-gallery-card-img {
+    position: relative; /* anchor for the absolute HIDDEN flag */
+}
+
+/* Hide / Show button — sits with the other action buttons */
+.admin-gallery-card-actions .btn-vis {
+    background: #fff;
+    color: #5a6877;
+    border: 1px solid #cfd9df;
+    padding: 0.3rem 0.65rem;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.admin-gallery-card-actions .btn-vis:hover:not(:disabled) {
+    background: #fff8e1;
+    color: #b07d00;
+    border-color: #f1c27d;
+}
+.admin-gallery-card-actions .btn-vis:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.admin-gallery-card.is-hidden-photo .btn-vis {
+    background: #d4edda;
+    color: #1e8449;
+    border-color: #a9dfbf;
+}
+.admin-gallery-card.is-hidden-photo .btn-vis:hover:not(:disabled) {
+    background: #1e8449;
+    color: #fff;
+    border-color: #1e8449;
+}

@@ -51,6 +51,12 @@
                 packageRef: data.packageRef || '',    // package id or name e.g. "honeymoon"
                 publicId: data.publicId || '',          // Cloudinary public_id
                 storagePath: data.storagePath || '',    // legacy (Firebase Storage)
+                // ── Visibility flag — admin can toggle this from the
+                //    dashboard to remove the photo from the public
+                //    /gallery page (and from "Pick from Gallery" lists)
+                //    without deleting the underlying Cloudinary asset.
+                //    Defaults to false → fully visible everywhere.
+                hidden:  data.hidden === true,
                 createdAt: data.createdAt || null
             });
         });
@@ -163,7 +169,7 @@
         const { db, firestore } = await window.__firebaseReady;
         const ref = firestore.doc(db, 'gallery', id);
         const allowed = {};
-        ['title', 'caption', 'category', 'order', 'date', 'place', 'packageRef'].forEach(k => {
+        ['title', 'caption', 'category', 'order', 'date', 'place', 'packageRef', 'hidden'].forEach(k => {
             if (patch && Object.prototype.hasOwnProperty.call(patch, k)) {
                 allowed[k] = patch[k];
             }

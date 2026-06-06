@@ -208,7 +208,13 @@
             statusEl.style.color = '#5a6877';
             statusEl.style.display = '';
             window.GalleryStore.loadGalleryItems().then(function (items) {
-                galleryPickerCache = items || [];
+                // Drop hidden photos so the picker shows only what the
+                // admin has marked as visible. Same filter the public
+                // /gallery page uses, so what you see here is what
+                // visitors can see.
+                galleryPickerCache = (items || []).filter(function (it) {
+                    return it && it.hidden !== true;
+                });
                 statusEl.style.display = 'none';
                 render(galleryPickerCache, search.value);
             }).catch(function (err) {
