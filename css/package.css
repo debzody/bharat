@@ -8,6 +8,130 @@ body {
     background: #f7f9fb;
 }
 
+/* ── Top notice strip ──────────────────────────────────────────
+   Yellow/cream banner that sits between the fixed navbar and the
+   hero image. Tells the visitor the default start city of the
+   package and is fully clickable — clicking anywhere except the
+   close X scrolls the page to the "Tweak this trip" widget so
+   they can change the starting city. The X dismisses the strip
+   for the rest of the session (sessionStorage flag).
+   ──────────────────────────────────────────────────────────── */
+.pkg-top-notice {
+    /* Reset native <button> styling so it lays out like a banner */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+    padding: 10px 24px 10px 24px;
+    border: 0;
+    border-bottom: 1px solid #f1d795;
+    background: #fff5d8;
+    color: #5a4615;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.18s ease, opacity 0.25s ease, transform 0.25s ease;
+    position: relative;
+    z-index: 5;
+}
+.pkg-top-notice:hover     { background: #ffeeb8; }
+.pkg-top-notice:focus-visible {
+    outline: 2px solid #c79100;
+    outline-offset: -2px;
+}
+.pkg-top-notice__icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #c79100;
+    border-radius: 50%;
+    color: #c79100;
+    font-size: 0.85rem;
+}
+.pkg-top-notice__text {
+    flex: 1;
+    line-height: 1.4;
+}
+.pkg-top-notice__text strong { color: #3b2d05; }
+.pkg-top-notice__cta {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 10px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #c79100;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    transition: background-color 0.18s ease, transform 0.18s ease;
+}
+.pkg-top-notice:hover .pkg-top-notice__cta {
+    background: #a87600;
+    transform: translateX(2px);
+}
+.pkg-top-notice__close {
+    flex-shrink: 0;
+    margin-left: 8px;
+    width: 28px;
+    height: 28px;
+    line-height: 26px;
+    text-align: center;
+    border-radius: 50%;
+    color: #c79100;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.pkg-top-notice__close:hover,
+.pkg-top-notice__close:focus-visible {
+    background: rgba(199, 145, 0, 0.18);
+    color: #5a4615;
+    outline: none;
+}
+
+/* Fade-out when the visitor dismisses the strip via the X */
+.pkg-top-notice--hidden {
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+}
+
+/* Brief flash applied to the "Tweak this trip" widget when the
+   visitor follows the notice strip — draws the eye to the form
+   they're now meant to interact with. */
+@keyframes pkgTweakTripFlash {
+    0%   { box-shadow: 0 0 0 0 rgba(199, 145, 0, 0.55); }
+    50%  { box-shadow: 0 0 0 8px rgba(199, 145, 0, 0.15); }
+    100% { box-shadow: 0 0 0 0 rgba(199, 145, 0, 0); }
+}
+.pkg-tweak-trip--flash {
+    animation: pkgTweakTripFlash 1.4s ease-out 1;
+}
+
+@media (max-width: 600px) {
+    .pkg-top-notice {
+        padding: 9px 14px;
+        font-size: 0.83rem;
+        gap: 10px;
+    }
+    .pkg-top-notice__icon { width: 24px; height: 24px; font-size: 0.78rem; }
+    .pkg-top-notice__cta {
+        /* Hide the inline pill on very narrow screens — the whole
+           strip is still tappable, the chevron just becomes visual
+           noise in the limited space. */
+        display: none;
+    }
+}
+
 /* ── Hero ── */
 .pkg-hero {
     position: relative;

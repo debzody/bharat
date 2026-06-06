@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=8">
+    <link rel="stylesheet" href="css/package.css?v=9">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
@@ -443,6 +443,22 @@ function renderPage(pkg) {
     const heroImg = pkg.image || 'images/beach1.jpg';
 
     document.getElementById('pageContent').innerHTML = `
+        <!-- ── Top notice strip — informs the visitor of the package's
+                 default start city and lets them jump straight to the
+                 "Tweak this trip" widget to change it. The whole strip
+                 (except the close X) is clickable. ─────────────────── -->
+        <button type="button" class="pkg-top-notice" id="pkgTopNotice"
+                aria-label="Change starting city — opens the Tweak this trip widget">
+            <i class="fas fa-triangle-exclamation pkg-top-notice__icon" aria-hidden="true"></i>
+            <span class="pkg-top-notice__text">
+                Please note that the start city of your package is
+                <strong>Port Blair</strong>.
+                <span class="pkg-top-notice__cta">Change&nbsp;<i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+            </span>
+            <span class="pkg-top-notice__close" id="pkgTopNoticeClose"
+                  role="button" tabindex="0" aria-label="Dismiss notice">&times;</span>
+        </button>
+
         <!-- Hero -->
         <div class="pkg-hero" style="background-image:url('${heroImg}');">
             <div class="pkg-hero-content">
@@ -461,6 +477,58 @@ function renderPage(pkg) {
         <div class="pkg-highlights-bar">
             ${(pkg.highlights || []).map(h => `<div class="pkg-highlight-item"><i class="fas fa-check-circle"></i> ${h}</div>`).join('')}
         </div>
+
+        <!-- ── Hero Gallery Strip — quick-access tiles for the visitor:
+                 main destination shot, Package Highlights call-out card,
+                 Activities & Sightseeing tile, Property photos tile.
+                 Every tile is clickable: opens the photo gallery / scrolls
+                 to the relevant section. ─────────────────────────────── -->
+        ${(function () {
+            var imgs = (pkg.images && pkg.images.length) ? pkg.images : [pkg.image || 'images/beach1.jpg'];
+            var img1 = imgs[0] || 'images/beach1.jpg';
+            var img2 = imgs[1] || imgs[0];
+            var img3 = imgs[2] || imgs[0];
+            var img4 = imgs[3] || imgs[0];
+            // Top 2 highlights for the highlights call-out
+            var hl = (pkg.highlights || []).slice(0, 2);
+            var hlMore = Math.max(0, (pkg.highlights || []).length - 2);
+            return `
+            <div class="pkg-hero-gallery" id="pkgHeroGallery">
+                <button type="button" class="phg-tile phg-main" data-phg-action="gallery"
+                        style="background-image:url('${img1}');" aria-label="View gallery">
+                    <span class="phg-cta"><i class="fas fa-images"></i> VIEW GALLERY <i class="fas fa-arrow-right"></i></span>
+                </button>
+                <button type="button" class="phg-tile phg-highlights" data-phg-action="highlights" aria-label="Package highlights">
+                    <span class="phg-hl-tag">PACKAGE HIGHLIGHTS</span>
+                    <ul class="phg-hl-list">
+                        ${hl.map(function (h) {
+                            return '<li><i class="fas fa-check"></i> <span>' + String(h).replace(/</g,'&lt;') + '</span></li>';
+                        }).join('')}
+                    </ul>
+                    ${hlMore ? `<span class="phg-hl-more">+${hlMore} more highlights →</span>` : ''}
+                </button>
+                <button type="button" class="phg-tile phg-mid" data-phg-action="itinerary"
+                        style="background-image:url('${img2}');" aria-label="See day-by-day itinerary">
+                    <span class="phg-label"><i class="fas fa-person-walking"></i> Activities &amp; Sightseeing</span>
+                </button>
+                <button type="button" class="phg-tile phg-right" data-phg-action="gallery"
+                        style="background-image:url('${img3}');" aria-label="View property photos">
+                    <span class="phg-label"><i class="fas fa-hotel"></i> Property photos</span>
+                </button>
+            </div>
+
+            <!-- Anchor tabs row — quick jump within the page -->
+            <div class="pkg-anchor-tabs">
+                <a href="#pkgItinerary" class="pat-tab pat-active">ITINERARY</a>
+                <a href="#pkgPolicies"  class="pat-tab">POLICIES</a>
+                <a href="#pkgSummary"   class="pat-tab">SUMMARY</a>
+                <span class="pat-spacer"></span>
+                <button type="button" class="pat-share" id="pkgShareBtn" aria-label="Share">
+                    <i class="fas fa-share-nodes"></i> Share
+                </button>
+            </div>
+            `;
+        })()}
 
         <!-- Phase 3 Option B — "Tweak this trip" widget.
              Compact mirror of the homepage hero search bar. Pre-fills from
@@ -522,7 +590,7 @@ function renderPage(pkg) {
                 </div>
 
                 <!-- Itinerary -->
-                <div class="pkg-section">
+                <div class="pkg-section" id="pkgItinerary">
                     <h2><i class="fas fa-map-marked-alt"></i> Day-by-Day Itinerary</h2>
                     ${(function () {
                         // Phase 2 — MMT-style typed timeline.
@@ -720,7 +788,7 @@ function renderPage(pkg) {
                 </div>
 
                 <!-- Gallery -->
-                <div class="pkg-section">
+                <div class="pkg-section" id="pkgSummary">
                     <h2><i class="fas fa-images"></i> Photo Gallery</h2>
                     <div class="gallery-grid">
                         ${(pkg.images || [pkg.image]).map(img => `
@@ -731,7 +799,7 @@ function renderPage(pkg) {
                 </div>
 
                 <!-- Terms -->
-                <div class="pkg-section">
+                <div class="pkg-section" id="pkgPolicies">
                     <h2><i class="fas fa-file-contract"></i> Terms & Policies</h2>
                     <ul style="color:#666;font-size:0.9rem;line-height:2;padding-left:1.2rem;margin:0;">
                         <li>Hotel check-in: 1:00 PM &middot; check-out: 11:00 AM</li>
@@ -821,7 +889,82 @@ function renderPage(pkg) {
             const img = galleryImg.querySelector('img');
             if (img) openImgLightbox(img.src);
         }
+
+        // Hero-gallery tile clicks — jump to the relevant section
+        const phgTile = e.target.closest('[data-phg-action]');
+        if (phgTile) {
+            const action = phgTile.dataset.phgAction;
+            const target = action === 'itinerary' ? 'pkgItinerary'
+                         : action === 'highlights' ? 'pkgItinerary'   // highlights live in itinerary section
+                         : 'pkgSummary';                               // gallery / property photos
+            const el = document.getElementById(target);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     });
+
+    // ── Top notice strip — clicking anywhere (except the X) scrolls to
+    //    the "Tweak this trip" widget so the visitor can change the
+    //    starting city. The X dismisses the strip for the session.
+    const topNotice      = document.getElementById('pkgTopNotice');
+    const topNoticeClose = document.getElementById('pkgTopNoticeClose');
+    if (topNotice) {
+        topNotice.addEventListener('click', function (e) {
+            // Ignore clicks that originated on the close button
+            if (e.target.closest('#pkgTopNoticeClose')) return;
+            const tt = document.getElementById('pkgTweakTrip');
+            if (tt) {
+                tt.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Brief flash to draw attention to the "Travelling from" field
+                tt.classList.add('pkg-tweak-trip--flash');
+                setTimeout(() => tt.classList.remove('pkg-tweak-trip--flash'), 1600);
+                const fromEl = document.getElementById('ttFrom');
+                if (fromEl) setTimeout(() => fromEl.focus(), 600);
+            }
+        });
+    }
+    if (topNoticeClose) {
+        const dismiss = function (e) {
+            e.stopPropagation();
+            if (topNotice) {
+                topNotice.classList.add('pkg-top-notice--hidden');
+                // Remove from DOM after the fade-out finishes
+                setTimeout(() => topNotice.remove(), 250);
+            }
+            try { sessionStorage.setItem('pkgTopNoticeDismissed', '1'); } catch (err) {}
+        };
+        topNoticeClose.addEventListener('click', dismiss);
+        topNoticeClose.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dismiss(e); }
+        });
+    }
+    // Honour previous dismissal within the same session
+    try {
+        if (sessionStorage.getItem('pkgTopNoticeDismissed') === '1' && topNotice) {
+            topNotice.remove();
+        }
+    } catch (e) {}
+
+    // Share button — uses Web Share API where supported, else copies the URL.
+    const shareBtn = document.getElementById('pkgShareBtn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', function () {
+            const shareData = {
+                title: document.title,
+                text: 'Check out this Andaman package!',
+                url: window.location.href
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    if (window.showToast) window.showToast('Link copied to clipboard!', 'success');
+                    else alert('Link copied to clipboard!');
+                });
+            } else {
+                alert(window.location.href);
+            }
+        });
+    }
 
     // Lightbox click to close
     const lightbox = document.getElementById('lightbox');
