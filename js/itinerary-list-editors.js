@@ -269,22 +269,48 @@
                     fileInput.value = '';
                     return;
                 }
-                statusEl.textContent = 'Uploading…';
-                statusEl.style.color = '#0d7a8a';
-                uploadBtn.disabled = true;
-
                 var defaults = (typeof opts.uploadDefaults === 'function')
                     ? (opts.uploadDefaults(day) || {}) : {};
-                var meta = {
-                    title: defaults.title || (act.title || 'Activity image'),
-                    category: defaults.category || '',
-                    date: defaults.date || new Date().toISOString().slice(0, 10),
-                    place: defaults.place || '',
-                    packageRef: defaults.packageRef || '',
-                    order: 9999
+                var prefilled = {
+                    title:      defaults.title || (act.title || 'Activity image'),
+                    category:   defaults.category || '',
+                    date:       defaults.date || new Date().toISOString().slice(0, 10),
+                    place:      defaults.place || '',
+                    packageRef: defaults.packageRef || ''
                 };
 
-                window.GalleryStore.uploadGalleryImage(file, meta).then(function (item) {
+                // Pop the shared "Photo details — required" dialog so the
+                // activity image is tagged with the same Title / Category /
+                // Date / Place / Package as a day-photo upload. Falls back
+                // to the silent path if the dialog helper isn't loaded yet.
+                var metaPromise;
+                if (window.IteUploadDialog && typeof window.IteUploadDialog.open === 'function') {
+                    metaPromise = window.IteUploadDialog.open(prefilled, [file]);
+                } else {
+                    metaPromise = Promise.resolve(prefilled);
+                }
+
+                metaPromise.then(function (chosen) {
+                    if (!chosen) {                    // user cancelled
+                        statusEl.textContent = '';
+                        fileInput.value = '';
+                        return null;
+                    }
+                    statusEl.textContent = 'Uploading…';
+                    statusEl.style.color = '#0d7a8a';
+                    uploadBtn.disabled = true;
+
+                    var meta = {
+                        title:      chosen.title,
+                        category:   chosen.category,
+                        date:       chosen.date,
+                        place:      chosen.place,
+                        packageRef: chosen.packageRef,
+                        order:      9999
+                    };
+                    return window.GalleryStore.uploadGalleryImage(file, meta);
+                }).then(function (item) {
+                    if (!item) return;
                     act.imageUrl = item.url || item.thumbUrl || '';
                     act.imagePublicId = item.publicId || item.id || '';
                     urlInput.value = act.imageUrl;
