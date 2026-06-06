@@ -271,10 +271,16 @@ function renderSitePackages() {
                 <div class="mmt-route">
                     ${route.map((r, i) => `<span>${r}</span>${i < route.length - 1 ? '<span class="dot"></span>' : ''}`).join('')}
                 </div>
+                <div class="mmt-card-amenities" aria-label="Inclusions at a glance">
+                    <span class="mmt-amen" title="Hotels"><i class="fas fa-hotel"></i></span>
+                    <span class="mmt-amen" title="Sightseeing"><i class="fas fa-binoculars"></i></span>
+                    <span class="mmt-amen" title="Transfers"><i class="fas fa-car-side"></i></span>
+                    <span class="mmt-amen" title="Meals"><i class="fas fa-utensils"></i></span>
+                </div>
                 ${incl.length ? `
-                <div class="mmt-incl-grid">
-                    ${incl.map(i => `<div class="mmt-incl-item">${i}</div>`).join('')}
-                </div>` : ''}
+                <ul class="mmt-incl-list">
+                    ${incl.slice(0, 3).map(i => `<li><i class="fas fa-check-circle"></i><span>${i}</span></li>`).join('')}
+                </ul>` : ''}
                 ${perks.length ? `
                 <div class="mmt-perks">
                     ${perks.map(p => `<div class="mmt-perk"><i class="fas fa-check"></i> ${p}</div>`).join('')}
@@ -283,11 +289,13 @@ function renderSitePackages() {
             <div class="mmt-card-price">
                 ${tag === 'Deal of the day' ? `<div class="mmt-price-tagline">Specially Curated For You</div>` : ''}
                 ${pkg.price >= 20000 ? `<div class="mmt-price-emi">No Cost EMI at <strong>₹${emi.toLocaleString()}</strong>/month</div>` : ''}
+                ${!isTest ? `<div class="mmt-price-from">Starting From</div>` : ''}
+                ${!isTest ? `<div class="mmt-price-strike">₹${(Math.round((pkg.price * 1.18) / 100) * 100).toLocaleString()}</div>` : ''}
                 <div class="mmt-price-row">
                     <span class="mmt-price-amt">₹${Number(pkg.price).toLocaleString()}</span>
                     <span class="mmt-price-per">${isTest ? '/test' : '/person'}</span>
                 </div>
-                ${!isTest ? `<div class="mmt-price-total">Total Price ₹${totalPrice.toLocaleString()}</div>` : ''}
+                ${!isTest ? `<div class="mmt-price-fineprint">Per Person on twin sharing</div>` : ''}
                 ${isSoldOut
                     ? `<button class="mmt-card-cta mmt-card-cta-soldout" data-action="enquire" data-pkg="${pkg.id}">
                          <i class="fas fa-times-circle"></i> Sold Out — Notify Me

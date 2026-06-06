@@ -858,3 +858,110 @@ select.mmt-field-value option {
         max-width: 100%;
     }
 }
+
+/* ───────────────────────────────────────────────────────────
+ * v40 card refresh — amenity icons strip, check-circle inclusions,
+ * "Starting From" with strikethrough, "Per Person on twin sharing".
+ * Used by every list/grid view rendered by js/script.js.
+ * ─────────────────────────────────────────────────────────── */
+.mmt-card-amenities {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    margin: .35rem 0 .15rem;
+    padding: .35rem 0;
+    border-top: 1px solid var(--mmt-line);
+    border-bottom: 1px solid var(--mmt-line);
+}
+.mmt-amen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    color: #4a5b6b;
+    font-size: .95rem;
+    border-radius: 6px;
+    background: #f6f9fb;
+    flex-shrink: 0;
+}
+.mmt-amen i { display: block; }
+
+.mmt-incl-list {
+    list-style: none;
+    margin: .25rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .25rem .9rem;
+}
+.mmt-incl-list li {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .82rem;
+    color: var(--mmt-text);
+    line-height: 1.35;
+}
+.mmt-incl-list li i {
+    color: #16a085;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+.mmt-incl-list li span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mmt-price-from {
+    font-size: .72rem;
+    color: var(--mmt-muted);
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+.mmt-price-strike {
+    font-size: .92rem;
+    color: var(--mmt-muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+    margin-top: -0.15rem;
+}
+.mmt-price-fineprint {
+    font-size: .72rem;
+    color: var(--mmt-muted);
+    margin-top: -.15rem;
+}
+
+/* In grid view we want the new richer markup to be visible
+   (the old .mmt-incl-grid is hidden, but our new .mmt-incl-list
+   should always show). */
+.mmt-results.view-grid .mmt-incl-list { display: grid; }
+.mmt-results.view-grid .mmt-card-amenities { display: flex; }
+.mmt-results.view-grid .mmt-price-from,
+.mmt-results.view-grid .mmt-price-strike,
+.mmt-results.view-grid .mmt-price-fineprint { display: block; }
+
+/* On very narrow grid cards drop to one inclusion per row */
+@media (max-width: 720px) {
+    .mmt-incl-list { grid-template-columns: 1fr; }
+}
+
+/* Dark-theme tweaks (keep visual parity with rest of card) */
+body.theme-hacker .mmt-amen,
+body.theme-midnight .mmt-amen,
+body.theme-cyberpunk .mmt-amen {
+    background: rgba(255,255,255,.05);
+    color: #d6dde4;
+}
+body.theme-hacker .mmt-card-amenities,
+body.theme-midnight .mmt-card-amenities,
+body.theme-cyberpunk .mmt-card-amenities {
+    border-color: rgba(255,255,255,.10);
+}
+body.theme-hacker .mmt-incl-list li,
+body.theme-midnight .mmt-incl-list li,
+body.theme-cyberpunk .mmt-incl-list li {
+    color: #e6edf3;
+}
