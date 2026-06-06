@@ -216,6 +216,98 @@ body {
     line-height: 1.5;
 }
 
+/* ─────────────────────────────────────────────────────────────
+ * v50 — Day plan refresh — colourful day-header card with banner
+ * image, title, description, and "INCLUDED" pill row. Lifts the
+ * visual hierarchy so each day reads at a glance.
+ * ───────────────────────────────────────────────────────────── */
+.pd-day-card {
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 0 0 1rem;
+    box-shadow: 0 4px 14px rgba(10, 31, 68, 0.06);
+}
+.pd-day-banner {
+    position: relative;
+    height: 140px;
+    background-size: cover;
+    background-position: center;
+    background-color: #cfe6ed;
+}
+.pd-day-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13,122,138,0.55) 0%, rgba(13,122,138,0.10) 60%, rgba(0,0,0,0) 100%);
+}
+.pd-day-tag {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    z-index: 1;
+    background: #fff;
+    color: #0d7a8a;
+    padding: 0.32rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.pd-day-headbody {
+    padding: 0.95rem 1.15rem 1.05rem;
+}
+.pd-day-title {
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #1c2b48;
+    margin: 0 0 0.35rem;
+    line-height: 1.3;
+}
+.pd-day-desc {
+    margin: 0 0 0.65rem;
+    color: #5a6877;
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+.pd-day-included {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding-top: 0.55rem;
+    border-top: 1px dashed #e3e8ef;
+}
+.pd-day-included-label {
+    font-size: 0.72rem;
+    color: #4a4a4a;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.pd-day-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+    color: #a04000;
+    border: 1px solid #fbe1b6;
+    padding: 0.32rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.pd-day-pill i {
+    color: #d97706;
+    font-size: 0.78rem;
+}
+@media (max-width: 600px) {
+    .pd-day-banner { height: 110px; }
+    .pd-day-title { font-size: 1.05rem; }
+}
+
 .timeline-activities {
     list-style: none;
     padding: 0;
