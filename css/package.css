@@ -803,9 +803,8 @@ body {
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.55rem;
-    /* Tighter padding — MMT shows roughly 0.55rem 0.85rem */
-    padding: 0.6rem 0.85rem;
+    gap: 0.85rem;
+    padding: 0.6rem 0.95rem;
     font-family: 'Lato', 'Poppins', sans-serif;
     font-weight: 800;
     color: #1c2b48;
@@ -815,6 +814,48 @@ body {
     user-select: none;
     border-bottom: 0;
     background: #fff;
+}
+/* MMT-style two-line summary: tiny grey "ACTIVITY · 2 hrs · Port Blair"
+   tag on top, then the actual activity NAME in bold below. Both visible
+   when the row is collapsed so visitors can scan the day plan without
+   needing to expand every row. */
+.timeline-activities li.ta-rich .ta-summary-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1;
+    min-width: 0;
+}
+.timeline-activities li.ta-rich .ta-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.timeline-activities li.ta-rich .ta-summary-title {
+    font-family: 'Lato', 'Poppins', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: #1c2b48;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    /* Truncate to one line in collapsed state — full title is in the
+       expanded body. Helps keep every row at the same compact height. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.timeline-activities li.ta-rich .ta-details[open] .ta-summary-title {
+    /* When opened, allow the title to wrap so visitors see it fully —
+       expanded body's <h3 class="ta-title"> is hidden in this state. */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+/* When the row is open, hide the duplicate title in the expanded body
+   so we don't show the title twice. The summary already has it. */
+.timeline-activities li.ta-rich .ta-details[open] .ta-content .ta-title {
+    display: none;
 }
 .timeline-activities li.ta-rich .ta-details[open] summary {
     border-bottom: 1px solid #f0f3f5;

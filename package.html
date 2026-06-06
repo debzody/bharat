@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=12">
+    <link rel="stylesheet" href="css/package.css?v=13">
     <!-- Lato + Poppins — Lato matches MMT's heading typography; Poppins
          remains for legacy components. Pacifico kept for any decorative use. -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700;900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -740,18 +740,30 @@ function renderPage(pkg) {
                                                 if (picked) imgUrl = esc(picked);
                                             }
 
-                                            // Type-tag header: ACTIVITY · 2 Hours · In Port Blair
-                                            var headerBits = [];
-                                            headerBits.push('<i class="fas fa-person-walking ta-tag-icon" aria-hidden="true"></i>');
-                                            headerBits.push('<span class="ta-tag-label">ACTIVITY</span>');
+                                            // MMT-style header: ACTIVITY · 2 hrs · Port Blair on
+                                            // top in tiny grey, then the actual activity NAME
+                                            // in bold below — both visible when the row is
+                                            // collapsed so visitors see what each row is about
+                                            // without having to expand it. Mirrors MMT's
+                                            // "SIGHTSEEING · 2 hrs · Port Blair / Sightseeing in
+                                            // Port Blair" two-line stack.
+                                            var tagBits = [];
+                                            tagBits.push('<i class="fas fa-person-walking ta-tag-icon" aria-hidden="true"></i>');
+                                            tagBits.push('<span class="ta-tag-label">ACTIVITY</span>');
                                             if (dur) {
-                                                headerBits.push('<span class="ta-tag-sep" aria-hidden="true"></span>');
-                                                headerBits.push('<span class="ta-tag-meta">' + dur + '</span>');
+                                                tagBits.push('<span class="ta-tag-sep" aria-hidden="true"></span>');
+                                                tagBits.push('<span class="ta-tag-meta">' + dur + '</span>');
                                             }
                                             if (place) {
-                                                headerBits.push('<span class="ta-tag-sep" aria-hidden="true"></span>');
-                                                headerBits.push('<span class="ta-tag-meta">In ' + place + '</span>');
+                                                tagBits.push('<span class="ta-tag-sep" aria-hidden="true"></span>');
+                                                tagBits.push('<span class="ta-tag-meta">' + place + '</span>');
                                             }
+
+                                            var headerBits = [];
+                                            headerBits.push('<div class="ta-summary-text">');
+                                            headerBits.push('<div class="ta-tag-row">' + tagBits.join('') + '</div>');
+                                            if (title) headerBits.push('<div class="ta-summary-title">' + title + '</div>');
+                                            headerBits.push('</div>');
                                             headerBits.push('<i class="fas fa-chevron-up ta-caret" aria-hidden="true"></i>');
 
                                             // Time-of-day footer line: e.g. "Duration 2 Hours · Morning"
