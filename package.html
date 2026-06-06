@@ -1478,13 +1478,21 @@ window.confirmBooking = async function() {
 };
 
 // ── Auth nav link ────────────────────────────────────────────────
+//   The shared topbar uses id="authLink" (was id="navAuthLink" in the
+//   old minimal header). Guard for the new id; user-menu.js will swap
+//   the Login button for an avatar/dropdown when the user is signed in.
 function updateNavAuth() {
-    const link = document.getElementById('navAuthLink');
+    const link = document.getElementById('authLink') || document.getElementById('navAuthLink');
+    if (!link) return;
     const user = localStorage.getItem('currentUser');
     if (user && localStorage.getItem('token')) {
-        const u = JSON.parse(user);
-        link.textContent = u.username;
-        link.href = '/';
+        try {
+            const u = JSON.parse(user);
+            if (u && u.username) {
+                link.textContent = u.username;
+                link.href = '/';
+            }
+        } catch (e) {}
     }
 }
 updateNavAuth();
