@@ -343,6 +343,10 @@
         if (statusEl) statusEl.style.display = '';
         try {
             allItems = await window.GalleryStore.loadGalleryItems();
+            // Drop photos the admin has hidden from the public gallery
+            // (hidden flag is toggled from the dashboard's gallery cards).
+            // Cloudinary still holds the asset; we just don't render it here.
+            allItems = allItems.filter(i => i && i.hidden !== true);
             const cats = Array.from(new Set(
                 allItems.map(i => (i.category || '').trim()).filter(Boolean)
             )).sort();
