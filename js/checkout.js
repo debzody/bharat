@@ -333,28 +333,37 @@
     }
 
     // Resolve the included meal plan for the cart's package tier.
-    // Budget / Standard  → all three meals (breakfast + lunch + dinner)
-    // Luxury / Premium / Honeymoon (and everything else) → breakfast only
-    // The plan is fixed by the package and NOT customer-selectable, so
-    // we render it as a read-only chip rather than a <select>.
+    //
+    //   Budget  / Economy   →  Breakfast + Lunch + Dinner   (all 3 meals)
+    //   Standard / Deluxe / Premium / Luxury / Honeymoon /
+    //   Royal / customised / unknown                        →  Breakfast only
+    //
+    // Match is by package id, then by package name (case-insensitive).
+    // Plan is fixed by the package — NOT customer-editable — so we render
+    // it as a read-only chip rather than a <select>.
     function mealPlanForCart() {
-        var perHead = advancePerHead();
         var key = String(state.cart && state.cart.pkgId || '').toLowerCase();
         var nm  = String(state.cart && state.cart.name  || '').toLowerCase();
-        // Budget / Standard tier (₹6,000 head advance) gets all 3 meals.
-        // We also catch admin-named packages whose id isn't 'budget'/'standard'
-        // by checking the per-head bucket.
-        if (perHead === ADVANCE_STANDARD || /budget|standard/.test(key) || /budget|standard/.test(nm)) {
+
+        // Whitelist for the all-3-meals tier. We accept any of:
+        //   • id      = "budget" / "economy" / "5A" / "6A" / "5N6D-5A" / "6N7D-6A"
+        //   • name    contains the word "budget" or "economy"
+        //              (e.g. "Economy Package 5N/6D — 2026", "Budget Andaman Escape")
+        var ID_ALL3 = ['budget', 'economy', '5a', '6a', '5n6d-5a', '6n7d-6a'];
+        var idAll3  = ID_ALL3.indexOf(key) >= 0;
+        var nameAll3 = /\b(budget|economy)\b/.test(nm);
+
+        if (idAll3 || nameAll3) {
             return {
                 code: 'all',
                 label: 'Breakfast + Lunch + Dinner',
-                note: 'All 3 meals included — Budget & Standard packages.'
+                note: 'All 3 meals included — Budget & Economy packages only.'
             };
         }
         return {
             code: 'breakfast',
             label: 'Breakfast only',
-            note: 'Only breakfast is included for Luxury / Premium / Honeymoon packages.'
+            note: 'Standard / Deluxe / Premium / Royal / Honeymoon packages include breakfast only.'
         };
     }
 
