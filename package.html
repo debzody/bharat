@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=5">
+    <link rel="stylesheet" href="css/package.css?v=6">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
@@ -610,24 +610,56 @@ function renderPage(pkg) {
                                     : `<ul class="timeline-activities">
                                         ${(d.activities || []).map(a => {
                                             // Activities can be plain strings (legacy) or objects
-                                            // { title, desc, imageUrl } once the dashboard editor
-                                            // (or AI Fill) has added a description / picture.
+                                            // { title, desc, imageUrl, duration, timeOfDay, place }
+                                            // once the dashboard editor (or AI Fill) has enriched
+                                            // them. The rich layout puts the image on the LEFT and
+                                            // the title / description / time on the RIGHT, modelled
+                                            // after the leading travel-agency itinerary cards.
                                             var act = (a && typeof a === 'object') ? a : { title: String(a == null ? '' : a) };
                                             var title    = esc(act.title || '');
                                             var descTxt  = act.desc ? esc(act.desc) : '';
                                             var imgUrl   = act.imageUrl ? esc(act.imageUrl) : '';
-                                            var hasExtra = !!(descTxt || imgUrl);
+                                            var dur      = act.duration ? esc(act.duration) : '';
+                                            var tod      = act.timeOfDay ? esc(act.timeOfDay) : '';
+                                            var place    = act.place ? esc(act.place) : '';
+                                            var hasExtra = !!(descTxt || imgUrl || dur || tod || place);
                                             if (!hasExtra) {
                                                 return '<li><i class="fas fa-chevron-right"></i> <span>' + title + '</span></li>';
                                             }
-                                            // Default OPEN whenever we have a description / picture
+
+                                            // Header: ACTIVITY · 2 Hours · In Port Blair
+                                            var headerBits = [];
+                                            headerBits.push('<i class="fas fa-person-walking ta-tag-icon" aria-hidden="true"></i>');
+                                            headerBits.push('<span class="ta-tag-label">ACTIVITY</span>');
+                                            if (dur) {
+                                                headerBits.push('<span class="ta-tag-sep" aria-hidden="true"></span>');
+                                                headerBits.push('<span class="ta-tag-meta">' + dur + '</span>');
+                                            }
+                                            if (place) {
+                                                headerBits.push('<span class="ta-tag-sep" aria-hidden="true"></span>');
+                                                headerBits.push('<span class="ta-tag-meta">In ' + place + '</span>');
+                                            }
+                                            headerBits.push('<i class="fas fa-chevron-up ta-caret" aria-hidden="true"></i>');
+
+                                            // Time-of-day footer line: e.g. "Duration 2 Hours · Morning"
+                                            var timeBits = [];
+                                            if (dur) timeBits.push('Duration ' + dur);
+                                            if (tod) timeBits.push(tod);
+                                            var timeLine = timeBits.length
+                                                ? '<span class="ta-time"><i class="far fa-clock"></i> ' + timeBits.join(' · ') + '</span>'
+                                                : '';
+
                                             return (
                                                 '<li class="ta-rich">' +
                                                   '<details class="ta-details" open>' +
-                                                    '<summary><i class="fas fa-chevron-right ta-caret"></i> <span>' + title + '</span></summary>' +
-                                                    '<div class="ta-body">' +
-                                                      (descTxt ? '<p class="ta-desc">' + descTxt + '</p>' : '') +
-                                                      (imgUrl  ? '<div class="ta-img"><img src="' + imgUrl + '" alt="' + title + '" loading="lazy" decoding="async"></div>' : '') +
+                                                    '<summary>' + headerBits.join('') + '</summary>' +
+                                                    '<div class="ta-body' + (imgUrl ? '' : ' ta-no-img') + '">' +
+                                                      (imgUrl ? '<div class="ta-img"><img src="' + imgUrl + '" alt="' + title + '" loading="lazy" decoding="async"></div>' : '') +
+                                                      '<div class="ta-content">' +
+                                                        '<h3 class="ta-title">' + title + '</h3>' +
+                                                        (descTxt ? '<p class="ta-desc">' + descTxt + '</p>' : '') +
+                                                        timeLine +
+                                                      '</div>' +
                                                     '</div>' +
                                                   '</details>' +
                                                 '</li>'
