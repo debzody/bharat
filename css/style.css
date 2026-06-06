@@ -2304,3 +2304,114 @@ body.dashboard-page.theme-cyberpunk footer{
     .cz-step{padding:1.5rem 1.2rem}
     .cz-summary{position:static}
 }
+/* ────────────────────────────────────────────────────────────
+ *  Site-wide thin topbar (was previously package-page only).
+ *  Per request, the slimmer dark opaque header from package.html
+ *  is now the default look for every page (homepage, flights,
+ *  cabs, gallery, dashboard, etc.). Brand uses Lato instead of
+ *  the Pacifico gradient — same compact two-line block.
+ *  ─────────────────────────────────────────────────────────── */
+.topbar {
+    --tb-h: 56px !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 56px !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    background: rgba(20,20,20,0.96) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18) !important;
+    padding: 0 1.25rem !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+.topbar.scrolled {
+    background: rgba(15,15,15,0.98) !important;
+}
+
+/* Brand logo + text — slimmer, no gradient, no Pacifico script */
+.topbar .topbar-logo img {
+    height: 36px !important;
+    border-radius: 8px !important;
+    filter: none !important;
+}
+.topbar .brand-text {
+    line-height: 1.1;
+    gap: .08rem;
+}
+.topbar .brand-line1,
+.topbar .brand-line2 {
+    font-family: 'Lato', 'Poppins', sans-serif !important;
+    background: none !important;
+    background-clip: initial !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: #fff !important;
+    letter-spacing: 0 !important;
+    margin-left: 0 !important;
+}
+.topbar .brand-line1 {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+}
+.topbar .brand-line2 {
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    color: rgba(255,255,255,0.55) !important;
+    letter-spacing: 0.18em !important;
+    text-transform: uppercase !important;
+    line-height: 1.2 !important;
+}
+.topbar .brand-line1 .bl,
+.topbar .brand-line2 .bl {
+    color: inherit !important;
+    background: none !important;
+    -webkit-text-fill-color: inherit !important;
+}
+
+/* Disable the heavy hover animation that was tuned for the original
+ * Pacifico-script branding — keeps the slim header crisp. */
+.topbar-logo:hover .brand-line1,
+.topbar-logo:hover .brand-line2 {
+    animation: none !important;
+    letter-spacing: 0 !important;
+    filter: none !important;
+}
+.topbar-logo:hover .bl {
+    animation: none !important;
+}
+.topbar-logo:hover img {
+    transform: scale(1.04) !important;
+    filter: none !important;
+}
+
+/* Nav items — slimmer pills */
+.topbar .topnav { gap: 0.15rem !important; }
+.topbar .topnav-item {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.78rem !important;
+}
+.topbar .topnav-item i { font-size: 0.9rem !important; }
+
+/* Phone / email pills on the right */
+.topbar .topbar-contact { font-size: 0.78rem; }
+.topbar .topbar-phone,
+.topbar .topbar-email {
+    padding: 0.3rem 0.55rem !important;
+    font-size: 0.78rem !important;
+}
+@media (max-width: 1180px) {
+    .topbar .topbar-email { display: none; }
+}
+
+/* Body padding-top so first content row clears the new fixed thin bar.
+ * The previous design used a much taller --tb-h (≈ 84px) so most pages
+ * have an explicit `padding-top: var(--tb-h)` on .dashboard-main and
+ * .main-content. We just shrink --tb-h here so those continue to work. */
+:root { --tb-h: 56px; }
+body.hero-page .main-content,
+body.dashboard-body .dashboard-main {
+    padding-top: 56px !important;
+}
