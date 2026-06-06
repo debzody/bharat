@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=7">
+    <link rel="stylesheet" href="css/package.css?v=8">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
@@ -125,6 +125,7 @@
     <script src="js/analytics.js?v=1"></script>
     <script src="js/dataStore.js?v=40"></script>
     <script src="js/itinerary-blocks.js?v=1"></script>
+    <script src="js/itinerary-image-picker.js?v=1"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/travelpayouts-init.js?v=1"></script>
     <!-- ── Google AdSense loader (publisher pub-8154901590978667) ── -->
@@ -597,14 +598,29 @@ function renderPage(pkg) {
                                     '</div>' +
                                 '</div>';
                             }
+                            // Day banner image (auto-picked from local Unsplash photo bank)
+                            var dayBanner = window.ItineraryImagePicker
+                                ? window.ItineraryImagePicker.forDay(d)
+                                : '';
+                            var actCount = (d.activities || []).length;
+
                             return `
                             <div class="timeline-day">
                                 <div class="timeline-dot">${d.day}</div>
-                                <div class="timeline-day-header">
-                                    <span class="day-badge">Day ${d.day}</span>
-                                    <span class="timeline-day-title">${d.title || ''}</span>
+                                <!-- Day header card: banner image + title + included summary -->
+                                <div class="pd-day-card">
+                                    ${dayBanner ? `<div class="pd-day-banner" style="background-image:url('${esc(dayBanner)}');">
+                                        <span class="pd-day-tag">DAY ${d.day}</span>
+                                    </div>` : ''}
+                                    <div class="pd-day-headbody">
+                                        <h3 class="pd-day-title">${esc(d.title || '')}</h3>
+                                        ${d.desc ? `<p class="pd-day-desc">${esc(d.desc)}</p>` : ''}
+                                        ${actCount ? `<div class="pd-day-included">
+                                            <span class="pd-day-included-label">INCLUDED:</span>
+                                            <span class="pd-day-pill"><i class="fas fa-person-walking"></i> ${actCount} ${actCount === 1 ? 'Activity' : 'Activities'}</span>
+                                        </div>` : ''}
+                                    </div>
                                 </div>
-                                ${d.desc ? `<p class="timeline-day-desc">${d.desc}</p>` : ''}
                                 ${blocks.length
                                     ? '<div class="ite-pub-blocks">' + blocks.map(renderBlock).join('') + '</div>'
                                     : `<ul class="timeline-activities">
@@ -622,6 +638,14 @@ function renderPage(pkg) {
                                             var dur      = act.duration ? esc(act.duration) : '';
                                             var tod      = act.timeOfDay ? esc(act.timeOfDay) : '';
                                             var place    = act.place ? esc(act.place) : '';
+
+                                            // Auto-pick a relevant local Unsplash image when no
+                                            // explicit imageUrl was set in the editor — keeps
+                                            // every card feeling rich without manual uploads.
+                                            if (!imgUrl && window.ItineraryImagePicker) {
+                                                var picked = window.ItineraryImagePicker.forActivity(act.title || '');
+                                                if (picked) imgUrl = esc(picked);
+                                            }
 
                                             // Type-tag header: ACTIVITY · 2 Hours · In Port Blair
                                             var headerBits = [];
