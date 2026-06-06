@@ -630,13 +630,26 @@ body {
 
 /* ── Main Layout ── */
 .pkg-main {
-    max-width: 1200px;
+    /* Wider canvas — 1400px gives the day cards more room without
+     * over-stretching paragraph lines. The right booking rail keeps a
+     * fixed 320px so the left (itinerary) column gets all the extra width. */
+    max-width: 1400px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
     display: grid;
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     gap: 2rem;
     align-items: start;
+}
+
+/* Match the wider layout for the other "container" sections so the
+ * mmt-head, hero gallery, anchor tabs and tweak-trip widget all line
+ * up with the new pkg-main edges instead of being narrower. */
+.pkg-mmt-head,
+.pkg-hero-gallery,
+.pkg-anchor-tabs,
+.pkg-tweak-trip {
+    max-width: 1400px;
 }
 
 /* ── Sections ── */
