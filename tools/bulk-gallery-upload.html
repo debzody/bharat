@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulk Gallery Upload — Andaman Photos</title>
+    <meta name="robots" content="noindex,nofollow">
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; color: #2c3e50; }
+        h1 { color: #0d7a8a; margin-bottom: .25rem; }
+        .lead { color: #5a6877; margin-top: 0; }
+        .auth-status { padding: .9rem 1.1rem; border-radius: 8px; margin: 1rem 0; font-weight: 600; }
+        .auth-status.in    { background: #d4f4dd; color: #186a3b; border-left: 4px solid #186a3b; }
+        .auth-status.out   { background: #fdedec; color: #922b21; border-left: 4px solid #922b21; }
+        .auth-status code  { background: rgba(0,0,0,.06); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+        button { background: #0d7a8a; color: #fff; border: 0; padding: .8rem 1.4rem; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: .25rem .25rem .25rem 0; }
+        button:hover:not(:disabled) { background: #0e8c72; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        button.secondary { background: #7f8c8d; }
+        .progress-row { background: #f4f7fb; padding: .9rem 1.1rem; border-radius: 8px; margin: 1rem 0; font-size: .92rem; }
+        .progress-bar { height: 22px; background: #e8eef4; border-radius: 11px; overflow: hidden; margin-top: .4rem; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #0d7a8a, #16a085); transition: width .3s; width: 0%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: .85rem; }
+        .config-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 1rem 0; }
+        .config-table th, .config-table td { border: 1px solid #dce4ed; padding: .55rem .7rem; text-align: left; }
+        .config-table th { background: #ecf0f1; }
+        .log { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-family: 'SF Mono', Consolas, monospace; font-size: .82rem; height: 320px; overflow-y: auto; white-space: pre-wrap; line-height: 1.55; }
+        .log .ok    { color: #6acd6f; }
+        .log .err   { color: #ff6b6b; }
+        .log .warn  { color: #f7c948; }
+        .log .info  { color: #82c4ff; }
+        .danger { color: #c0392b; font-weight: 700; }
+        details { margin: .8rem 0; }
+        summary  { cursor: pointer; font-weight: 600; color: #0d7a8a; }
+        .checkbox-row { margin: .4rem 0; }
+        .checkbox-row label { user-select: none; cursor: pointer; }
+    </style>
+    <!-- Reuse the site's Firebase + Cloudinary config so we hit the same backend -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/dataStore.js"></script>
+    <script src="../js/gallery.js"></script>
+</head>
+<body>
+    <h1>📤 Bulk Gallery Upload</h1>
+    <p class="lead">Reads the 210 local images under <code>../images/</code> and uploads each to Cloudinary &amp; Firestore with the right <code>place</code>, <code>category</code> and <code>title</code> tags. Run this <strong>once</strong> from your admin browser session.</p>
+
+    <div id="authStatus" class="auth-status out">⏳ Checking authentication…</div>
+
+    <details open>
+        <summary>📋 What gets uploaded (review before clicking Upload)</summary>
+        <table class="config-table">
+            <thead>
+                <tr><th>Folder</th><th>Slug prefix</th><th>Photos</th><th>Place tag</th><th>Category tag</th></tr>
+            </thead>
+            <tbody id="configTableBody"></tbody>
+        </table>
+    </details>
+
+    <div class="checkbox-row">
+        <label>
+            <input type="checkbox" id="dryRun">
+            <strong>Dry run</strong> — list what would be uploaded without actually uploading
+        </label>
+    </div>
+    <div class="checkbox-row">
+        <label>
+            <input type="checkbox" id="skipExisting" checked>
+            <strong>Skip existing</strong> — don't re-upload photos already present in the gallery (matched by title)
+        </label>
+    </div>
+
+    <button id="startBtn" disabled>🚀 Start Upload (210 photos)</button>
+    <button id="stopBtn" class="secondary" disabled>⏹ Stop</button>
+
+    <div class="progress-row">
+        <div><span id="progressLabel">Ready.</span> <span id="progressCount" style="color:#0d7a8a;font-weight:700;"></span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
+    </div>
+
+    <h3>📜 Log</h3>
+    <div class="log" id="log"></div>
+
+    <p style="font-size:.85rem;color:#7f8c8d;margin-top:2rem;">
+        <strong>Tip:</strong> Open this page from the running <code>npm start</code> dev server (e.g.
+        <code>http://localhost:8080/tools/bulk-gallery-upload.html</code>) so the relative
+        <code>../images/&lt;folder&gt;/&lt;file&gt;.jpg</code> URLs resolve. Or temporarily move this file to the
+        repo root and visit <code>/bulk-gallery-upload.html</code> on your live site (delete after use).
+    </p>
+
+<script>
+'use strict';
+
+// ────────────────────────────────────────────────────────────────
+// Config: every folder we want to import + its tags
+// ────────────────────────────────────────────────────────────────
+const FOLDERS = [
+    { folder: 'neil',           prefix: 'neil',           count: 30, place: 'Neil Island',     category: 'Neil Island'     },
+    { folder: 'havelock',       prefix: 'havelock',       count: 20, place: 'Havelock Island', category: 'Havelock Island' },
+    { folder: 'port-blair',     prefix: 'port-blair',     count: 20, place: 'Port Blair',      category: 'Port Blair'      },
+    { folder: 'little-andaman', prefix: 'little-andaman', count: 20, place: 'Little Andaman',  category: 'Little Andaman'  },
+    { folder: 'jarawa',         prefix: 'jarawa',         count: 20, place: 'Jarawa Reserve',  category: 'Jarawa Reserve'  },
+    { folder: 'limestone-cave', prefix: 'limestone-cave', count: 20, place: 'Baratang — Limestone Cave', category: 'Limestone Cave' },
+    { folder: 'baratang',       prefix: 'baratang',       count: 20, place: 'Baratang',        category: 'Baratang'        },
+    { folder: 'diglipur',       prefix: 'diglipur',       count: 20, place: 'Diglipur',        category: 'Diglipur'        },
+    { folder: 'ross-island',    prefix: 'ross-island',    count: 20, place: 'Ross Island',     category: 'Ross Island'     },
+    { folder: 'smith-island',   prefix: 'smith-island',   count: 20, place: 'Smith Island',    category: 'Smith Island'    }
+];
+
+const TOTAL = FOLDERS.reduce((s, f) => s + f.count, 0);
+
+// ────────────────────────────────────────────────────────────────
+// UI helpers
+// ────────────────────────────────────────────────────────────────
+const $log = document.getElementById('log');
+function log(msg, cls) {
+    const span = document.createElement('span');
+    if (cls) span.className = cls;
+    const ts = new Date().toLocaleTimeString();
+    span.textContent = '[' + ts + '] ' + msg + '\n';
+    $log.appendChild(span);
+    $log.scrollTop = $log.scrollHeight;
+}
+function setProgress(done, total, label) {
+    const pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressFill').textContent = pct + '%';
+    document.getElementById('progressLabel').textContent = label || 'Working…';
+    document.getElementById('progressCount').textContent = '(' + done + '/' + total + ')';
+}
+
+// Render the config preview table
+(function renderConfigTable() {
+    const body = document.getElementById('configTableBody');
+    FOLDERS.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td><code>images/' + f.folder + '/</code></td><td><code>' + f.prefix + '-N.jpg</code></td><td>' + f.count + '</td><td><strong>' + f.place + '</strong></td><td>' + f.category + '</td>';
+        body.appendChild(tr);
+    });
+})();
+
+// ────────────────────────────────────────────────────────────────
+// Auth gating — must be signed in (Firebase) to write to Firestore
+// ────────────────────────────────────────────────────────────────
+let authReady = null;
+if (window.__firebaseReady) {
+    window.__firebaseReady.then(({ auth, firebaseAuth }) => {
+        if (firebaseAuth && firebaseAuth.onAuthStateChanged) {
+            firebaseAuth.onAuthStateChanged(auth, user => {
+                const $auth = document.getElementById('authStatus');
+                if (user && user.uid) {
+                    $auth.className = 'auth-status in';
+                    $auth.innerHTML = '✅ Signed in as <code>' + (user.email || user.uid) + '</code>. Ready to upload.';
+                    document.getElementById('startBtn').disabled = false;
+                    authReady = user;
+                } else {
+                    $auth.className = 'auth-status out';
+                    $auth.innerHTML = '⚠️ <strong>Not signed in.</strong> Open the main site (<a href="/" target="_blank">/</a>), log in as admin, then refresh this page.';
+                    document.getElementById('startBtn').disabled = true;
+                    authReady = null;
+                }
+            });
+        }
+    }).catch(err => {
+        log('Firebase init failed: ' + err.message, 'err');
+    });
+}
+
+// ────────────────────────────────────────────────────────────────
+// Core upload pipeline
+// ────────────────────────────────────────────────────────────────
+let isRunning = false;
+let isStopRequested = false;
+
+// Fetch one local image as a File object
+async function fetchLocalImage(folder, prefix, idx) {
+    const filename = prefix + '-' + idx + '.jpg';
+    const path = '../images/' + folder + '/' + filename;
+    const res = await fetch(path);
+    if (!res.ok) {
+        throw new Error('Could not fetch ' + path + ' — ' + res.status + ' ' + res.statusText);
+    }
+    const blob = await res.blob();
+    // Wrap as File so gallery.uploadGalery's MIME check passes
+    return new File([blob], filename, { type: 'image/jpeg' });
+}
+
+// Build the metadata for one photo
+function metaFor(cfg, idx) {
+    return {
+        title:    cfg.place + ' — Photo ' + idx,
+        caption:  'Stunning view from ' + cfg.place + ', Andaman & Nicobar Islands.',
+        category: cfg.category,
+        place:    cfg.place,
+        order:    9999,
+        date:     new Date().toISOString().slice(0, 10)
+    };
+}
+function titleFor(cfg, idx) { return cfg.place + ' — Photo ' + idx; }
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+    if (isRunning) return;
+    if (!authReady) { log('Not authenticated — aborting.', 'err'); return; }
+    isRunning = true;
+    isStopRequested = false;
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+
+    const dryRun       = document.getElementById('dryRun').checked;
+    const skipExisting = document.getElementById('skipExisting').checked;
+
+    log('=== Starting bulk upload ===', 'info');
+    log('  • Total: ' + TOTAL + ' photos across ' + FOLDERS.length + ' folders');
+    log('  • Dry run: ' + (dryRun ? 'YES (no uploads)' : 'no'));
+    log('  • Skip existing: ' + (skipExisting ? 'yes (matched by title)' : 'no — re-upload everything'));
+
+    let existingTitles = new Set();
+    if (skipExisting) {
+        try {
+            const existing = await window.GalleryStore.loadGalleryItems();
+            existingTitles = new Set(existing.map(it => (it.title || '').trim()));
+            log('  • Loaded ' + existing.length + ' existing items for de-dupe.', 'info');
+        } catch (e) {
+            log('  • Could not pre-load existing gallery — continuing: ' + e.message, 'warn');
+        }
+    }
+
+    let done = 0, okCount = 0, skipCount = 0, errCount = 0;
+
+    for (const cfg of FOLDERS) {
+        log('\n── ' + cfg.place + ' (' + cfg.count + ' photos) ──', 'info');
+        for (let idx = 1; idx <= cfg.count; idx++) {
+            if (isStopRequested) {
+                log('🛑 Stop requested — aborting.', 'warn');
+                break;
+            }
+            done++;
+            const title = titleFor(cfg, idx);
+            setProgress(done, TOTAL, 'Uploading ' + cfg.prefix + '-' + idx + '.jpg → ' + cfg.place + '…');
+
+            if (skipExisting && existingTitles.has(title)) {
+                log('  [' + done + '/' + TOTAL + '] SKIP — "' + title + '" already exists', 'warn');
+                skipCount++;
+                continue;
+            }
+
+            if (dryRun) {
+                log('  [' + done + '/' + TOTAL + '] DRY-RUN — would upload images/' + cfg.folder + '/' + cfg.prefix + '-' + idx + '.jpg as "' + title + '"');
+                okCount++;
+                continue;
+            }
+
+            try {
+                const file = await fetchLocalImage(cfg.folder, cfg.prefix, idx);
+                const meta = metaFor(cfg, idx);
+                const result = await window.GalleryStore.uploadGalleryImage(file, meta);
+                log('  [' + done + '/' + TOTAL + '] ✓ ' + cfg.prefix + '-' + idx + '.jpg → ' + result.id + ' (' + (file.size / 1024).toFixed(0) + ' KB)', 'ok');
+                okCount++;
+            } catch (err) {
+                log('  [' + done + '/' + TOTAL + '] ✗ ' + cfg.prefix + '-' + idx + '.jpg — ' + (err.message || err), 'err');
+                errCount++;
+                await new Promise(r => setTimeout(r, 800));
+            }
+        }
+        if (isStopRequested) break;
+    }
+
+    log('\n=== Done. ' + okCount + ' uploaded, ' + skipCount + ' skipped, ' + errCount + ' errors. ===', errCount ? 'warn' : 'ok');
+    setProgress(done, TOTAL, errCount ? 'Finished with errors.' : 'Finished.');
+    isRunning = false;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+});
+
+document.getElementById('stopBtn').addEventListener('click', () => {
+    if (!isRunning) return;
+    isStopRequested = true;
+    log('🛑 Stop requested — will halt after the current upload completes…', 'warn');
+});
+</script>
+</body>
+</html>
