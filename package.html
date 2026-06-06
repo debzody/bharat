@@ -98,7 +98,7 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=13">
+    <link rel="stylesheet" href="css/package.css?v=14">
     <!-- Lato + Poppins — Lato matches MMT's heading typography; Poppins
          remains for legacy components. Pacifico kept for any decorative use. -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700;900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -127,7 +127,7 @@
     <script src="js/analytics.js?v=1"></script>
     <script src="js/dataStore.js?v=40"></script>
     <script src="js/itinerary-blocks.js?v=1"></script>
-    <script src="js/itinerary-image-picker.js?v=1"></script>
+    <script src="js/itinerary-image-picker.js?v=2"></script>
     <script src="js/toast.js?v=1"></script>
     <script src="js/travelpayouts-init.js?v=1"></script>
     <!-- ── Google AdSense loader (publisher pub-8154901590978667) ── -->
@@ -732,13 +732,30 @@ function renderPage(pkg) {
                                             var tod      = act.timeOfDay ? esc(act.timeOfDay) : '';
                                             var place    = act.place ? esc(act.place) : '';
 
-                                            // Auto-pick a relevant local Unsplash image when no
-                                            // explicit imageUrl was set in the editor — keeps
-                                            // every card feeling rich without manual uploads.
-                                            if (!imgUrl && window.ItineraryImagePicker) {
-                                                var picked = window.ItineraryImagePicker.forActivity(act.title || '');
-                                                if (picked) imgUrl = esc(picked);
+                                            // Auto-pick a small CAROUSEL of relevant local
+                                            // Unsplash images when no explicit imageUrl was
+                                            // set — same destination folder, multiple shots.
+                                            // Mirrors MMT's gallery strip. The first image
+                                            // is the "cover"; the rest are mini-thumbs the
+                                            // visitor can click to swap in.
+                                            var carouselImgs = [];
+                                            if (act.imageUrl) {
+                                                carouselImgs.push(act.imageUrl);
                                             }
+                                            if (window.ItineraryImagePicker &&
+                                                typeof window.ItineraryImagePicker.forActivityMulti === 'function') {
+                                                var picked = window.ItineraryImagePicker
+                                                    .forActivityMulti(act.title || '', 5);
+                                                picked.forEach(function (p) {
+                                                    if (carouselImgs.indexOf(p) === -1) carouselImgs.push(p);
+                                                });
+                                            } else if (window.ItineraryImagePicker) {
+                                                var single = window.ItineraryImagePicker.forActivity(act.title || '');
+                                                if (single && carouselImgs.indexOf(single) === -1) carouselImgs.push(single);
+                                            }
+                                            // Cap to 5 photos — keeps the carousel tidy
+                                            carouselImgs = carouselImgs.slice(0, 5);
+                                            imgUrl = carouselImgs.length ? esc(carouselImgs[0]) : '';
 
                                             // MMT-style header: ACTIVITY · 2 hrs · Port Blair on
                                             // top in tiny grey, then the actual activity NAME
@@ -774,16 +791,49 @@ function renderPage(pkg) {
                                                 ? '<span class="ta-time"><i class="far fa-clock"></i> ' + timeBits.join(' · ') + '</span>'
                                                 : '';
 
+                                            // ── Build the carousel HTML — main cover image
+                                            //    on top, then a row of clickable thumbnails
+                                            //    below. Clicking a thumbnail swaps in the
+                                            //    cover image (delegated handler at the
+                                            //    bottom of renderPage). All <img>s use
+                                            //    loading="lazy" so the page stays fast even
+                                            //    with 5 photos × N activities.
+                                            var carouselHtml = '';
+                                            if (carouselImgs.length) {
+                                                var thumbsHtml = carouselImgs.length > 1
+                                                    ? carouselImgs.map(function (src, idx) {
+                                                          var sel = idx === 0 ? ' is-active' : '';
+                                                          return '<button type="button" class="ta-thumb' + sel +
+                                                                 '" data-src="' + esc(src) + '" aria-label="Photo ' + (idx + 1) + '">' +
+                                                                 '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async">' +
+                                                                 '</button>';
+                                                      }).join('')
+                                                    : '';
+                                                carouselHtml =
+                                                    '<div class="ta-carousel" data-carousel>' +
+                                                        '<div class="ta-carousel-main">' +
+                                                            '<img class="ta-carousel-cover" src="' + esc(carouselImgs[0]) +
+                                                                '" alt="' + title + '" loading="lazy" decoding="async">' +
+                                                            (carouselImgs.length > 1
+                                                                ? '<button type="button" class="ta-carousel-nav ta-carousel-prev" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>' +
+                                                                  '<button type="button" class="ta-carousel-nav ta-carousel-next" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>' +
+                                                                  '<span class="ta-carousel-count"><i class="fas fa-images"></i> 1/' + carouselImgs.length + '</span>'
+                                                                : '') +
+                                                        '</div>' +
+                                                        (thumbsHtml ? '<div class="ta-thumbs">' + thumbsHtml + '</div>' : '') +
+                                                    '</div>';
+                                            }
+
                                             // MMT-style: collapsed by default. Visitor taps the
                                             // header (ACTIVITY · 2hrs · Port Blair) to expand and
-                                            // see the image + description. Keeps the day plan
+                                            // see the carousel + description. Keeps the day plan
                                             // information-dense, like leading travel agencies.
                                             return (
                                                 '<li class="ta-rich">' +
                                                   '<details class="ta-details">' +
                                                     '<summary>' + headerBits.join('') + '</summary>' +
-                                                    '<div class="ta-body' + (imgUrl ? '' : ' ta-no-img') + '">' +
-                                                      (imgUrl ? '<div class="ta-img"><img src="' + imgUrl + '" alt="' + title + '" loading="lazy" decoding="async"></div>' : '') +
+                                                    '<div class="ta-body' + (carouselImgs.length ? '' : ' ta-no-img') + '">' +
+                                                      carouselHtml +
                                                       '<div class="ta-content">' +
                                                         '<h3 class="ta-title">' + title + '</h3>' +
                                                         (descTxt ? '<p class="ta-desc">' + descTxt + '</p>' : '') +
@@ -934,6 +984,46 @@ function renderPage(pkg) {
                          : 'pkgSummary';                               // gallery / property photos
             const el = document.getElementById(target);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ── Activity carousel — thumbnail click swaps the cover image
+        //    Delegated handler so it works for every activity card
+        //    (potentially dozens) without per-card JS.
+        const thumb = e.target.closest('.ta-thumb');
+        if (thumb) {
+            e.preventDefault();
+            const carousel = thumb.closest('[data-carousel]');
+            if (carousel) {
+                const cover = carousel.querySelector('.ta-carousel-cover');
+                const thumbs = carousel.querySelectorAll('.ta-thumb');
+                const newSrc = thumb.dataset.src;
+                if (cover && newSrc) cover.src = newSrc;
+                thumbs.forEach(t => t.classList.remove('is-active'));
+                thumb.classList.add('is-active');
+                // Update "1/5" counter
+                const count = carousel.querySelector('.ta-carousel-count');
+                if (count) {
+                    var idx = Array.prototype.indexOf.call(thumbs, thumb) + 1;
+                    count.innerHTML = '<i class="fas fa-images"></i> ' + idx + '/' + thumbs.length;
+                }
+            }
+            return;
+        }
+
+        // Carousel prev/next arrow clicks
+        const navBtn = e.target.closest('.ta-carousel-nav');
+        if (navBtn) {
+            e.preventDefault();
+            const carousel = navBtn.closest('[data-carousel]');
+            if (!carousel) return;
+            const thumbs = Array.prototype.slice.call(carousel.querySelectorAll('.ta-thumb'));
+            if (!thumbs.length) return;
+            let activeIdx = thumbs.findIndex(t => t.classList.contains('is-active'));
+            if (activeIdx < 0) activeIdx = 0;
+            const dir = navBtn.classList.contains('ta-carousel-prev') ? -1 : 1;
+            const nextIdx = (activeIdx + dir + thumbs.length) % thumbs.length;
+            thumbs[nextIdx].click(); // re-uses the .ta-thumb branch above
+            return;
         }
     });
 
