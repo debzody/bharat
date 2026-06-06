@@ -54,18 +54,30 @@ function pkgMealPlan(pkg) {
 }
 
 // Build the inclusion list shown on the card. Always prepends the
-// resolved meal plan so the customer sees what meals are included
+// resolved hotel tier (e.g. "3/4-star Hotels") and the meal plan so
+// the customer instantly sees both the room category and the meal plan
 // at a glance — even when the admin's inclusions[] doesn't include
-// a meal entry. We then dedupe so an existing meal-style entry
-// (e.g. "Breakfast, Lunch & Dinner") doesn't appear twice.
+// either entry. We then dedupe so existing hotel/meal-style entries
+// don't appear twice.
+//
+// NOTE: pkgCardInclusions() is called BEFORE pkgHotelTierLabel /
+// pkgMealPlan are defined? No — function declarations hoist, so order
+// is fine. Just keep this comment so future edits don't reorder them.
 function pkgCardInclusions(pkg) {
-    var meal = pkgMealPlan(pkg);
-    var src  = Array.isArray(pkg && pkg.inclusions) ? pkg.inclusions.slice() : [];
-    // Strip any pre-existing meal-style inclusion so we control the wording
+    var hotel = pkgHotelTierLabel(pkg);
+    var meal  = pkgMealPlan(pkg);
+    var src   = Array.isArray(pkg && pkg.inclusions) ? pkg.inclusions.slice() : [];
+    // Strip any pre-existing hotel-tier or meal-style entries so we
+    // control the wording. The first regex catches "3 star hotel",
+    // "3-star hotels", "Deluxe Hotels", "5* Resorts", etc. The second
+    // catches breakfast/lunch/dinner/"all meals" lines.
     var filtered = src.filter(function (i) {
-        return !/breakfast|lunch|dinner|all meals/i.test(String(i || ''));
+        var s = String(i || '');
+        if (/(\bhotels?\b|\bresorts?\b|\bstar\b|\d\s*\*)/i.test(s)) return false;
+        if (/breakfast|lunch|dinner|all meals/i.test(s)) return false;
+        return true;
     });
-    return [meal].concat(filtered);
+    return [hotel, meal].concat(filtered);
 }
 
 // Hard-coded defaults — used only if both jsonbin.io AND the repo file fail
@@ -181,8 +193,36 @@ function pkgCategoryColor(slug) {
         honeymoon: '#e74c3c'
     }[slug] || '#0d7a8a');
 }
+// Numeric "max star" used by the filter pills in the sidebar.
+//   Budget / Economy / Standard  -> 3
+//   Deluxe / Premium             -> 4 (so the "4-star" filter catches them)
+//   Royal / Honeymoon / Luxury   -> 5
 function pkgHotelCategory(pkg) {
-    return ({ budget: 3, standard: 3, luxury: 5, honeymoon: 4, test: 3 }[pkg.id] || 3);
+    if (!pkg) return 3;
+    var slug = pkgCategory(pkg);
+    var byCat = { budget: 3, standard: 3, deluxe: 4, premium: 4, royal: 5, honeymoon: 5, luxury: 5 };
+    if (byCat[slug] != null) return byCat[slug];
+    // Legacy id fallback
+    return ({ budget: 3, standard: 3, luxury: 5, honeymoon: 5, test: 3 }[pkg.id] || 3);
+}
+
+// Human-friendly hotel-tier label shown on the homepage card. We use a
+// range ("3-star Hotels", "3/4-star Hotels") rather than a single number
+// so the customer sees realistic expectations — the actual hotel a
+// booking lands in depends on availability for the dates chosen.
+//
+//   Budget / Economy / Standard  -> "3-star Hotels"
+//   Deluxe / Premium             -> "3/4-star Hotels"
+//   Royal / Honeymoon            -> "4/5-star Hotels"
+//   Luxury (legacy)              -> "5-star Hotels"
+function pkgHotelTierLabel(pkg) {
+    if (!pkg) return '3-star Hotels';
+    var slug = pkgCategory(pkg);
+    if (slug === 'budget' || slug === 'standard')         return '3-star Hotels';
+    if (slug === 'deluxe' || slug === 'premium')          return '3/4-star Hotels';
+    if (slug === 'royal'  || slug === 'honeymoon')        return '4/5-star Hotels';
+    if (slug === 'luxury')                                return '5-star Hotels';
+    return '3-star Hotels';
 }
 function pkgPerks(pkg) {
     return ({
