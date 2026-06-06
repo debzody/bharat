@@ -98,8 +98,10 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/package.css?v=10">
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/package.css?v=11">
+    <!-- Lato + Poppins — Lato matches MMT's heading typography; Poppins
+         remains for legacy components. Pacifico kept for any decorative use. -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700;900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand (see comments in index.html) ── -->
     <script>
@@ -459,24 +461,47 @@ function renderPage(pkg) {
                   role="button" tabindex="0" aria-label="Dismiss notice">&times;</span>
         </button>
 
-        <!-- Hero -->
-        <div class="pkg-hero" style="background-image:url('${heroImg}');">
-            <div class="pkg-hero-content">
-                <a href="/#packages" class="back-btn"><i class="fas fa-arrow-left"></i> All Packages</a>
-                <h1>${pkg.name}</h1>
-                <div class="pkg-hero-meta">
-                    <span class="price-badge">₹${Number(pkg.price).toLocaleString()} ${isTest ? '/test' : '/person'}</span>
-                    <span class="rating-badge"><i class="fas fa-star" style="color:#f1c40f;"></i> ${Number(pkg.rating).toFixed(1)}</span>
-                    <span><i class="fas fa-clock"></i> ${pkg.duration}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> Andaman Islands</span>
-                </div>
-            </div>
-        </div>
+        <!-- ── Compact MMT-style header — title + nights/route meta.
+                 No big background image; the four-tile collage below is
+                 the "hero" instead. Cleaner, more information-dense. -->
+        ${(function () {
+            // Build a compact MMT-style route summary, e.g.
+            // "1N Port Blair · 2N Havelock · 1N Neil Island · 1N Port Blair"
+            // First try pkg.route (if explicitly set in the package doc),
+            // otherwise derive from pkg.duration, otherwise leave blank.
+            var route = '';
+            if (Array.isArray(pkg.route) && pkg.route.length) {
+                route = pkg.route.join(' &nbsp;•&nbsp; ');
+            } else if (pkg.duration) {
+                route = pkg.duration;
+            }
+            var customisable = (pkg.customizable !== false) ? '<span class="pmh-tag pmh-tag--blue">⇄ Customizable</span>' : '';
+            // Pull the "5N/6D" badge out of the duration string ("5 Nights / 6 Days" → "5N/6D")
+            var durTag = '';
+            var m = String(pkg.duration || '').match(/(\d+)\s*Nights?\s*\/\s*(\d+)\s*Days?/i);
+            if (m) durTag = '<span class="pmh-tag pmh-tag--grey">' + m[1] + 'N/' + m[2] + 'D</span>';
 
-        <!-- Highlights Bar -->
-        <div class="pkg-highlights-bar">
-            ${(pkg.highlights || []).map(h => `<div class="pkg-highlight-item"><i class="fas fa-check-circle"></i> ${h}</div>`).join('')}
-        </div>
+            return `
+            <header class="pkg-mmt-head">
+                <a href="/#packages" class="pmh-back"><i class="fas fa-arrow-left"></i> All Packages</a>
+                <h1 class="pmh-title">${pkg.name}</h1>
+                <div class="pmh-meta">
+                    ${customisable}
+                    ${durTag}
+                    <span class="pmh-route">${route}</span>
+                </div>
+                <div class="pmh-quick">
+                    <span class="pmh-rating"><i class="fas fa-star"></i> ${Number(pkg.rating).toFixed(1)}</span>
+                    <span class="pmh-divider"></span>
+                    <span><i class="far fa-clock"></i> ${pkg.duration}</span>
+                    <span class="pmh-divider"></span>
+                    <span><i class="fas fa-map-marker-alt"></i> Andaman Islands</span>
+                    <span class="pmh-spacer"></span>
+                    <span class="pmh-price">₹${Number(pkg.price).toLocaleString()} <em>${isTest ? '/test' : '/person'}</em></span>
+                </div>
+            </header>
+            `;
+        })()}
 
         <!-- ── Hero Gallery Strip — quick-access tiles for the visitor:
                  main destination shot, Package Highlights call-out card,
