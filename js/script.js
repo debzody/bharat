@@ -126,12 +126,95 @@ function pkgRoute(pkg) {
         test:      ['Test Package']
     })[pkg.id];
     if (legacy) return legacy;
-    // Fallback when the package has no admin-set route: derive a clean
-    // "<N> Nights / <N+1> Days" line from the duration so the card shows
-    // useful trip-length info instead of a generic "Andaman Tour" label.
+    // Try to infer a per-night route from the package's `desc` / `name`,
+    // splitting the total nights across the islands mentioned. Most
+    // Andaman trips start AND end in Port Blair (it's the only airport),
+    // with the bulk of nights at Havelock + Neil. We mirror that pattern
+    // here so cards without an admin-set `cities` array still show a
+    // realistic per-night breakdown like:
+    //   "1N Port Blair · 2N Havelock · 1N Neil Island · 1N Port Blair"
+    return inferAndamanRoute(pkg);
+}
+
+// Heuristic Andaman route builder. Reads `pkg.desc` / `pkg.name` to find
+// which islands the package visits, then splits the total nights across
+// them in a sensible order (Port Blair → Havelock → Neil → Baratang →
+// Port Blair return). Falls back to a Port Blair + Havelock split if no
+// island keywords are detected.
+function inferAndamanRoute(pkg) {
     var nights = pkgDuration(pkg);
-    var days   = nights + 1;
-    return [nights + ' Nights / ' + days + ' Days'];
+    if (!nights || nights < 1) {
+        return [(nights || 1) + 'N Andaman'];
+    }
+    var blob = String((pkg && pkg.desc) || '') + ' ' +
+               String((pkg && pkg.name) || '');
+    var b = blob.toLowerCase();
+    var hasPB   = /port\s*blair|portblair|\bpb\b/.test(b);
+    var hasHav  = /havelock|swaraj/.test(b);
+    var hasNeil = /\bneil\b|shaheed/.test(b);
+    var hasBar  = /baratang/.test(b);
+    var hasDig  = /diglipur/.test(b);
+
+    // Default to PB + Havelock + Neil if nothing matches — that's the
+    // most common Andaman itinerary by a wide margin.
+    if (!hasPB && !hasHav && !hasNeil && !hasBar && !hasDig) {
+        hasPB = true; hasHav = true; hasNeil = true;
+    }
+
+    // Priority order: Havelock takes the most nights (best beaches),
+    // then Neil, then Baratang/Diglipur, then Port Blair (bookends).
+    var picks = [];
+    if (hasHav)  picks.push({ key: 'Havelock',     w: 4 });
+    if (hasNeil) picks.push({ key: 'Neil Island',  w: 3 });
+    if (hasBar)  picks.push({ key: 'Baratang',     w: 2 });
+    if (hasDig)  picks.push({ key: 'Diglipur',     w: 2 });
+
+    // Reserve nights for Port Blair on arrival + return when the trip
+    // is long enough to need both. Short trips just bookend with a
+    // single PB night at the start.
+    var pbStart = hasPB ? 1 : 0;
+    var pbEnd   = (hasPB && nights >= 4) ? 1 : 0;
+    var remaining = nights - pbStart - pbEnd;
+
+    // If we somehow over-reserved (e.g. tiny trip), pull from PB end first
+    if (remaining < picks.length) {
+        if (pbEnd > 0) { pbEnd = 0; remaining = nights - pbStart; }
+    }
+    if (remaining < picks.length) {
+        // Still not enough? Trim islands list — keep the first ones
+        picks = picks.slice(0, Math.max(1, remaining));
+    }
+
+    // Distribute remaining nights across picks proportional to weight,
+    // ensuring at least 1 per pick.
+    var totalW = picks.reduce(function (s, p) { return s + p.w; }, 0) || 1;
+    var alloc  = picks.map(function (p) {
+        return Math.max(1, Math.floor(remaining * p.w / totalW));
+    });
+    // Top-up rounding error
+    var allocSum = alloc.reduce(function (s, n) { return s + n; }, 0);
+    var diff = remaining - allocSum;
+    var i = 0;
+    while (diff > 0 && picks.length) {
+        alloc[i % picks.length] += 1;
+        diff--; i++;
+    }
+    while (diff < 0 && picks.length) {
+        if (alloc[i % picks.length] > 1) {
+            alloc[i % picks.length] -= 1;
+            diff++;
+        }
+        i++;
+        if (i > 100) break; // safety
+    }
+
+    var parts = [];
+    if (pbStart) parts.push(pbStart + 'N Port Blair');
+    picks.forEach(function (p, idx) {
+        parts.push(alloc[idx] + 'N ' + p.key);
+    });
+    if (pbEnd) parts.push(pbEnd + 'N Port Blair');
+    return parts.length ? parts : [nights + 'N Andaman'];
 }
 // Map a package to its filter-tab category (lower-case slug).
 //
