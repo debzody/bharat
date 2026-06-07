@@ -118,13 +118,20 @@ function pkgDuration(pkg) {
 }
 function pkgRoute(pkg) {
     if (Array.isArray(pkg.cities) && pkg.cities.length) return pkg.cities;
-    return ({
+    var legacy = ({
         budget:    ['1N Port Blair', '2N Havelock', '1N Port Blair'],
         standard:  ['1N Port Blair', '2N Havelock', '1N Neil Island', '2N Port Blair'],
         luxury:    ['2N Port Blair', '3N Havelock', '1N Neil Island'],
         honeymoon: ['1N Port Blair', '3N Havelock', '1N Neil Island'],
         test:      ['Test Package']
-    }[pkg.id] || ['Andaman Tour']);
+    })[pkg.id];
+    if (legacy) return legacy;
+    // Fallback when the package has no admin-set route: derive a clean
+    // "<N> Nights / <N+1> Days" line from the duration so the card shows
+    // useful trip-length info instead of a generic "Andaman Tour" label.
+    var nights = pkgDuration(pkg);
+    var days   = nights + 1;
+    return [nights + ' Nights / ' + days + ' Days'];
 }
 // Map a package to its filter-tab category (lower-case slug).
 //
