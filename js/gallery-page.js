@@ -181,10 +181,26 @@
         }
     }
 
+    // Material-style ripple effect on chip click
+    function spawnRipple(chip, e) {
+        try {
+            const r = chip.getBoundingClientRect();
+            const size = Math.max(r.width, r.height);
+            const ripple = document.createElement('span');
+            ripple.className = 'gal-ripple';
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (e.clientX - r.left - size / 2) + 'px';
+            ripple.style.top  = (e.clientY - r.top  - size / 2) + 'px';
+            chip.appendChild(ripple);
+            setTimeout(() => { try { ripple.remove(); } catch (_) {} }, 700);
+        } catch (_) {}
+    }
+
     if (filtersEl) {
         filtersEl.addEventListener('click', (e) => {
             const chip = e.target.closest('.gallery-chip');
             if (!chip) return;
+            spawnRipple(chip, e);
             filtersEl.querySelectorAll('.gallery-chip').forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
             activeCat = chip.dataset.cat;
@@ -192,15 +208,68 @@
         });
     }
 
+    // ── motion preferences (respect reduced-motion users) ─────
+    const prefersReducedMotion =
+        window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTouchDevice =
+        ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    // ── scroll-triggered reveal observer (staggered fade-in-up)
+    const tileObserver = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                const el = entry.target;
+                // Slight stagger based on element's position in its row group
+                const idx = parseInt(el.dataset.galIdx || '0', 10);
+                const delay = Math.min(idx % 12, 11) * 60; // cap stagger
+                el.style.animationDelay = delay + 'ms';
+                el.classList.add('gal-in');
+                tileObserver.unobserve(el);
+            }
+        });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 }) : null;
+
     // ── tile builder ───────────────────────────────────────────
     function buildTile(item, lbIdx) {
         const tile = document.createElement('div');
         tile.className = 'gallery-tile';
+        tile.dataset.galIdx = String(lbIdx);
         const altText = (item.title || 'Andaman photo').replace(/"/g, '&quot;');
+        const titleHtml = item.title
+            ? '<div class="gallery-tile-caption">' + escapeHtml(item.title) + '</div>'
+            : '';
         tile.innerHTML =
             '<img loading="lazy" src="' + escapeHtml(item.thumbUrl || item.url) + '" alt="' + escapeHtml(altText) + '">' +
-            (item.title ? '<div class="gallery-tile-caption">' + escapeHtml(item.title) + '</div>' : '');
+            '<div class="gallery-tile-overlay" aria-hidden="true"></div>' +
+            '<span class="gallery-tile-view"><i class="fas fa-arrow-right"></i> View</span>' +
+            titleHtml;
         tile.addEventListener('click', () => openLightbox(lbIdx));
+
+        // 3D mouse-follow tilt — desktop & motion-OK only
+        if (!prefersReducedMotion && !isTouchDevice) {
+            tile.addEventListener('mousemove', (e) => {
+                const r = tile.getBoundingClientRect();
+                const px = (e.clientX - r.left) / r.width;
+                const py = (e.clientY - r.top) / r.height;
+                const ry = (px - 0.5) *  8;   // rotateY
+                const rx = (0.5 - py) *  8;   // rotateX
+                tile.style.setProperty('--tilt-x', rx.toFixed(2) + 'deg');
+                tile.style.setProperty('--tilt-y', ry.toFixed(2) + 'deg');
+            });
+            tile.addEventListener('mouseleave', () => {
+                tile.style.setProperty('--tilt-x', '0deg');
+                tile.style.setProperty('--tilt-y', '0deg');
+            });
+        }
+
+        // Observe for scroll-triggered entrance
+        if (tileObserver) {
+            tileObserver.observe(tile);
+        } else {
+            // Fallback: just show it
+            tile.classList.add('gal-in');
+        }
+
         return tile;
     }
 
