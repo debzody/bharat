@@ -91,7 +91,7 @@
 
     <link rel="stylesheet" href="css/style.css?v=57">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/gallery.css?v=4">
+    <link rel="stylesheet" href="css/gallery.css?v=5">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -125,44 +125,91 @@
 
     <main class="main-content">
 
-        <section class="gallery-hero">
-            <div class="gallery-hero-inner">
-                <h1><i class="fas fa-images"></i> Photo Gallery</h1>
-                <p>A glimpse of Andaman through our travelers' lenses.</p>
-                <span class="gallery-hero-accent"></span>
-            </div>
-        </section>
-
         <section class="gallery-wrap">
-            <div class="gallery-filters" id="galleryFilters">
-                <button class="gallery-chip active" data-cat="all">All</button>
+            <!-- Filter chips + tiny icon-buttons row -->
+            <div class="gallery-toolbar">
+                <div class="gallery-filters" id="galleryFilters">
+                    <button class="gallery-chip active" data-cat="all">All</button>
+                </div>
+                <div class="gallery-toolbar-actions">
+                    <!-- Group icon-button + popover -->
+                    <div class="gal-icon-wrap" id="galGroupWrap">
+                        <button type="button" class="gal-icon-btn" id="galGroupBtn"
+                                aria-label="Group by" aria-haspopup="true" aria-expanded="false"
+                                title="Group by">
+                            <i class="fas fa-layer-group"></i>
+                        </button>
+                        <div class="gal-popover" id="galGroupPop" role="menu" aria-label="Group by">
+                            <div class="gal-pop-title">Group by</div>
+                            <button class="gal-pop-item" data-group="none" role="menuitemradio">
+                                <i class="fas fa-ban"></i> None
+                            </button>
+                            <button class="gal-pop-item" data-group="year" role="menuitemradio">
+                                <i class="fas fa-calendar"></i> Year
+                            </button>
+                            <button class="gal-pop-item" data-group="month" role="menuitemradio">
+                                <i class="fas fa-calendar-alt"></i> Month
+                            </button>
+                            <button class="gal-pop-item" data-group="place" role="menuitemradio">
+                                <i class="fas fa-map-marker-alt"></i> Place
+                            </button>
+                            <button class="gal-pop-item" data-group="package" role="menuitemradio">
+                                <i class="fas fa-suitcase-rolling"></i> Package
+                            </button>
+                            <button class="gal-pop-item" data-group="category" role="menuitemradio">
+                                <i class="fas fa-tag"></i> Category
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Sort icon-button + popover -->
+                    <div class="gal-icon-wrap" id="galSortWrap">
+                        <button type="button" class="gal-icon-btn" id="galSortBtn"
+                                aria-label="Sort by" aria-haspopup="true" aria-expanded="false"
+                                title="Sort by">
+                            <i class="fas fa-sort"></i>
+                        </button>
+                        <div class="gal-popover" id="galSortPop" role="menu" aria-label="Sort by">
+                            <div class="gal-pop-title">Sort by</div>
+                            <button class="gal-pop-item" data-sort="date_desc" role="menuitemradio">
+                                <i class="fas fa-arrow-down-wide-short"></i> Newest first
+                            </button>
+                            <button class="gal-pop-item" data-sort="date_asc" role="menuitemradio">
+                                <i class="fas fa-arrow-up-wide-short"></i> Oldest first
+                            </button>
+                            <button class="gal-pop-item" data-sort="title_asc" role="menuitemradio">
+                                <i class="fas fa-arrow-down-a-z"></i> Title (A → Z)
+                            </button>
+                            <button class="gal-pop-item" data-sort="title_desc" role="menuitemradio">
+                                <i class="fas fa-arrow-up-a-z"></i> Title (Z → A)
+                            </button>
+                            <button class="gal-pop-item" data-sort="place_asc" role="menuitemradio">
+                                <i class="fas fa-map-pin"></i> Place (A → Z)
+                            </button>
+                            <button class="gal-pop-item" data-sort="order_asc" role="menuitemradio">
+                                <i class="fas fa-list-ol"></i> Custom order
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Group + Sort controls -->
-            <div class="gallery-controls" id="galleryControls">
-                <div class="gallery-control">
-                    <label for="groupBy"><i class="fas fa-layer-group"></i> Group by</label>
-                    <select id="groupBy">
-                        <option value="none">None</option>
-                        <option value="year">Year</option>
-                        <option value="month">Month</option>
-                        <option value="place">Place</option>
-                        <option value="package">Package</option>
-                        <option value="category">Category</option>
-                    </select>
-                </div>
-                <div class="gallery-control">
-                    <label for="sortBy"><i class="fas fa-sort"></i> Sort by</label>
-                    <select id="sortBy">
-                        <option value="date_desc">Newest first (date)</option>
-                        <option value="date_asc">Oldest first (date)</option>
-                        <option value="title_asc">Title (A → Z)</option>
-                        <option value="title_desc">Title (Z → A)</option>
-                        <option value="place_asc">Place (A → Z)</option>
-                        <option value="order_asc">Custom order</option>
-                    </select>
-                </div>
-            </div>
+            <!-- Hidden legacy selects (kept for gallery-page.js compatibility) -->
+            <select id="groupBy" class="gal-hidden-select" aria-hidden="true" tabindex="-1">
+                <option value="none">None</option>
+                <option value="year">Year</option>
+                <option value="month">Month</option>
+                <option value="place">Place</option>
+                <option value="package">Package</option>
+                <option value="category">Category</option>
+            </select>
+            <select id="sortBy" class="gal-hidden-select" aria-hidden="true" tabindex="-1">
+                <option value="date_desc">Newest first (date)</option>
+                <option value="date_asc">Oldest first (date)</option>
+                <option value="title_asc">Title (A → Z)</option>
+                <option value="title_desc">Title (Z → A)</option>
+                <option value="place_asc">Place (A → Z)</option>
+                <option value="order_asc">Custom order</option>
+            </select>
 
             <div id="galleryStatus" class="gallery-empty" style="display:none;">
                 <i class="fas fa-spinner fa-spin"></i>
@@ -188,7 +235,7 @@
     <script src="js/dataStore.js?v=40"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/script.js?v=43"></script>
-    <script src="js/gallery-page.js?v=2"></script>
+    <script src="js/gallery-page.js?v=3"></script>
     <script src="js/user-menu.js?v=14"></script>
     <script src="js/conversion-kit.js?v=1"></script>
     <script src="js/brevo.js?v=3" async></script>
