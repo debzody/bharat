@@ -347,15 +347,97 @@
     if (groupByEl) {
         groupByEl.addEventListener('change', () => {
             try { localStorage.setItem('galleryGroupBy', groupByEl.value); } catch (e) {}
+            syncPopoverActive('group', groupByEl.value);
             renderGrid();
         });
     }
     if (sortByEl) {
         sortByEl.addEventListener('change', () => {
             try { localStorage.setItem('gallerySortBy', sortByEl.value); } catch (e) {}
+            syncPopoverActive('sort', sortByEl.value);
             renderGrid();
         });
     }
+
+    // ── icon-button popovers (Group / Sort) ────────────────────
+    const galGroupBtn = document.getElementById('galGroupBtn');
+    const galSortBtn  = document.getElementById('galSortBtn');
+    const galGroupPop = document.getElementById('galGroupPop');
+    const galSortPop  = document.getElementById('galSortPop');
+
+    function closeAllPopovers() {
+        if (galGroupPop) galGroupPop.classList.remove('open');
+        if (galSortPop)  galSortPop.classList.remove('open');
+        if (galGroupBtn) galGroupBtn.setAttribute('aria-expanded', 'false');
+        if (galSortBtn)  galSortBtn.setAttribute('aria-expanded',  'false');
+    }
+    function togglePopover(btn, pop) {
+        if (!btn || !pop) return;
+        const isOpen = pop.classList.contains('open');
+        closeAllPopovers();
+        if (!isOpen) {
+            pop.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
+        }
+    }
+    function syncPopoverActive(kind, value) {
+        const pop = (kind === 'group') ? galGroupPop : galSortPop;
+        if (!pop) return;
+        const attr = (kind === 'group') ? 'data-group' : 'data-sort';
+        pop.querySelectorAll('.gal-pop-item').forEach(item => {
+            item.classList.toggle('active', item.getAttribute(attr) === value);
+        });
+    }
+
+    if (galGroupBtn && galGroupPop) {
+        galGroupBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePopover(galGroupBtn, galGroupPop);
+        });
+        galGroupPop.addEventListener('click', (e) => {
+            const item = e.target.closest('.gal-pop-item');
+            if (!item) return;
+            const value = item.getAttribute('data-group');
+            if (groupByEl && groupByEl.value !== value) {
+                groupByEl.value = value;
+                groupByEl.dispatchEvent(new Event('change'));
+            } else {
+                syncPopoverActive('group', value);
+            }
+            closeAllPopovers();
+        });
+    }
+    if (galSortBtn && galSortPop) {
+        galSortBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePopover(galSortBtn, galSortPop);
+        });
+        galSortPop.addEventListener('click', (e) => {
+            const item = e.target.closest('.gal-pop-item');
+            if (!item) return;
+            const value = item.getAttribute('data-sort');
+            if (sortByEl && sortByEl.value !== value) {
+                sortByEl.value = value;
+                sortByEl.dispatchEvent(new Event('change'));
+            } else {
+                syncPopoverActive('sort', value);
+            }
+            closeAllPopovers();
+        });
+    }
+
+    // Click outside / Escape closes popovers
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.gal-icon-wrap')) return;
+        closeAllPopovers();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllPopovers();
+    });
+
+    // Initial sync (after restoring localStorage values above)
+    if (groupByEl) syncPopoverActive('group', groupByEl.value);
+    if (sortByEl)  syncPopoverActive('sort',  sortByEl.value);
 
     // ── lightbox ───────────────────────────────────────────────
     function openLightbox(idx) {
