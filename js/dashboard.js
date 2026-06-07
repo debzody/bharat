@@ -1923,6 +1923,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const def = ITINERARY_DEFAULTS[defKey];
         return {
             duration:   pkg.duration   || def.duration,
+            // `cities` holds the per-night route shown on the public
+            // package card (e.g. "1N Port Blair", "2N Havelock").
+            // Empty by default — when blank, the public site falls back to
+            // an inferred route built from the description.
+            cities:     Array.isArray(pkg.cities) ? pkg.cities.slice() : [],
             highlights: (pkg.highlights && pkg.highlights.length) ? pkg.highlights : def.highlights,
             exclusions: (pkg.exclusions && pkg.exclusions.length) ? pkg.exclusions : def.exclusions,
             days:       (pkg.days && pkg.days.length)            ? pkg.days       : def.days
@@ -2486,6 +2491,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Ensure packagesData has the merged values
         pkg.days       = data.days.map(d => ({ ...d, activities: [...(d.activities||[])] }));
         pkg.duration   = data.duration;
+        pkg.cities     = data.cities.slice();
         pkg.highlights = data.highlights.slice();
         pkg.exclusions = data.exclusions.slice();
 
@@ -2502,6 +2508,10 @@ document.addEventListener('DOMContentLoaded', function () {
                             <select id="ite-duration" class="pkg-input">
                                 ${Array.from({length:14},(_,i)=>`<option value="${i+1} Night${i>0?'s':''} / ${i+2} Days">${i+1} Night${i>0?'s':''} / ${i+2} Days</option>`).join('')}
                             </select>
+                        </div>
+                        <div class="pkg-edit-row">
+                            <label>Route <small>(per-night stops shown on the package card · e.g. <em>1N Port Blair</em>, <em>2N Havelock</em>)</small></label>
+                            <div id="ite-cities" class="ite-list-host"></div>
                         </div>
                         <div class="pkg-edit-row">
                             <label>Highlights <small>(one per row)</small></label>
@@ -2533,11 +2543,15 @@ document.addEventListener('DOMContentLoaded', function () {
         // If no match, fall back to first option
         if (!durSel.value) durSel.selectedIndex = 0;
 
-        // Wire the line-by-line list editors for Highlights / Inclusions /
-        // Exclusions. Logic lives in js/itinerary-list-editors.js. Each
-        // editor reads/writes directly to the corresponding pkg field.
+        // Wire the line-by-line list editors for Route / Highlights /
+        // Inclusions / Exclusions. Logic lives in js/itinerary-list-editors.js.
+        // Each editor reads/writes directly to the corresponding pkg field.
         if (window.IteListEditors && typeof window.IteListEditors.wireStringList === 'function') {
             const wire = window.IteListEditors.wireStringList;
+            wire(document.getElementById('ite-cities'),
+                () => packagesData[pkgIdx].cities,
+                (a) => { packagesData[pkgIdx].cities = a; },
+                { placeholder: 'e.g. 1N Port Blair', addLabel: 'Add Stop' });
             wire(document.getElementById('ite-highlights'),
                 () => packagesData[pkgIdx].highlights,
                 (a) => { packagesData[pkgIdx].highlights = a; },
