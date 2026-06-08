@@ -264,6 +264,70 @@
     "visible": true
   },
   {
+    "id": "7A",
+    "name": "Economy Package (7A) — 2026",
+    "desc": "7N/8D | Port Blair + Havelock + Neil + Baratang | Non-AC Room, Car & Cruise | Breakfast, Lunch & Dinner",
+    "price": 19500,
+    "rating": 4.3,
+    "image": "images/beach1.jpg",
+    "category": "Economy",
+    "code": "7-A",
+    "duration": "7 Nights / 8 Days",
+    "inclusions": [
+      "Accommodation (Non-AC)",
+      "Breakfast, Lunch & Dinner",
+      "Transportation (Non-AC)",
+      "Toll Tax",
+      "Boat for Ross & North Bay Island",
+      "Forest Permit",
+      "Jarawa Permit",
+      "Parking",
+      "Airport Pickup & Drop",
+      "Non-AC Cruise Ship (Havelock & Neil)"
+    ],
+    "exclusions": [
+      "Entry Fees",
+      "Light & Sound Show Ticket",
+      "Personal Activities (Scuba, Snorkelling, Sea Walk, Speed Boat, Glass Boat, Water Scooter, Jet Ski, Baratang Safari, Limestone Cave)",
+      "Mineral Water, Cool Drinks, Ice Cream & Beverages",
+      "GST (5%)",
+      "Flight Fare (To & From)"
+    ],
+    "visible": true
+  },
+  {
+    "id": "7B",
+    "name": "Standard Package (7B) — 2026",
+    "desc": "7N/8D | Port Blair + Havelock + Neil + Baratang | AC Room, Car & Cruise | Breakfast, Lunch & Dinner",
+    "price": 22500,
+    "rating": 4.5,
+    "image": "images/beach2.jpg",
+    "category": "Standard",
+    "code": "7-B",
+    "duration": "7 Nights / 8 Days",
+    "inclusions": [
+      "Accommodation (AC)",
+      "Breakfast, Lunch & Dinner",
+      "Transportation (AC)",
+      "Toll Tax",
+      "Boat for Ross & North Bay Island",
+      "Forest Permit",
+      "Jarawa Permit",
+      "Parking",
+      "Airport Pickup & Drop",
+      "AC Cruise Ship (Havelock & Neil)"
+    ],
+    "exclusions": [
+      "Entry Fees",
+      "Light & Sound Show Ticket",
+      "Personal Activities (Scuba, Snorkelling, Sea Walk, Speed Boat, Glass Boat, Water Scooter, Jet Ski, Baratang Safari, Limestone Cave)",
+      "Mineral Water, Cool Drinks, Ice Cream & Beverages",
+      "GST (5%)",
+      "Flight Fare (To & From)"
+    ],
+    "visible": true
+  },
+  {
     "id": "honeymoon-4a-2026",
     "name": "Honeymoon Package (4A) — 2026",
     "desc": "4N/5D | Port Blair + Havelock | Beach Resort + Candlelight Dinner + Photoshoot + AC Premium Cruise",
