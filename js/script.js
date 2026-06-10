@@ -116,32 +116,34 @@ function pkgDuration(pkg) {
     if (m) return parseInt(m[1], 10);
     return ({ budget: 4, standard: 6, luxury: 6, honeymoon: 5 }[pkg.id] || 5);
 }
+// Validate-and-sanitize a route. Per actual Bharat Transport & Tourism
+// brochures, Havelock and Neil get exactly 1 overnight each — the rest
+// park at Port Blair. Honeymoon allows up to 2N Havelock. ANY route
+// that violates this is rebuilt from the durations in-place so the
+// homepage card NEVER shows a wrong stay distribution.
+function sanitizeAndamanRoute(route, pkg) {
+    if (!Array.isArray(route) || !route.length) return route;
+    var isHoneymoon = String(pkg && pkg.category || '').toLowerCase() === 'honeymoon'
+                   || /honeymoon/i.test((pkg && pkg.id) || '')
+                   || /honeymoon/i.test((pkg && pkg.name) || '');
+    var maxHav = isHoneymoon ? 2 : 1;
+    var bad = route.some(function (c) {
+        var m = String(c).match(/^(\d+)\s*N\s*(.+)$/i);
+        if (!m) return false;
+        var n = parseInt(m[1], 10);
+        var place = m[2].trim().toLowerCase();
+        if (/havelock/.test(place) && n > maxHav) return true;
+        if (/neil/.test(place)     && n > 1)      return true;
+        return false;
+    });
+    if (!bad) return route;
+    // Recompute from the package — totally ignore the broken cities[].
+    return inferAndamanRoute(pkg);
+}
+
 function pkgRoute(pkg) {
     if (Array.isArray(pkg.cities) && pkg.cities.length) {
-        // Safety net: if a stale Firestore entry has Havelock or Neil
-        // with > 1 overnight (impossible per actual brochures), fix it
-        // on the fly so cards never display wrong stay distributions.
-        // Honeymoon is the exception (Havelock-focused, allows 2N).
-        var isHoneymoon = String(pkg.category || '').toLowerCase() === 'honeymoon'
-                       || /honeymoon/i.test(pkg.id || '')
-                       || /honeymoon/i.test(pkg.name || '');
-        var totalN = pkg.cities.reduce(function (s, c) {
-            var m = String(c).match(/^(\d+)\s*N/i);
-            return s + (m ? parseInt(m[1], 10) : 0);
-        }, 0);
-        var maxHav = isHoneymoon ? 2 : 1;
-        var bad = pkg.cities.some(function (c) {
-            var m = String(c).match(/^(\d+)\s*N\s*(.+)$/i);
-            if (!m) return false;
-            var n = parseInt(m[1], 10);
-            var place = m[2].trim().toLowerCase();
-            if (/havelock/.test(place) && n > maxHav) return true;
-            if (/neil/.test(place)     && n > 1)      return true;
-            return false;
-        });
-        if (!bad) return pkg.cities;
-        // Drop through to recompute via the heuristic — keeps the card
-        // honest without requiring an immediate Firestore re-publish.
+        return sanitizeAndamanRoute(pkg.cities, pkg);
     }
     // Legacy fallbacks for the original demo IDs. Per actual Bharat
     // Transport & Tourism brochures Havelock and Neil get 1 overnight
@@ -154,15 +156,15 @@ function pkgRoute(pkg) {
         honeymoon: ['1N Port Blair', '2N Havelock', '1N Port Blair'],
         test:      ['Test Package']
     })[pkg.id];
-    if (legacy) return legacy;
+    if (legacy) return sanitizeAndamanRoute(legacy, pkg);
     // Try to infer a per-night route from the package's `desc` / `name`,
     // splitting the total nights across the islands mentioned. Most
     // Andaman trips start AND end in Port Blair (it's the only airport),
     // with the bulk of nights at Havelock + Neil. We mirror that pattern
     // here so cards without an admin-set `cities` array still show a
     // realistic per-night breakdown like:
-    //   "1N Port Blair · 2N Havelock · 1N Neil Island · 1N Port Blair"
-    return inferAndamanRoute(pkg);
+    //   "1N Port Blair · 1N Havelock · 1N Neil Island · 1N Port Blair"
+    return sanitizeAndamanRoute(inferAndamanRoute(pkg), pkg);
 }
 
 // Heuristic Andaman route builder. Reads `pkg.desc` / `pkg.name` to find
