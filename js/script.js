@@ -117,12 +117,41 @@ function pkgDuration(pkg) {
     return ({ budget: 4, standard: 6, luxury: 6, honeymoon: 5 }[pkg.id] || 5);
 }
 function pkgRoute(pkg) {
-    if (Array.isArray(pkg.cities) && pkg.cities.length) return pkg.cities;
+    if (Array.isArray(pkg.cities) && pkg.cities.length) {
+        // Safety net: if a stale Firestore entry has Havelock or Neil
+        // with > 1 overnight (impossible per actual brochures), fix it
+        // on the fly so cards never display wrong stay distributions.
+        // Honeymoon is the exception (Havelock-focused, allows 2N).
+        var isHoneymoon = String(pkg.category || '').toLowerCase() === 'honeymoon'
+                       || /honeymoon/i.test(pkg.id || '')
+                       || /honeymoon/i.test(pkg.name || '');
+        var totalN = pkg.cities.reduce(function (s, c) {
+            var m = String(c).match(/^(\d+)\s*N/i);
+            return s + (m ? parseInt(m[1], 10) : 0);
+        }, 0);
+        var maxHav = isHoneymoon ? 2 : 1;
+        var bad = pkg.cities.some(function (c) {
+            var m = String(c).match(/^(\d+)\s*N\s*(.+)$/i);
+            if (!m) return false;
+            var n = parseInt(m[1], 10);
+            var place = m[2].trim().toLowerCase();
+            if (/havelock/.test(place) && n > maxHav) return true;
+            if (/neil/.test(place)     && n > 1)      return true;
+            return false;
+        });
+        if (!bad) return pkg.cities;
+        // Drop through to recompute via the heuristic — keeps the card
+        // honest without requiring an immediate Firestore re-publish.
+    }
+    // Legacy fallbacks for the original demo IDs. Per actual Bharat
+    // Transport & Tourism brochures Havelock and Neil get 1 overnight
+    // each — the rest park at Port Blair (the only airport + road hub).
+    // Honeymoon is the one exception (Havelock-focused — 2N Havelock).
     var legacy = ({
-        budget:    ['1N Port Blair', '2N Havelock', '1N Port Blair'],
-        standard:  ['1N Port Blair', '2N Havelock', '1N Neil Island', '2N Port Blair'],
-        luxury:    ['2N Port Blair', '3N Havelock', '1N Neil Island'],
-        honeymoon: ['1N Port Blair', '3N Havelock', '1N Neil Island'],
+        budget:    ['1N Port Blair', '1N Havelock', '1N Neil Island', '1N Port Blair'],
+        standard:  ['1N Port Blair', '1N Havelock', '1N Neil Island', '3N Port Blair'],
+        luxury:    ['1N Port Blair', '1N Havelock', '1N Neil Island', '3N Port Blair'],
+        honeymoon: ['1N Port Blair', '2N Havelock', '1N Port Blair'],
         test:      ['Test Package']
     })[pkg.id];
     if (legacy) return legacy;
@@ -161,59 +190,40 @@ function inferAndamanRoute(pkg) {
         hasPB = true; hasHav = true; hasNeil = true;
     }
 
-    // Priority order: Havelock takes the most nights (best beaches),
-    // then Neil, then Baratang/Diglipur, then Port Blair (bookends).
-    var picks = [];
-    if (hasHav)  picks.push({ key: 'Havelock',     w: 4 });
-    if (hasNeil) picks.push({ key: 'Neil Island',  w: 3 });
-    if (hasBar)  picks.push({ key: 'Baratang',     w: 2 });
-    if (hasDig)  picks.push({ key: 'Diglipur',     w: 2 });
-
-    // Reserve nights for Port Blair on arrival + return when the trip
-    // is long enough to need both. Short trips just bookend with a
-    // single PB night at the start.
-    var pbStart = hasPB ? 1 : 0;
-    var pbEnd   = (hasPB && nights >= 4) ? 1 : 0;
-    var remaining = nights - pbStart - pbEnd;
-
-    // If we somehow over-reserved (e.g. tiny trip), pull from PB end first
-    if (remaining < picks.length) {
-        if (pbEnd > 0) { pbEnd = 0; remaining = nights - pbStart; }
-    }
-    if (remaining < picks.length) {
-        // Still not enough? Trim islands list — keep the first ones
-        picks = picks.slice(0, Math.max(1, remaining));
-    }
-
-    // Distribute remaining nights across picks proportional to weight,
-    // ensuring at least 1 per pick.
-    var totalW = picks.reduce(function (s, p) { return s + p.w; }, 0) || 1;
-    var alloc  = picks.map(function (p) {
-        return Math.max(1, Math.floor(remaining * p.w / totalW));
-    });
-    // Top-up rounding error
-    var allocSum = alloc.reduce(function (s, n) { return s + n; }, 0);
-    var diff = remaining - allocSum;
-    var i = 0;
-    while (diff > 0 && picks.length) {
-        alloc[i % picks.length] += 1;
-        diff--; i++;
-    }
-    while (diff < 0 && picks.length) {
-        if (alloc[i % picks.length] > 1) {
-            alloc[i % picks.length] -= 1;
-            diff++;
+    // Per actual Bharat Transport & Tourism brochures (Economy/Standard/
+    // Deluxe/Premium 5N–7N packages), Havelock and Neil get exactly 1
+    // overnight each (max), with everything else parked at Port Blair.
+    // Baratang/Diglipur are day-trips from Port Blair — no overnight.
+    // This matches the real Andaman trip pattern (PB is the only airport
+    // and also the road hub for Baratang/Diglipur).
+    var havN  = hasHav  ? 1 : 0;
+    var neilN = hasNeil ? 1 : 0;
+    var pbN   = nights - havN - neilN;
+    if (pbN < 0) {
+        // Shouldn't happen for Andaman trips ≥ 2N, but be safe.
+        pbN = 0;
+        if (havN + neilN > nights) {
+            // Drop Neil first to fit (Havelock is the bigger draw).
+            if (neilN && havN + neilN > nights) neilN = Math.max(0, nights - havN);
+            if (havN + neilN > nights) havN = Math.max(0, nights - neilN);
         }
-        i++;
-        if (i > 100) break; // safety
     }
 
     var parts = [];
-    if (pbStart) parts.push(pbStart + 'N Port Blair');
-    picks.forEach(function (p, idx) {
-        parts.push(alloc[idx] + 'N ' + p.key);
-    });
-    if (pbEnd) parts.push(pbEnd + 'N Port Blair');
+    // Bookend with PB on arrival when there's at least 1 PB night.
+    if (pbN > 0 && hasPB) {
+        var pbStart = 1;
+        var pbEnd   = pbN - pbStart;
+        parts.push(pbStart + 'N Port Blair');
+        if (havN)  parts.push(havN  + 'N Havelock');
+        if (neilN) parts.push(neilN + 'N Neil Island');
+        if (pbEnd > 0) parts.push(pbEnd + 'N Port Blair');
+    } else {
+        // No PB nights (rare — e.g. Havelock-only honeymoon variant).
+        if (havN)  parts.push(havN  + 'N Havelock');
+        if (neilN) parts.push(neilN + 'N Neil Island');
+        if (pbN)   parts.push(pbN   + 'N Port Blair');
+    }
     return parts.length ? parts : [nights + 'N Andaman'];
 }
 // Map a package to its filter-tab category (lower-case slug).

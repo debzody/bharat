@@ -29,7 +29,12 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "5B",
@@ -61,7 +66,12 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "5C",
@@ -95,7 +105,12 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "5D",
@@ -129,7 +144,12 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "6A",
@@ -161,7 +181,13 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "6B",
@@ -193,7 +219,13 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "6C",
@@ -227,7 +259,13 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "6D",
@@ -261,7 +299,13 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "2N Port Blair"
+    ]
   },
   {
     "id": "7A",
@@ -293,7 +337,13 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "3N Port Blair"
+    ]
   },
   {
     "id": "7B",
@@ -325,7 +375,93 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "3N Port Blair"
+    ]
+  },
+  {
+    "id": "7C",
+    "name": "Deluxe Package (7C) — 2026",
+    "desc": "7N/8D | Port Blair + Havelock + Neil + Baratang | Beach Property at Havelock | AC | Breakfast & Dinner",
+    "price": 24500,
+    "rating": 4.6,
+    "image": "images/beach3.jpg",
+    "category": "Deluxe",
+    "code": "7-C",
+    "duration": "7 Nights / 8 Days",
+    "inclusions": [
+      "Accommodation (AC)",
+      "Beach Property at Havelock",
+      "Breakfast & Dinner",
+      "Transportation (AC)",
+      "Toll Tax",
+      "Boat for Ross & North Bay Island",
+      "Forest Permit",
+      "Jarawa Permit",
+      "Parking",
+      "Airport Pickup & Drop",
+      "AC Cruise Ship (Havelock & Neil)"
+    ],
+    "exclusions": [
+      "Entry Fees",
+      "Lunch",
+      "Light & Sound Show Ticket",
+      "Personal Activities (Scuba, Snorkelling, Sea Walk, Speed Boat, Glass Boat, Water Scooter, Jet Ski, Baratang Safari, Limestone Cave)",
+      "Mineral Water, Cool Drinks, Ice Cream & Beverages",
+      "GST (5%)",
+      "Flight Fare (To & From)"
+    ],
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "3N Port Blair"
+    ]
+  },
+  {
+    "id": "7D",
+    "name": "Premium Package (7D) — 2026",
+    "desc": "7N/8D | Port Blair + Havelock + Neil + Baratang | Deluxe Hotel PB + Beach Property Havelock & Neil | AC | Breakfast & Dinner",
+    "price": 26500,
+    "rating": 4.7,
+    "image": "images/beach3.jpg",
+    "category": "Premium",
+    "code": "7-D",
+    "duration": "7 Nights / 8 Days",
+    "inclusions": [
+      "Accommodation (Deluxe Hotel in Port Blair)",
+      "Beach Property at Havelock & Neil",
+      "Breakfast & Dinner",
+      "Transportation (AC)",
+      "Toll Tax",
+      "Boat for Ross & North Bay Island",
+      "Forest Permit",
+      "Jarawa Permit",
+      "Parking",
+      "Airport Pickup & Drop",
+      "AC Cruise Ship (Havelock & Neil)"
+    ],
+    "exclusions": [
+      "Entry Fees",
+      "Lunch",
+      "Light & Sound Show Ticket",
+      "Personal Activities (Scuba, Snorkelling, Sea Walk, Speed Boat, Glass Boat, Water Scooter, Jet Ski, Baratang Safari, Limestone Cave)",
+      "Mineral Water, Cool Drinks, Ice Cream & Beverages",
+      "GST (5%)",
+      "Flight Fare (To & From)"
+    ],
+    "visible": true,
+    "cities": [
+      "2N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "3N Port Blair"
+    ]
   },
   {
     "id": "honeymoon-4a-2026",
@@ -359,7 +495,12 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "1N Port Blair",
+      "2N Havelock",
+      "1N Port Blair"
+    ]
   },
   {
     "id": "royal-4b-2026",
@@ -390,7 +531,13 @@
       "GST (5%)",
       "Flight Fare (To & From)"
     ],
-    "visible": true
+    "visible": true,
+    "cities": [
+      "1N Port Blair",
+      "1N Havelock",
+      "1N Neil Island",
+      "1N Port Blair"
+    ]
   },
   {
     "id": "test",
