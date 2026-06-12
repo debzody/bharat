@@ -1,0 +1,299 @@
+/* ════════════════════════════════════════════════════════════════════
+   hero-pro-2.css — Part 2 (loaded after hero-pro.css)
+   ────────────────────────────────────────────────────────────────────
+   • Reverts the hero to a single full-width column (the side preview
+     card has been removed) so the search bar can stretch big again.
+   • Restyles the listing .mmt-card grid to look exactly like the
+     floating preview card we removed: orange "MOST POPULAR" pill,
+     serif title, 4N · 5D pill, "From ₹x,xxx / pax", green CTA.
+   • Card backgrounds become semi-transparent with a soft glassy blur,
+     and the listing wrap gets a calm light-teal gradient so the
+     transparency reads cleanly.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── 1. Single-column hero, big search bar ─────────────────────── */
+.hero-content--pro {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1.25rem !important;
+    max-width: 1180px;
+}
+.hero-content--pro .hero-main {
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+.hero-content--pro .hero-main > .hero-eyebrow,
+.hero-content--pro .hero-main > .hero-heading,
+.hero-content--pro .hero-main > .hero-subtext,
+.hero-content--pro .hero-main > .hero-price--pro,
+.hero-content--pro .hero-main > .hero-cta-secondary--ghost {
+    align-self: center;
+}
+.hero-content--pro .hero-main > .hero-heading h1 { text-align: center; }
+.hero-content--pro .hero-main > .hero-subtext p {
+    margin: 0 auto;
+    text-align: center;
+}
+.hero-content--pro .hero-main > .hero-price--pro {
+    justify-content: center;
+}
+
+/* Big, hero-width search bar */
+.hero-content--pro .mmt-searchbar--pro {
+    width: 100%;
+    max-width: 1180px;
+    margin-top: 0.5rem;
+    padding: 0.85rem !important;
+}
+.hero-content--pro .mmt-searchbar--pro .mmt-search-fields {
+    gap: 0.65rem;
+}
+.hero-content--pro .mmt-searchbar--pro .mmt-field {
+    padding: 0.75rem 0.9rem 0.75rem 2.6rem !important;
+    min-height: 56px;
+}
+.hero-content--pro .mmt-searchbar--pro .mmt-field-label {
+    font-size: 0.66rem !important;
+}
+.hero-content--pro .mmt-searchbar--pro .mmt-field-value {
+    font-size: 1rem !important;
+}
+.hero-content--pro .mmt-searchbar--pro .mmt-search-btn {
+    padding: 0 2.2rem !important;
+    font-size: 0.95rem !important;
+    min-height: 56px;
+}
+
+/* ── 2. Listing wrap — soft tropical-light background ───────────── */
+.hero-page #packages.mmt-listing-wrap {
+    background: linear-gradient(180deg, #f5fbfb 0%, #eef6f8 100%);
+}
+
+/* ── 3. .mmt-card — adopts the preview-card look ────────────────── */
+.hero-page .mmt-card {
+    background: rgba(255, 255, 255, 0.62) !important;
+    border: 1px solid rgba(13, 122, 138, 0.10) !important;
+    border-radius: 18px !important;
+    overflow: hidden;
+    box-shadow:
+        0 14px 38px rgba(8, 24, 40, 0.10),
+        0 2px 6px rgba(8, 24, 40, 0.05) !important;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+.hero-page .mmt-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.82) !important;
+    box-shadow:
+        0 22px 50px rgba(8, 24, 40, 0.16),
+        0 4px 10px rgba(8, 24, 40, 0.06) !important;
+}
+
+/* Image — uniform 16:10, rounded top, clean overlay */
+.hero-page .mmt-card-img {
+    aspect-ratio: 16 / 10 !important;
+    height: auto !important;
+    border-radius: 18px 18px 0 0 !important;
+    background-size: cover !important;
+    background-position: center !important;
+    position: relative;
+}
+
+/* Top-left orange "MOST POPULAR" / "Deal" pill */
+.hero-page .mmt-card-tag {
+    top: 0.85rem !important;
+    left: 0.85rem !important;
+    right: auto !important;
+    padding: 0.35rem 0.8rem !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    border-radius: 999px !important;
+    background: linear-gradient(135deg, #ff8a3d 0%, #ff5a3d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(255, 90, 61, 0.35) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem;
+}
+.hero-page .mmt-card-tag::before {
+    content: "\f06d";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.65rem;
+}
+.hero-page .mmt-card-tag-soldout {
+    background: linear-gradient(135deg, #6b7280 0%, #374151 100%) !important;
+    box-shadow: 0 4px 12px rgba(55, 65, 81, 0.35) !important;
+}
+.hero-page .mmt-card-tag-soldout::before { content: "\f00d"; }
+
+/* Card body — translucent, serif title, mint duration pill */
+.hero-page .mmt-card-body {
+    padding: 1rem 1.15rem 0.85rem !important;
+    background: transparent !important;
+}
+.hero-page .mmt-card-title-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+}
+.hero-page .mmt-card-title {
+    font-family: 'Fraunces', 'Playfair Display', serif !important;
+    font-size: 1.18rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.01em !important;
+    color: #0d2c3a !important;
+    margin: 0 !important;
+    order: 2;
+}
+.hero-page .mmt-card-duration {
+    order: 1;
+    align-self: flex-start;
+    display: inline-block !important;
+    padding: 0.25rem 0.65rem !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    color: #0d7a8a !important;
+    background: rgba(13, 122, 138, 0.10) !important;
+    border-radius: 6px !important;
+    border: none !important;
+    text-transform: none !important;
+}
+
+/* Amenity icons row */
+.hero-page .mmt-card-amenities {
+    margin-top: 0.7rem !important;
+    padding-top: 0.7rem !important;
+    border-top: 1px solid rgba(13, 122, 138, 0.10) !important;
+    gap: 0.5rem !important;
+    background: transparent !important;
+}
+.hero-page .mmt-amen {
+    color: rgba(13, 44, 58, 0.55) !important;
+}
+
+/* Price + CTA strip */
+.hero-page .mmt-card-price {
+    padding: 0.85rem 1.15rem 1.1rem !important;
+    background: transparent !important;
+    border-top: 1px solid rgba(13, 122, 138, 0.10) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap;
+    gap: 0.6rem !important;
+}
+.hero-page .mmt-card-price strong,
+.hero-page .mmt-card-price .price-now,
+.hero-page .mmt-card-price .mmt-price-now {
+    font-family: 'Fraunces', serif !important;
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+    color: #0d7a8a !important;
+    line-height: 1.05 !important;
+}
+.hero-page .mmt-card-price del,
+.hero-page .mmt-card-price s,
+.hero-page .mmt-card-price .price-was,
+.hero-page .mmt-card-price .mmt-price-was {
+    font-size: 0.78rem !important;
+    color: #8a96a3 !important;
+    opacity: 0.8;
+}
+
+/* Primary CTA — green pill */
+.hero-page .mmt-card-cta {
+    padding: 0.65rem 1.05rem !important;
+    background: linear-gradient(135deg, #1abc9c 0%, #0d7a8a 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.01em;
+    box-shadow: 0 6px 14px rgba(13, 122, 138, 0.25) !important;
+    transition: transform .15s, box-shadow .15s !important;
+}
+.hero-page .mmt-card-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(13, 122, 138, 0.35) !important;
+}
+.hero-page .mmt-card-cta-soldout {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
+    box-shadow: 0 4px 10px rgba(100, 116, 139, 0.25) !important;
+    cursor: not-allowed;
+}
+
+/* Secondary "Customize" CTA — ghost outline */
+.hero-page .mmt-card-cta-secondary {
+    padding: 0.55rem 0.9rem !important;
+    background: transparent !important;
+    color: #0d7a8a !important;
+    border: 1.5px solid rgba(13, 122, 138, 0.30) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    transition: background .15s, border-color .15s !important;
+}
+.hero-page .mmt-card-cta-secondary:hover {
+    background: rgba(13, 122, 138, 0.08) !important;
+    border-color: #0d7a8a !important;
+}
+
+/* Filter sidebar tones — match the new translucent vibe */
+.hero-page .mmt-filters {
+    background: rgba(255, 255, 255, 0.70) !important;
+    border: 1px solid rgba(13, 122, 138, 0.10) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 14px !important;
+}
+
+/* Tabs card */
+.hero-page .mmt-tabs-card {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* ── 4. Responsive tweaks ──────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .hero-content--pro .mmt-searchbar--pro .mmt-field { min-height: 52px; }
+    .hero-content--pro .mmt-searchbar--pro .mmt-search-btn { min-height: 52px; }
+}
+
+@media (max-width: 880px) {
+    .hero-content--pro {
+        gap: 1rem !important;
+        padding: 0 1.25rem !important;
+    }
+    .hero-page .mmt-card-title { font-size: 1.05rem !important; }
+    .hero-page .mmt-card-price strong,
+    .hero-page .mmt-card-price .price-now,
+    .hero-page .mmt-card-price .mmt-price-now { font-size: 1.25rem !important; }
+}
+
+@media (max-width: 600px) {
+    .hero-content--pro .mmt-searchbar--pro {
+        padding: 0.6rem !important;
+    }
+    .hero-content--pro .mmt-searchbar--pro .mmt-field {
+        min-height: 48px;
+        padding: 0.6rem 0.75rem 0.6rem 2.4rem !important;
+    }
+    .hero-content--pro .mmt-searchbar--pro .mmt-search-btn {
+        min-height: 48px;
+        padding: 0 1.4rem !important;
+    }
+    .hero-page .mmt-card-cta,
+    .hero-page .mmt-card-cta-secondary {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+}
