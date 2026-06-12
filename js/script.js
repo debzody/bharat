@@ -864,18 +864,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
-    // ── Load site settings from Firestore (payments toggle, etc.) ──
+    // ── Load site settings from Firestore (payments toggle, heroSlides, etc.) ──
     if (window.SettingsStore && typeof window.SettingsStore.load === 'function') {
         // Use cached value first (instant), then fetch fresh and re-apply
         const cached = window.SettingsStore.cached && window.SettingsStore.cached();
         if (cached) {
             window._siteSettings = cached;
             applyPaymentsState();
+            applyHeroSlides(cached);
         }
         window.SettingsStore.load().then(s => {
             window._siteSettings = s || window._siteSettings;
             applyPaymentsState();
+            applyHeroSlides(s);
         }).catch(err => console.warn('Settings load failed:', err));
+    }
+
+    // ── Apply admin-managed hero slides from settings.heroSlides ──
+    function applyHeroSlides(settings) {
+        const slides = settings && Array.isArray(settings.heroSlides) && settings.heroSlides.length
+            ? settings.heroSlides
+            : null;
+        if (!slides) return; // empty → keep static HTML slides
+
+        const track = document.getElementById('carouselTrack');
+        if (!track) return;
+
+        track.innerHTML = slides.map((s, i) => {
+            const url = String(s.url || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const cap = String(s.caption || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<div class="carousel-slide${i === 0 ? ' active' : ''}" style="background-image: url('${url}')">` +
+                   (cap ? `<div class="slide-caption">${cap}</div>` : '') +
+                   '</div>';
+        }).join('');
+
+        // Rebuild dots and reinit the carousel with the new slide count
+        const dotsContainer = document.getElementById('carouselDots');
+        if (dotsContainer) dotsContainer.innerHTML = '';
+        // Trigger a fresh carousel init by dispatching a custom event
+        document.dispatchEvent(new CustomEvent('heroSlidesUpdated'));
     }
 
     function applyPaymentsState() {
@@ -909,17 +936,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ── Hero Carousel ──────────────────────────────────────────
-    (function initCarousel() {
+    let _carouselAutoTimer = null;
+    function initCarousel() {
+        // Stop any prior timer before reinitialising (called again after heroSlidesUpdated)
+        if (_carouselAutoTimer) { clearInterval(_carouselAutoTimer); _carouselAutoTimer = null; }
+
         const slides = document.querySelectorAll('.carousel-slide');
         const dotsContainer = document.getElementById('carouselDots');
         const prevBtn = document.getElementById('carouselPrev');
         const nextBtn = document.getElementById('carouselNext');
-        if (!slides.length) return;
+        if (!slides.length || !dotsContainer || !prevBtn || !nextBtn) return;
 
         let current = 0;
-        let autoTimer = null;
 
-        // Build dots
+        // Rebuild dots (may be called after heroSlidesUpdated cleared them)
+        dotsContainer.innerHTML = '';
         slides.forEach((_, i) => {
             const dot = document.createElement('button');
             dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
@@ -940,15 +971,15 @@ document.addEventListener('DOMContentLoaded', function() {
         function prev() { goTo(current - 1); }
 
         function startAuto() {
-            stopAuto();
-            autoTimer = setInterval(next, 4500);
+            if (_carouselAutoTimer) { clearInterval(_carouselAutoTimer); }
+            _carouselAutoTimer = setInterval(next, 4500);
         }
         function stopAuto() {
-            if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+            if (_carouselAutoTimer) { clearInterval(_carouselAutoTimer); _carouselAutoTimer = null; }
         }
 
-        prevBtn.addEventListener('click', () => { prev(); startAuto(); });
-        nextBtn.addEventListener('click', () => { next(); startAuto(); });
+        prevBtn.onclick = () => { prev(); startAuto(); };
+        nextBtn.onclick = () => { next(); startAuto(); };
 
         // Pause on hover
         const carousel = document.querySelector('.hero-carousel');
@@ -964,7 +995,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }, { passive: true });
 
         startAuto();
-    })();
+    }
+    initCarousel();
+    document.addEventListener('heroSlidesUpdated', initCarousel);
 
     // Mobile hamburger: slide-down topnav
     const hamburgerBtn = document.getElementById('hamburgerBtn');
