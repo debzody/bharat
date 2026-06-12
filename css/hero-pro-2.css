@@ -907,3 +907,125 @@ body.hero-page {
 .hero-page .hero-price-meta {
     text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 11 — Image to the top, glass-transparent header, smaller height
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── 1. Hero image fills the top — no dark band above it ────────── */
+/* The hero section now stretches to the very top of the viewport;
+   the topbar floats over it. */
+.hero-page #home.hero {
+    position: relative !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    top: 0 !important;
+}
+.hero-page #home.hero,
+.hero-page .hero-carousel,
+.hero-page .carousel-track,
+.hero-page .carousel-slide {
+    background-color: transparent !important;
+}
+
+/* Make the carousel actually sit at the top of the section */
+.hero-page .hero-carousel {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1;
+}
+
+/* The .main-content was likely getting a top offset (padding/margin)
+   from style.css to clear the floating bar — kill it on the homepage. */
+.hero-page .main-content > section#home.hero {
+    margin-top: 0 !important;
+}
+.hero-page main.main-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* If body or hero-page has a dark color it would show as a band when
+   the image hasn't loaded — keep it dark teal but the image is now
+   absolutely-positioned to fill, so it covers immediately. */
+body.hero-page {
+    background: #08243a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ── 2. Glass-transparent header, smaller height ─────────────────── */
+/* Keep style.css's position:fixed but override the dark/black look
+   with a true frosted-glass overlay that sits ON the image. */
+.hero-page .topbar {
+    /* Smaller — was about 84-92px, now 64px */
+    height: 60px !important;
+    min-height: 60px !important;
+    /* Edge-to-edge instead of inset margins so it feels like a true header */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+    /* Glass effect: very subtle dark veil + heavy blur of what's behind */
+    background: linear-gradient(180deg,
+        rgba(8, 30, 46, 0.42) 0%,
+        rgba(8, 30, 46, 0.28) 100%) !important;
+    backdrop-filter: blur(18px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    padding: 0 1.25rem !important;
+}
+
+/* When user scrolls, deepen the glass slightly for legibility */
+.hero-page .topbar.scrolled {
+    background: linear-gradient(180deg,
+        rgba(8, 30, 46, 0.78) 0%,
+        rgba(8, 30, 46, 0.65) 100%) !important;
+    backdrop-filter: blur(22px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(170%) !important;
+}
+
+/* Smaller logo to match the slimmer header */
+.hero-page .topbar-logo--pro img {
+    height: 64px !important;
+    width: 64px !important;
+    margin-top: -4px !important;
+    margin-bottom: -4px !important;
+}
+.hero-page .topbar-logo--pro::before {
+    width: 100px !important;
+    height: 100px !important;
+    left: -8px !important;
+}
+.hero-page .topbar-logo--pro .brand-line1 {
+    font-size: 1rem !important;
+}
+.hero-page .topbar-logo--pro .brand-line2 {
+    font-size: 0.62rem !important;
+}
+
+/* Push the hero CONTENT down so the headline isn't hidden under
+   the now edge-to-edge fixed header. */
+.hero-page .hero-content--pro {
+    padding-top: 6.5rem !important;
+}
+
+/* Mobile: slightly tighter still */
+@media (max-width: 768px) {
+    .hero-page .topbar {
+        height: 56px !important;
+        min-height: 56px !important;
+        padding: 0 0.85rem !important;
+    }
+    .hero-page .topbar-logo--pro img {
+        height: 50px !important;
+        width: 50px !important;
+    }
+    .hero-page .hero-content--pro {
+        padding-top: 5rem !important;
+    }
+}
