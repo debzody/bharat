@@ -511,3 +511,84 @@
     padding: 0.7rem 1.2rem !important;
     font-size: 0.85rem !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 6 — Bring inclusions back, make image shorter
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Make the hero image shorter — was 16:9, now ~21:9 (cinematic strip).
+   This reclaims a lot of vertical space for the inclusions. */
+.hero-page .mmt-card-img {
+    aspect-ratio: 21 / 9 !important;
+}
+
+/* Restore inclusions in grid view (5-star Hotels / Breakfast & Dinner /
+   AC Private Cab in Port Blair / etc.) — user wants them visible. */
+.hero-page .mmt-results.view-grid .mmt-incl-list {
+    display: block !important;
+    margin: 0.5rem 0 0 !important;
+    padding: 0 !important;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #4a5867;
+    list-style: none;
+}
+.hero-page .mmt-results.view-grid .mmt-incl-list li,
+.hero-page .mmt-results.view-grid .mmt-incl-list .mmt-incl-item {
+    position: relative;
+    padding-left: 1.1rem;
+    margin: 0.15rem 0;
+}
+.hero-page .mmt-results.view-grid .mmt-incl-list li::before,
+.hero-page .mmt-results.view-grid .mmt-incl-list .mmt-incl-item::before {
+    content: "•";
+    position: absolute;
+    left: 0.25rem;
+    top: 0;
+    color: #1abc9c;
+    font-weight: 900;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+/* Bring back the perks row (small icon row above inclusions) — show
+   it but tightened so it doesn't hog space. */
+.hero-page .mmt-results.view-grid .mmt-perks {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.45rem 0 0 !important;
+    font-size: 0.78rem !important;
+}
+
+/* Bring back the small amenity-icon row (hotel / sightseeing / cab /
+   meals) — useful at-a-glance info. */
+.hero-page .mmt-results.view-grid .mmt-card-amenities {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 0.4rem !important;
+    padding: 0.55rem 0 0 !important;
+    margin: 0.5rem 0 0 !important;
+    border-top: 1px solid rgba(13, 122, 138, 0.10) !important;
+}
+.hero-page .mmt-results.view-grid .mmt-amen {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 122, 138, 0.08);
+    color: rgba(13, 44, 58, 0.70) !important;
+    border-radius: 7px;
+    font-size: 0.85rem;
+}
+
+/* Limit the body block so it doesn't grow infinitely and the cards
+   stay roughly the same height — extra inclusions clip with ellipsis. */
+.hero-page .mmt-results.view-grid .mmt-incl-list {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-height: 6.6em; /* ~4 lines × 1.55 line-height */
+}
