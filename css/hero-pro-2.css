@@ -592,3 +592,172 @@
     overflow: hidden;
     max-height: 6.6em; /* ~4 lines × 1.55 line-height */
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 7 — Inclusion bullet alignment + floating glowing logo
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Bullet alignment fix ────────────────────────────────────────── */
+/* The mmt.css base styles add their own list-marker; layering our
+   pseudo ::before on top creates double-bullets and vertical drift.
+   Strip the browser marker entirely and make the pseudo dot the only
+   bullet, baseline-aligned to the first line of text. */
+.hero-page .mmt-results.view-grid .mmt-incl-list,
+.hero-page .mmt-results.view-grid .mmt-incl-list li {
+    list-style: none !important;
+    list-style-position: outside !important;
+}
+.hero-page .mmt-results.view-grid .mmt-incl-list li::marker {
+    content: "" !important;
+    display: none;
+}
+.hero-page .mmt-results.view-grid .mmt-incl-list li,
+.hero-page .mmt-results.view-grid .mmt-incl-list .mmt-incl-item {
+    padding-left: 1.1rem !important;
+    margin: 0.18rem 0 !important;
+    line-height: 1.55 !important;
+    font-size: 0.85rem !important;
+}
+.hero-page .mmt-results.view-grid .mmt-incl-list li::before,
+.hero-page .mmt-results.view-grid .mmt-incl-list .mmt-incl-item::before {
+    content: "" !important;
+    position: absolute;
+    left: 0.3rem;
+    top: 0.55em;            /* visually centers a tiny dot to the cap height */
+    width: 6px;
+    height: 6px;
+    background: #1abc9c;
+    border-radius: 50%;
+    font-size: 0;
+    line-height: 0;
+    transform: translateY(-50%);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 8 — Floating + glowing logo (bigger, lifted above the topbar)
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Topbar needs to allow the logo to overflow upward/downward */
+.hero-page .topbar {
+    overflow: visible !important;
+    position: relative;
+    z-index: 90;
+}
+
+/* Glowing teal halo behind the logo — sits on a ::before so we can
+   pulse it without re-running filter:drop-shadow on the image. */
+.hero-page .topbar-logo--pro {
+    position: relative;
+    overflow: visible;
+}
+.hero-page .topbar-logo--pro::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at center,
+            rgba(126, 226, 192, 0.55) 0%,
+            rgba(126, 226, 192, 0.30) 35%,
+            rgba(13, 122, 138, 0.18) 60%,
+            transparent 78%);
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(2px);
+    animation: bp-logo-halo 3.5s ease-in-out infinite;
+}
+@keyframes bp-logo-halo {
+    0%, 100% { opacity: 0.55; transform: translateY(-50%) scale(1); }
+    50%      { opacity: 1.00; transform: translateY(-50%) scale(1.12); }
+}
+
+/* Logo image — bigger, lifted above the bar, with a 3D drop-shadow */
+.hero-page .topbar-logo--pro img {
+    display: block !important;
+    height: 88px !important;          /* bigger */
+    width: 88px !important;
+    border-radius: 50% !important;    /* perfect circle so it floats */
+    object-fit: cover;
+    margin-top: -10px;                /* lifts it above the topbar */
+    margin-bottom: -10px;
+    background:
+        radial-gradient(circle at 30% 28%,
+            rgba(255,255,255,0.18) 0%,
+            rgba(255,255,255,0) 55%),
+        linear-gradient(145deg, #1a4f5c 0%, #0a2935 100%);
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    position: relative;
+    z-index: 2;
+    /* Layered drop-shadow stack: outer glow + medium soft shadow + sharp foot */
+    filter:
+        drop-shadow(0 0 20px rgba(126, 226, 192, 0.65))
+        drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+    transition: transform .35s ease, filter .35s ease;
+    /* override the older bp-logo-glow keyframes */
+    animation: bp-logo-glow-float 3.2s ease-in-out infinite;
+}
+@keyframes bp-logo-glow-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        filter:
+            drop-shadow(0 0 18px rgba(126, 226, 192, 0.55))
+            drop-shadow(0 10px 22px rgba(0, 0, 0, 0.42))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.30));
+    }
+    50% {
+        transform: translateY(-3px) scale(1.02);
+        filter:
+            drop-shadow(0 0 28px rgba(126, 226, 192, 0.85))
+            drop-shadow(0 0 44px rgba(13, 122, 138, 0.55))
+            drop-shadow(0 14px 28px rgba(0, 0, 0, 0.50))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.30));
+    }
+}
+.hero-page .topbar-logo--pro:hover img {
+    transform: translateY(-4px) scale(1.06) rotate(-3deg);
+    filter:
+        drop-shadow(0 0 34px rgba(126, 226, 192, 1))
+        drop-shadow(0 0 60px rgba(13, 122, 138, 0.70))
+        drop-shadow(0 16px 32px rgba(0, 0, 0, 0.55))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.30));
+}
+.hero-page .topbar-logo--pro:hover::before {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.25);
+}
+
+/* Mobile — slightly smaller but still floating + glowing */
+@media (max-width: 768px) {
+    .hero-page .topbar-logo--pro img {
+        height: 64px !important;
+        width: 64px !important;
+        margin-top: -6px;
+        margin-bottom: -6px;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 80px;
+        height: 80px;
+        left: -8px;
+    }
+}
+@media (max-width: 480px) {
+    .hero-page .topbar-logo--pro img {
+        height: 52px !important;
+        width: 52px !important;
+        margin-top: -4px;
+        margin-bottom: -4px;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 66px;
+        height: 66px;
+    }
+}
+
+/* Topbar gets a touch more height to accommodate the floating logo */
+.hero-page .topbar { min-height: 92px !important; }
+@media (max-width: 768px) { .hero-page .topbar { min-height: 70px !important; } }
