@@ -761,3 +761,84 @@
 /* Topbar gets a touch more height to accommodate the floating logo */
 .hero-page .topbar { min-height: 92px !important; }
 @media (max-width: 768px) { .hero-page .topbar { min-height: 70px !important; } }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 9 — Remove white gap below topbar + brighter white logo glow
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Kill the white gap between the black topbar and the hero carousel.
+   The hero section likely has a top margin/padding from base style.css;
+   we tighten it on the homepage only. */
+.hero-page .topbar {
+    margin-bottom: 0 !important;
+}
+.hero-page .main-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+.hero-page #home.hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* If style.css uses --tb-h or .topbar height to push content down with
+   a top offset, eliminate it on the homepage so the hero starts flush
+   under the bar. */
+.hero-page .hero-page,
+.hero-page .hero {
+    top: 0 !important;
+}
+
+/* ── Brighter, whiter glow behind the logo ──────────────────────── */
+/* The previous halo used teal/mint which faded into the dark topbar.
+   Replace with a soft warm-white core that fades to mint at the edges
+   so it pops on the dark navy bar but still feels brand-coloured. */
+.hero-page .topbar-logo--pro::before {
+    background:
+        radial-gradient(circle at center,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 255, 255, 0.55) 22%,
+            rgba(196, 244, 224, 0.35) 45%,
+            rgba(126, 226, 192, 0.20) 65%,
+            transparent 80%) !important;
+    filter: blur(4px) !important;
+    /* Bigger so it actually shows through on the dark bar */
+    width: 140px !important;
+    height: 140px !important;
+    left: -16px !important;
+}
+
+/* Brighter white-leaning drop shadows on the floating image —
+   the mint stayed too dark on a near-black header. */
+.hero-page .topbar-logo--pro img {
+    filter:
+        drop-shadow(0 0 22px rgba(255, 255, 255, 0.85))
+        drop-shadow(0 0 40px rgba(178, 240, 220, 0.55))
+        drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) !important;
+}
+@keyframes bp-logo-glow-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        filter:
+            drop-shadow(0 0 22px rgba(255, 255, 255, 0.80))
+            drop-shadow(0 0 38px rgba(178, 240, 220, 0.50))
+            drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+    50% {
+        transform: translateY(-3px) scale(1.02);
+        filter:
+            drop-shadow(0 0 32px rgba(255, 255, 255, 1))
+            drop-shadow(0 0 54px rgba(178, 240, 220, 0.80))
+            drop-shadow(0 12px 24px rgba(0, 0, 0, 0.42))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+}
+.hero-page .topbar-logo--pro:hover img {
+    filter:
+        drop-shadow(0 0 38px rgba(255, 255, 255, 1))
+        drop-shadow(0 0 68px rgba(178, 240, 220, 0.85))
+        drop-shadow(0 14px 30px rgba(0, 0, 0, 0.50))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) !important;
+}
