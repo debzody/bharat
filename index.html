@@ -269,7 +269,8 @@
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
     <link rel="stylesheet" href="css/mmt.css?v=34">
     <link rel="stylesheet" href="css/flights.css?v=3">
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/hero-pro.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand ──────────────────────────────
          Razorpay's checkout.js eagerly fetches ~70 chunk files (Google Pay,
@@ -313,9 +314,26 @@
 <body class="hero-page">
     <!-- ── Top Brand Bar with Inline Icon Nav ───────────────── -->
     <header class="topbar">
-        <a href="/" class="topbar-logo" style="text-decoration:none">
-            <img src="images/logo-white.png" alt="Bharat Transport and Tourism logo">
-            <span class="brand-text"><span class="brand-line1">Bharat Transport &amp; Tourism</span><span class="brand-line2">Andaman Specialists</span></span>
+        <a href="/" class="topbar-logo topbar-logo--pro" style="text-decoration:none" aria-label="Bharat Transport and Tourism — Andaman Specialists">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                    <defs>
+                        <linearGradient id="bm-g" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#7ee2c0"/>
+                            <stop offset="100%" stop-color="#0d7a8a"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="24" cy="24" r="22" fill="url(#bm-g)"/>
+                    <path d="M6 32c4-3 8-3 12 0s8 3 12 0 8-3 12 0v6H6z" fill="#ffffff" opacity=".95"/>
+                    <path d="M6 36c4-2.5 8-2.5 12 0s8 2.5 12 0 8-2.5 12 0v4H6z" fill="#ffffff" opacity=".55"/>
+                    <path d="M30 8c-4 1-7 4-8 8 3-1 6-1 9 0-1-3-1-6-1-8z" fill="#f5e6c8"/>
+                    <path d="M30 8c-2 2-3 5-3 8 0 0 .5-.2 1.4-.4l1.6-7.6z" fill="#e8d4a8"/>
+                </svg>
+            </span>
+            <span class="brand-text">
+                <span class="brand-line1">Bharat Transport &amp; Tourism</span>
+                <span class="brand-line2">Andaman Travel Specialists · Since 2013</span>
+            </span>
         </a>
         <nav class="topnav" id="topnav">
         <a href="#home" class="topnav-item">
@@ -398,30 +416,34 @@
             <div class="carousel-dots" id="carouselDots"></div>
         </div>
 
-        <div class="hero-content">
+        <div class="hero-content hero-content--pro">
+          <div class="hero-main">
+            <span class="hero-eyebrow">Andaman &amp; Nicobar · Curated Travel</span>
             <div class="hero-heading">
-                <h1>Andaman, <em>Done Right</em>.</h1>
-            </div>
-
-            <!-- Price callout: was/now/savings -->
-            <div class="hero-price">
-                <span class="hero-price-was">₹22,999</span>
-                <span class="hero-price-now">₹15,999</span>
-                <span class="hero-price-pp">per person, all-inclusive</span>
-                <span class="hero-price-save">Save ₹7,000</span>
+                <h1>The Andamans, <em>Crafted&nbsp;for&nbsp;You</em>.</h1>
             </div>
 
             <div class="hero-subtext">
-                <p>Pristine beaches, crystal waters, expert local guides — every package includes ferries, hand-picked stays &amp; activities.</p>
+                <p>Hand-picked stays, private ferries and local experts — every detail handled, so you just unwind on turquoise water.</p>
             </div>
 
-            <div class="mmt-searchbar mmt-searchbar-hero">
+            <!-- Price callout — refined: clean "starting from", subtle savings tag -->
+            <div class="hero-price hero-price--pro">
+                <span class="hero-price-from">Starting from</span>
+                <span class="hero-price-now">₹15,999<small>/ person</small></span>
+                <span class="hero-price-meta">All-inclusive · 4N&nbsp;5D</span>
+                <span class="hero-price-tag" title="Compared to ₹22,999"><i class="fas fa-tag"></i> ₹7,000 off</span>
+            </div>
+
+            <div class="mmt-searchbar mmt-searchbar-hero mmt-searchbar--pro">
                 <div class="mmt-search-fields">
                     <div class="mmt-field">
+                        <i class="mmt-field-icon fas fa-location-dot" aria-hidden="true"></i>
                         <span class="mmt-field-label">Travelling From</span>
                         <select class="mmt-field-value" id="mmtFrom" data-cities data-default="Bangalore (Bengaluru)"></select>
                     </div>
                     <div class="mmt-field">
+                        <i class="mmt-field-icon fas fa-calendar-day" aria-hidden="true"></i>
                         <span class="mmt-field-label">Travel Date</span>
                         <input class="mmt-field-value" id="mmtDate" type="date">
                     </div>
@@ -431,6 +453,7 @@
                          #mmtAdults / #mmtChildren inputs keep the rest of the
                          search/booking flow working unchanged. -->
                     <div class="mmt-field mmt-field-travellers" id="mmtTravellersField">
+                        <i class="mmt-field-icon fas fa-user-group" aria-hidden="true"></i>
                         <span class="mmt-field-label">Travellers</span>
                         <button type="button" class="mmt-field-value mmt-travellers-trigger" id="mmtTravellersTrigger" aria-haspopup="dialog" aria-expanded="false">
                             <span id="mmtTravellersText">2 Adults</span>
@@ -472,6 +495,7 @@
                          filter pills below the hero. SEARCH applies it via mmtState.cat
                          and pushes it as ?category= so the filter survives reload/share. -->
                     <div class="mmt-field">
+                        <i class="mmt-field-icon fas fa-tag" aria-hidden="true"></i>
                         <span class="mmt-field-label">Category</span>
                         <select class="mmt-field-value" id="mmtCategory">
                             <option value="all" selected>Any</option>
@@ -487,22 +511,41 @@
                 <button class="mmt-search-btn" id="mmtSearchBtn">SEARCH</button>
             </div>
 
-            <!-- Secondary CTA: no-commit browsing -->
-            <a href="#packages" class="hero-cta-secondary">
-                Or browse all curated packages <i class="fas fa-arrow-right"></i>
+            <!-- Secondary CTA: now an outline button for visual weight -->
+            <a href="#packages" class="hero-cta-secondary hero-cta-secondary--ghost">
+                <i class="fas fa-compass"></i>
+                Browse all curated packages
+                <i class="fas fa-arrow-right"></i>
             </a>
+          </div><!-- /.hero-main -->
 
-            <!-- Trust strip: badges + contact pills -->
-            <div class="hero-trust">
-                <span class="hero-trust__label">Trusted by 50,000+ travelers</span>
-                <div class="hero-trust__row">
-                    <span class="hero-trust__item"><i class="fas fa-shield-halved"></i> Secure SSL</span>
-                    <span class="hero-trust__item"><i class="fas fa-circle-check"></i> Instant Confirmation</span>
-                    <span class="hero-trust__item"><i class="fas fa-headset"></i> 24×7 Support</span>
-                    <a href="tel:+918880195191" class="hero-trust__contact"><i class="fas fa-phone"></i> +91 88801 95191</a>
-                    <a href="mailto:booking@andamanvoyages.in" class="hero-trust__contact"><i class="fas fa-envelope"></i> booking@andamanvoyages.in</a>
+          <!-- Floating package preview card — balances the right side
+               of the hero, gives instant value, and links to a real
+               package on the listings page. -->
+          <aside class="hero-side" aria-label="Featured package preview">
+            <a href="#packages" class="hero-pkg-card">
+              <div class="hero-pkg-card__media">
+                <img src="images/neil1.jpg" alt="Havelock Island, Andaman" loading="lazy">
+                <span class="hero-pkg-card__badge"><i class="fas fa-fire"></i> Most popular</span>
+              </div>
+              <div class="hero-pkg-card__body">
+                <div class="hero-pkg-card__meta">
+                  <span class="hero-pkg-card__rating"><i class="fas fa-star"></i> 4.9</span>
+                  <span class="hero-pkg-card__pill">4N · 5D</span>
+                  <span class="hero-pkg-card__pill">3 islands</span>
                 </div>
-            </div>
+                <h3 class="hero-pkg-card__title">Havelock &amp; Neil Escape</h3>
+                <p class="hero-pkg-card__desc">Port Blair · Havelock · Neil — sea-facing stays, snorkelling &amp; private ferry transfers.</p>
+                <div class="hero-pkg-card__foot">
+                  <div>
+                    <span class="hero-pkg-card__from">From</span>
+                    <span class="hero-pkg-card__price">₹15,999<small>/ pax</small></span>
+                  </div>
+                  <span class="hero-pkg-card__cta">View itinerary <i class="fas fa-arrow-right"></i></span>
+                </div>
+              </div>
+            </a>
+          </aside>
         </div>
 
     </section>
