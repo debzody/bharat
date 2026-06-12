@@ -1104,6 +1104,253 @@
 
             <div id="settingsStatus" class="publish-status" style="display:none;"></div>
 
+            <!-- ── Homepage Hero Carousel — admin-controlled image set ───
+                 Lets the admin pick which images appear in the rotating
+                 hero on the homepage. Reads from the gallery (Cloudinary-
+                 hosted) and saves the chosen URLs to settings.heroSlides
+                 in Firestore. The homepage carousel reads the same field
+                 at boot and rebuilds the slide track. -->
+            <div class="settings-card">
+                <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:.5rem;">
+                    <div class="settings-label-block" style="margin-bottom:.5rem;">
+                        <h3><i class="fas fa-images"></i> Homepage Hero Slides</h3>
+                        <p>Pick the images that rotate in the big hero carousel on the public homepage. The list saves to Firebase and applies to every visitor instantly. Recommended size: <strong>1920 × 1080</strong> or larger landscape photos.</p>
+                    </div>
+
+                    <!-- Currently-selected slides (sortable, removable) -->
+                    <div id="heroSlidesSelected" class="hero-slides-selected" aria-label="Selected hero slides">
+                        <div class="hero-slides-empty" id="heroSlidesEmpty">
+                            <i class="fas fa-image"></i>
+                            <span>No hero slides selected yet — pick photos from the gallery below.</span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:.4rem 0;">
+                        <button type="button" class="btn-primary" id="heroSlidesSaveBtn" style="background:#1abc9c;border:0;color:#fff;padding:.55rem 1.1rem;border-radius:8px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-save"></i> Save hero slides
+                        </button>
+                        <button type="button" id="heroSlidesResetBtn" style="background:transparent;border:1.5px solid #94a3b8;color:#475569;padding:.55rem 1rem;border-radius:8px;font-weight:600;cursor:pointer;">
+                            Reset to defaults
+                        </button>
+                        <span id="heroSlidesSaveStatus" style="font-size:.88rem;color:#64748b;"></span>
+                    </div>
+
+                    <!-- Pick from gallery -->
+                    <div class="hero-slides-picker">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;margin:.5rem 0 .35rem;">
+                            <h4 style="margin:0;font-size:.95rem;color:#0d2c3a;"><i class="fas fa-folder-open"></i> Pick from Gallery</h4>
+                            <input type="text" id="heroSlidesSearch" placeholder="Search by title / category / place…" style="flex:1;min-width:220px;max-width:380px;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;">
+                        </div>
+                        <div id="heroSlidesGallery" class="hero-slides-gallery">
+                            <div style="grid-column:1/-1;text-align:center;padding:1.5rem;color:#64748b;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading gallery photos…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                /* ── Hero Slides admin styles ───────────────────────── */
+                .hero-slides-selected {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                    gap: .6rem;
+                    padding: .6rem;
+                    background: #f8fafb;
+                    border: 1px dashed #cbd5e1;
+                    border-radius: 10px;
+                    min-height: 120px;
+                }
+                .hero-slides-empty {
+                    grid-column: 1 / -1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .6rem;
+                    color: #94a3b8;
+                    font-size: .9rem;
+                    padding: 1rem;
+                    text-align: center;
+                }
+                .hero-slides-empty i { font-size: 1.4rem; }
+                .hero-slide-chip {
+                    position: relative;
+                    aspect-ratio: 16/10;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    background: #0d2c3a;
+                    cursor: grab;
+                    box-shadow: 0 2px 6px rgba(8,24,40,.12);
+                }
+                .hero-slide-chip img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+                .hero-slide-chip__order {
+                    position: absolute;
+                    top: 6px;
+                    left: 6px;
+                    background: rgba(13, 122, 138, .92);
+                    color: #fff;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .72rem;
+                    font-weight: 700;
+                }
+                .hero-slide-chip__remove {
+                    position: absolute;
+                    top: 6px;
+                    right: 6px;
+                    background: rgba(220, 38, 38, .92);
+                    color: #fff;
+                    border: none;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: .8rem;
+                    line-height: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .hero-slide-chip__remove:hover { background: #b91c1c; }
+                .hero-slide-chip__moves {
+                    position: absolute;
+                    bottom: 6px;
+                    right: 6px;
+                    display: flex;
+                    gap: 2px;
+                }
+                .hero-slide-chip__moves button {
+                    background: rgba(255,255,255,.92);
+                    border: none;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: .7rem;
+                    color: #0d2c3a;
+                }
+                .hero-slide-chip__moves button:hover { background: #fff; color: #0d7a8a; }
+                .hero-slide-chip.dragging { opacity: .35; }
+                .hero-slide-chip.drop-target { outline: 2px solid #1abc9c; outline-offset: -2px; }
+
+                .hero-slides-gallery {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                    gap: .55rem;
+                    max-height: 460px;
+                    overflow-y: auto;
+                    padding: .5rem;
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                }
+                .hero-slides-gallery__item {
+                    position: relative;
+                    aspect-ratio: 16/10;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    border: 2px solid transparent;
+                    transition: border-color .15s, transform .15s;
+                }
+                .hero-slides-gallery__item:hover { transform: translateY(-2px); border-color: #94d3c5; }
+                .hero-slides-gallery__item.is-selected { border-color: #1abc9c; box-shadow: 0 0 0 3px rgba(26,188,156,.20); }
+                .hero-slides-gallery__item img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+                .hero-slides-gallery__item.is-selected::after {
+                    content: "\f00c";
+                    font-family: "Font Awesome 6 Free";
+                    font-weight: 900;
+                    position: absolute;
+                    top: 6px;
+                    right: 6px;
+                    background: #1abc9c;
+                    color: #fff;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .7rem;
+                }
+                .hero-slides-gallery__caption {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: linear-gradient(transparent, rgba(0,0,0,.7));
+                    color: #fff;
+                    font-size: .68rem;
+                    padding: 1rem .5rem .35rem;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    overflow: hidden;
+                }
+                /* Selected-slides chips (the "selection bar" at the top) */
+                .hero-slide-chip {
+                    position: relative;
+                    width: 92px;
+                    height: 64px;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    border: 2px solid #1abc9c;
+                    box-shadow: 0 2px 5px rgba(0,0,0,.10);
+                    cursor: grab;
+                    flex: 0 0 auto;
+                    background: #f1f5f9;
+                }
+                .hero-slide-chip.dragging { opacity: .55; cursor: grabbing; }
+                .hero-slide-chip.drop-target { outline: 3px dashed #1abc9c; outline-offset: 1px; }
+                .hero-slide-chip img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+                .hero-slide-chip__order {
+                    position: absolute; top: 2px; left: 2px;
+                    background: #1abc9c; color: #fff;
+                    font-size: .68rem; font-weight: 700;
+                    padding: 1px 6px; border-radius: 999px;
+                    line-height: 1.1;
+                }
+                .hero-slide-chip__remove {
+                    position: absolute; top: 2px; right: 2px;
+                    width: 20px; height: 20px;
+                    border: 0; border-radius: 50%;
+                    background: rgba(0,0,0,.65); color: #fff;
+                    font-size: .6rem; line-height: 1; cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    padding: 0;
+                }
+                .hero-slide-chip__remove:hover { background: #e74c3c; }
+                .hero-slide-chip__moves {
+                    position: absolute; bottom: 0; left: 0; right: 0;
+                    display: flex; justify-content: space-between;
+                    background: linear-gradient(transparent, rgba(0,0,0,.55));
+                    padding: 1px 2px;
+                }
+                .hero-slide-chip__moves button {
+                    background: rgba(255,255,255,.85);
+                    border: 0; cursor: pointer;
+                    width: 18px; height: 16px;
+                    border-radius: 3px;
+                    font-size: .6rem; padding: 0;
+                    line-height: 1;
+                }
+                .hero-slide-chip__moves button:hover { background: #1abc9c; color: #fff; }
+            </style>
+
             <!-- ── Appearance / Theme picker ─────────────────────── -->
             <div class="settings-card">
                 <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:.5rem;">
@@ -3754,5 +4001,256 @@
     </script>
 
     <script src="js/user-menu.js?v=14"></script>
-</body>
-</html>
+
+    <!-- ── Homepage Hero Slides admin wiring ─────────────────────
+         Lets the admin pick which gallery photos appear in the rotating
+         carousel on the public homepage. The selection is stored in
+         /settings/site under `heroSlides` (array of { url, caption }).
+         The homepage reads the same field on boot via SettingsStore. -->
+    <script>
+    (function () {
+        var selectedEl = document.getElementById('heroSlidesSelected');
+        var emptyEl    = document.getElementById('heroSlidesEmpty');
+        var galleryEl  = document.getElementById('heroSlidesGallery');
+        var searchEl   = document.getElementById('heroSlidesSearch');
+        var saveBtn    = document.getElementById('heroSlidesSaveBtn');
+        var resetBtn   = document.getElementById('heroSlidesResetBtn');
+        var statusEl   = document.getElementById('heroSlidesSaveStatus');
+
+        if (!selectedEl || !galleryEl || !saveBtn) return; // not on this page
+
+        // ── Defaults: the original /images/*.jpg slides shipped with
+        // the static homepage. Used as the seed when settings.heroSlides
+        // is empty AND when admin clicks "Reset to defaults".
+        var DEFAULT_SLIDES = [
+            { url: 'images/beach1.jpg', caption: 'Radhanagar Beach — Asia\'s Best Beach' },
+            { url: 'images/neil1.jpg',  caption: 'Havelock Island — Turquoise Waters'   },
+            { url: 'images/beach2.jpg', caption: 'Neil Island — Serene Paradise'        },
+            { url: 'images/neil2.jpg',  caption: 'Scuba Diving — Explore the Deep'      },
+            { url: 'images/beach3.jpg', caption: 'Luxury Resorts — World-Class Stays'   },
+            { url: 'images/neil3.jpg',  caption: 'Elephant Beach — Crystal Clear Lagoon'},
+            { url: 'images/beach4.jpg', caption: 'Romantic Sunsets — Honeymoon Special' },
+            { url: 'images/neil4.jpg',  caption: 'Overwater Bungalows — Ultimate Luxury'},
+            { url: 'images/neil6.jpg',  caption: 'Port Blair — Gateway to Andaman'      },
+            { url: 'images/ross2.jpg',  caption: 'Ross Island — Colonial Heritage Trail'},
+            { url: 'images/ross3.jpg',  caption: 'Ross Island — Tropical Forest Walks'  }
+        ];
+
+        var selected = [];   // [{ url, caption }, ...]
+        var galleryItems = []; // raw gallery items
+        var searchTerm = '';
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+            });
+        }
+        function setStatus(msg, isError) {
+            if (!statusEl) return;
+            statusEl.textContent = msg || '';
+            statusEl.style.color = isError ? '#c0392b' : '#0a5a68';
+        }
+
+        function renderSelected() {
+            if (!selected.length) {
+                selectedEl.innerHTML = '';
+                if (emptyEl) {
+                    selectedEl.appendChild(emptyEl);
+                    emptyEl.style.display = '';
+                }
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            selectedEl.innerHTML = selected.map(function (s, i) {
+                var safeUrl = escapeHtml(s.url);
+                var safeCap = escapeHtml(s.caption || '');
+                return '<div class="hero-slide-chip" draggable="true" data-idx="' + i + '" title="' + safeCap + '">' +
+                    '<img src="' + safeUrl + '" alt="" loading="lazy">' +
+                    '<span class="hero-slide-chip__order">' + (i + 1) + '</span>' +
+                    '<button class="hero-slide-chip__remove" type="button" data-remove="' + i + '" aria-label="Remove">' +
+                        '<i class="fas fa-times"></i>' +
+                    '</button>' +
+                    '<span class="hero-slide-chip__moves">' +
+                        (i > 0 ? '<button type="button" data-up="' + i + '" title="Move left"><i class="fas fa-chevron-left"></i></button>' : '') +
+                        (i < selected.length - 1 ? '<button type="button" data-down="' + i + '" title="Move right"><i class="fas fa-chevron-right"></i></button>' : '') +
+                    '</span>' +
+                '</div>';
+            }).join('');
+            wireSelectedChips();
+        }
+
+        function wireSelectedChips() {
+            // Remove
+            selectedEl.querySelectorAll('[data-remove]').forEach(function (b) {
+                b.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var idx = parseInt(b.dataset.remove, 10);
+                    if (isNaN(idx)) return;
+                    selected.splice(idx, 1);
+                    renderSelected();
+                    renderGalleryGrid();
+                });
+            });
+            // Move left
+            selectedEl.querySelectorAll('[data-up]').forEach(function (b) {
+                b.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var idx = parseInt(b.dataset.up, 10);
+                    if (isNaN(idx) || idx <= 0) return;
+                    var tmp = selected[idx - 1];
+                    selected[idx - 1] = selected[idx];
+                    selected[idx] = tmp;
+                    renderSelected();
+                });
+            });
+            // Move right
+            selectedEl.querySelectorAll('[data-down]').forEach(function (b) {
+                b.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var idx = parseInt(b.dataset.down, 10);
+                    if (isNaN(idx) || idx >= selected.length - 1) return;
+                    var tmp = selected[idx + 1];
+                    selected[idx + 1] = selected[idx];
+                    selected[idx] = tmp;
+                    renderSelected();
+                });
+            });
+            // Drag-and-drop reorder
+            var dragSrc = null;
+            selectedEl.querySelectorAll('.hero-slide-chip').forEach(function (chip) {
+                chip.addEventListener('dragstart', function (e) {
+                    dragSrc = parseInt(chip.dataset.idx, 10);
+                    chip.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                chip.addEventListener('dragend', function () {
+                    chip.classList.remove('dragging');
+                    selectedEl.querySelectorAll('.drop-target').forEach(function (c) {
+                        c.classList.remove('drop-target');
+                    });
+                });
+                chip.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    selectedEl.querySelectorAll('.drop-target').forEach(function (c) {
+                        c.classList.remove('drop-target');
+                    });
+                    chip.classList.add('drop-target');
+                });
+                chip.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    var dst = parseInt(chip.dataset.idx, 10);
+                    if (dragSrc == null || isNaN(dst) || dragSrc === dst) return;
+                    var item = selected.splice(dragSrc, 1)[0];
+                    selected.splice(dst, 0, item);
+                    dragSrc = null;
+                    renderSelected();
+                });
+            });
+        }
+
+        function isSelected(url) {
+            return selected.some(function (s) { return s.url === url; });
+        }
+
+        function renderGalleryGrid() {
+            if (!galleryItems.length) {
+                galleryEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1.5rem;color:#64748b;">No gallery photos found. Upload some in the Gallery tab first.</div>';
+                return;
+            }
+            var term = (searchTerm || '').toLowerCase().trim();
+            var filtered = galleryItems.filter(function (it) {
+                if (it.hidden) return false;
+                if (!term) return true;
+                var hay = (it.title + ' ' + it.caption + ' ' + it.category + ' ' + it.place + ' ' + it.packageRef).toLowerCase();
+                return hay.indexOf(term) >= 0;
+            });
+            if (!filtered.length) {
+                galleryEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;color:#94a3b8;">No photos match "' + escapeHtml(term) + '".</div>';
+                return;
+            }
+            galleryEl.innerHTML = filtered.map(function (it) {
+                var sel = isSelected(it.url);
+                var safeTitle = escapeHtml(it.title || it.caption || '');
+                return '<div class="hero-slides-gallery__item' + (sel ? ' is-selected' : '') + '" data-url="' + escapeHtml(it.url) + '" data-title="' + escapeHtml(it.title) + '" data-caption="' + escapeHtml(it.caption) + '" title="' + safeTitle + '">' +
+                    '<img src="' + escapeHtml(it.thumbUrl || it.url) + '" alt="" loading="lazy">' +
+                    (safeTitle ? '<div class="hero-slides-gallery__caption">' + safeTitle + '</div>' : '') +
+                '</div>';
+            }).join('');
+            galleryEl.querySelectorAll('.hero-slides-gallery__item').forEach(function (cell) {
+                cell.addEventListener('click', function () {
+                    var url = cell.dataset.url;
+                    var title = cell.dataset.title || '';
+                    var caption = cell.dataset.caption || '';
+                    if (isSelected(url)) {
+                        selected = selected.filter(function (s) { return s.url !== url; });
+                    } else {
+                        selected.push({ url: url, caption: caption || title });
+                    }
+                    renderSelected();
+                    renderGalleryGrid();
+                });
+            });
+        }
+
+        async function loadGallery() {
+            try {
+                if (!window.GalleryStore || !window.GalleryStore.loadGalleryItems) {
+                    galleryEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;color:#c0392b;">GalleryStore not loaded.</div>';
+                    return;
+                }
+                var items = await window.GalleryStore.loadGalleryItems();
+                galleryItems = items || [];
+                renderGalleryGrid();
+            } catch (err) {
+                console.error('[hero-slides] gallery load failed:', err);
+                galleryEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;color:#c0392b;">Failed to load gallery: ' + escapeHtml(err && err.message || err) + '</div>';
+            }
+        }
+
+        async function hydrate() {
+            try {
+                var s = window.SettingsStore && (window.SettingsStore.cached() || await window.SettingsStore.load());
+                if (s && Array.isArray(s.heroSlides) && s.heroSlides.length) {
+                    selected = s.heroSlides.slice();
+                } else {
+                    selected = DEFAULT_SLIDES.slice();
+                }
+            } catch (e) {
+                selected = DEFAULT_SLIDES.slice();
+            }
+            renderSelected();
+        }
+
+        async function save() {
+            if (!window.SettingsStore) { setStatus('SettingsStore not available.', true); return; }
+            saveBtn.disabled = true;
+            setStatus('Saving…');
+            try {
+                await window.SettingsStore.save({ heroSlides: selected });
+                setStatus('Saved! Refresh the homepage to see changes.');
+            } catch (err) {
+                setStatus('Save failed: ' + (err && err.message || err), true);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        }
+
+        saveBtn.addEventListener('click', save);
+
+        resetBtn.addEventListener('click', function () {
+            selected = DEFAULT_SLIDES.slice();
+            renderSelected();
+            renderGalleryGrid();
+            setStatus('Reset to defaults — click Save to apply.');
+        });
+
+        searchEl.addEventListener('input', function () {
+            searchTerm = searchEl.value;
+            renderGalleryGrid();
+        });
+
+        // Init: load gallery then hydrate saved selection
+        loadGallery().then(hydrate);
+    })();
+    </script>

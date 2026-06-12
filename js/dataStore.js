@@ -594,7 +594,14 @@
         // arrayUnion / arrayRemove if we ever need that later.
         galleryCategoryOptions: ['Beaches', 'Islands', 'Activities', 'Resorts', 'Sunsets'],
         galleryPlaceOptions:    ['Port Blair', 'Havelock Island', 'Neil Island', 'Ross Island', 'Baratang', 'Diglipur', 'Radhanagar Beach', 'Elephant Beach', 'Cellular Jail'],
-        galleryPackageOptions:  ['Budget', 'Standard', 'Luxury', 'Honeymoon', 'Family', 'Adventure']
+        galleryPackageOptions:  ['Budget', 'Standard', 'Luxury', 'Honeymoon', 'Family', 'Adventure'],
+
+        // ── Homepage Hero Slides (admin-managed) ─────────────
+        // Array of { url, caption } that the rotating carousel on
+        // the public homepage renders. Picked from /gallery via the
+        // dashboard "Hero Slides" admin UI. Empty array means
+        // "use the static fallback already in index.html".
+        heroSlides: []
     };
 
     function getCachedSettings() {
