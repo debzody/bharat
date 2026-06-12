@@ -35,11 +35,11 @@
 .hero-page .hero-heading h1 em {
     font-style: italic;
     font-weight: 600;
-    color: var(--bp-cream);
-    background: linear-gradient(135deg, #ffe9b8 0%, #f5d188 60%, #e9b96a 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #fff;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: #fff;
     white-space: nowrap;
 }
 
