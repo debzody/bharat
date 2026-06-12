@@ -1300,3 +1300,12 @@ body.hero-page {
         left: -18px !important;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 15 — Remove white round border on the logo
+   ──────────────────────────────────────────────────────────────────── */
+.hero-page .topbar-logo--pro img {
+    border: none !important;
+    background: transparent !important;
+    /* keep the perfect circle crop on the PNG itself */
+}
