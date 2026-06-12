@@ -1115,3 +1115,86 @@ body.hero-page {
         left: -13px !important;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 13 — Top getting clipped: bar slightly taller, logo fully inside
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Make the bar a touch taller so the logo fits without clipping at the
+   top edge — and shrink the logo a hair so it always sits within the
+   bar's vertical space. */
+.hero-page .topbar {
+    height: 72px !important;
+    min-height: 72px !important;
+}
+
+.hero-page .topbar-logo--pro img {
+    height: 56px !important;          /* was 80 — now fits cleanly inside 72px bar */
+    width: 56px !important;
+    transform: translateY(0) !important;  /* no overflow needed */
+}
+
+/* Halo trimmed to match the smaller mark */
+.hero-page .topbar-logo--pro::before {
+    width: 92px !important;
+    height: 92px !important;
+    left: -18px !important;
+}
+
+/* Animation baseline back to 0 since the logo no longer protrudes */
+@keyframes bp-logo-glow-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        filter:
+            drop-shadow(0 0 18px rgba(255, 255, 255, 0.75))
+            drop-shadow(0 0 32px rgba(178, 240, 220, 0.45))
+            drop-shadow(0 6px 14px rgba(0, 0, 0, 0.32))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.22));
+    }
+    50% {
+        transform: translateY(-2px) scale(1.02);
+        filter:
+            drop-shadow(0 0 26px rgba(255, 255, 255, 1))
+            drop-shadow(0 0 44px rgba(178, 240, 220, 0.75))
+            drop-shadow(0 10px 20px rgba(0, 0, 0, 0.40))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.22));
+    }
+}
+.hero-page .topbar-logo--pro:hover img {
+    transform: translateY(-3px) scale(1.06) rotate(-3deg) !important;
+}
+
+/* Hero content padding-top adjusts to the new bar height */
+.hero-page .hero-content--pro {
+    padding-top: 7rem !important;
+}
+
+@media (max-width: 768px) {
+    .hero-page .topbar {
+        height: 60px !important;
+        min-height: 60px !important;
+    }
+    .hero-page .topbar-logo--pro img {
+        height: 46px !important;
+        width: 46px !important;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 76px !important;
+        height: 76px !important;
+        left: -15px !important;
+    }
+    .hero-page .hero-content--pro {
+        padding-top: 5.5rem !important;
+    }
+}
+@media (max-width: 480px) {
+    .hero-page .topbar-logo--pro img {
+        height: 40px !important;
+        width: 40px !important;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 64px !important;
+        height: 64px !important;
+        left: -12px !important;
+    }
+}
