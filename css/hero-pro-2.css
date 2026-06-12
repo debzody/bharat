@@ -297,3 +297,153 @@
         text-align: center;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 3 — 2 cards / row, wider cards, better Book Now alignment
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Force a 2-column grid on the homepage listing so each card has more
+   room to breathe. The original CSS used auto-fill with 260px which
+   produced 3 cramped columns on desktop. */
+.hero-page .mmt-results.view-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1.5rem !important;
+}
+@media (max-width: 880px) {
+    .hero-page .mmt-results.view-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Wider card defaults — give the body and price strip a touch more padding */
+.hero-page .mmt-card-body {
+    padding: 1.15rem 1.4rem 0.9rem !important;
+}
+.hero-page .mmt-card-price {
+    padding: 1rem 1.4rem 1.25rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+}
+
+/* Price block at the top — left aligned, with eyebrow above the amount */
+.hero-page .mmt-card-price > *:not(button) {
+    width: 100%;
+    text-align: left;
+}
+
+/* Make the Book Now button full-width and well-aligned across the card */
+.hero-page .mmt-results.view-grid .mmt-card-cta {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.85rem 1.2rem !important;
+    font-size: 0.92rem !important;
+    text-align: center;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 12px !important;
+}
+
+/* Re-show the secondary "Customize" CTA in grid view, also full width
+   underneath. (mmt.css hides it for grid view; we want it back since
+   we now have plenty of horizontal room.) */
+.hero-page .mmt-results.view-grid .mmt-card-cta-secondary {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.7rem 1.2rem !important;
+    text-align: center;
+    margin-top: 0;
+}
+
+/* Title size bumps up because the cards are wider */
+.hero-page .mmt-results.view-grid .mmt-card-title {
+    font-size: 1.32rem !important;
+    line-height: 1.22 !important;
+}
+
+/* Show the route text + amenity icons row that view-grid previously hid */
+.hero-page .mmt-results.view-grid .mmt-route {
+    font-size: 0.88rem !important;
+    line-height: 1.5 !important;
+    color: #5a6877 !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 4 — Bring the original logo back, BIGGER + 3D + glowing
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Show the PNG logo again (we hid it with .topbar-logo--pro img { display:none }
+   in hero-pro.css) — and make it shine. */
+.topbar-logo--pro img {
+    display: block !important;
+    height: 64px !important;
+    width: auto !important;
+    border-radius: 14px;
+    /* 3D depth: subtle inner top highlight + multi-layered drop shadow */
+    filter:
+        drop-shadow(0 0 18px rgba(126, 226, 192, 0.55))
+        drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    transform: translateZ(0);
+    transition: filter .35s ease, transform .35s ease;
+    animation: bp-logo-glow 3.2s ease-in-out infinite;
+}
+
+/* Hide the SVG mark we added — we're back to the PNG */
+.topbar-logo--pro .brand-mark {
+    display: none !important;
+}
+
+.topbar-logo--pro:hover img {
+    transform: translateY(-2px) scale(1.05) rotate(-2deg);
+    filter:
+        drop-shadow(0 0 26px rgba(126, 226, 192, 0.85))
+        drop-shadow(0 12px 24px rgba(0, 0, 0, 0.40))
+        drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+}
+
+/* Ambient glow pulse — gentle in/out so the logo always feels alive
+   without being distracting. */
+@keyframes bp-logo-glow {
+    0%, 100% {
+        filter:
+            drop-shadow(0 0 14px rgba(126, 226, 192, 0.45))
+            drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+    50% {
+        filter:
+            drop-shadow(0 0 24px rgba(126, 226, 192, 0.75))
+            drop-shadow(0 0 38px rgba(13, 122, 138, 0.40))
+            drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+}
+
+/* Mobile — slightly smaller but still glowing */
+@media (max-width: 768px) {
+    .topbar-logo--pro img { height: 50px !important; border-radius: 11px; }
+}
+@media (max-width: 480px) {
+    .topbar-logo--pro img { height: 42px !important; border-radius: 9px; }
+}
+
+/* Make the wordmark a touch bigger to balance the bigger logo */
+.topbar-logo--pro .brand-line1 {
+    font-size: 1.15rem !important;
+}
+.topbar-logo--pro .brand-line2 {
+    font-size: 0.7rem !important;
+}
+@media (max-width: 768px) {
+    .topbar-logo--pro .brand-line1 { font-size: 1rem !important; }
+    .topbar-logo--pro .brand-line2 { font-size: 0.62rem !important; }
+}
+
+/* The header probably needs a bit more height to fit the bigger logo */
+.hero-page .topbar {
+    min-height: 84px;
+}
+@media (max-width: 768px) {
+    .hero-page .topbar { min-height: 64px; }
+}
