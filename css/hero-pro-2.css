@@ -842,3 +842,68 @@
         drop-shadow(0 14px 30px rgba(0, 0, 0, 0.50))
         drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 10 — Truly remove white gap + remove dark hero tint
+   ──────────────────────────────────────────────────────────────────── */
+
+/* The .topbar is position:fixed with top/left/right: 0.65rem, so the
+   body's background shows through behind/around it. The hero section
+   below it sits at the page top, but it doesn't extend up far enough
+   under the topbar — and the body is white. Two fixes: */
+
+/* 1. Body background goes dark so any space around the floating topbar
+      blends seamlessly into the hero / topbar instead of glaring white. */
+body.hero-page {
+    background: #0d2c3a !important;
+}
+
+/* 2. Pull the hero section up under the floating topbar so no white
+      strip is ever visible at the top, regardless of viewport size. */
+.hero-page #home.hero {
+    margin-top: -1px !important;       /* eat any sub-pixel rounding gap */
+    padding-top: 0 !important;
+}
+
+/* If style.css gave .main-content a top offset to clear the floating bar,
+   keep that offset but make the area behind it dark so it isn't white. */
+.hero-page .main-content {
+    background: transparent !important;
+}
+
+/* And the hero carousel should fully fill any space the offset reserves */
+.hero-page .hero-carousel {
+    top: 0 !important;
+    height: 100% !important;
+}
+
+/* ── Remove the dark tint overlay from the hero carousel ──────────
+   The original carousel had a gradient overlay added in hero-pro.css
+   PART 3 — user wants the actual photo to show clearly. Strip it. */
+.hero-page .hero-carousel::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+}
+
+/* Make sure the slide image itself isn't dimmed by any other filter
+   from style.css */
+.hero-page .carousel-slide {
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+/* Headline still readable on bright photos — push the heading text
+   shadow up so it stays legible without a global overlay. */
+.hero-page .hero-heading h1,
+.hero-page .hero-subtext p {
+    text-shadow:
+        0 2px 18px rgba(0, 0, 0, 0.55),
+        0 1px 4px rgba(0, 0, 0, 0.45) !important;
+}
+.hero-page .hero-eyebrow,
+.hero-page .hero-price-from,
+.hero-page .hero-price-now,
+.hero-page .hero-price-meta {
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+}
