@@ -1198,3 +1198,105 @@ body.hero-page {
         left: -12px !important;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 14 — Bigger logo, sitting lower (protrudes downward, "floating")
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Bar a touch taller so a bigger logo fits with breathing room */
+.hero-page .topbar {
+    height: 80px !important;
+    min-height: 80px !important;
+    overflow: visible !important;
+}
+
+/* BIG, properly visible logo. Bigger than the bar height so it
+   protrudes downward, giving the floating-coin effect the user wants
+   while keeping the top from being clipped. */
+.hero-page .topbar-logo--pro img {
+    height: 92px !important;
+    width: 92px !important;
+    /* Centered + nudged DOWN so the protrusion is below the bar
+       (not at the top). The bar is 80px, logo is 92px — 6px shows
+       above the bar's bottom edge, 6px below. We push it to align
+       with bar top and overflow downward. */
+    align-self: flex-start;
+    margin-top: 4px !important;
+    margin-bottom: -16px !important;   /* protrudes BELOW the bar */
+    transform: translateY(0) !important;
+    border-radius: 50% !important;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Halo follows the bigger logo */
+.hero-page .topbar-logo--pro::before {
+    width: 150px !important;
+    height: 150px !important;
+    left: -28px !important;
+    top: 55% !important;                /* slightly biased downward to wrap the protruding part */
+}
+
+/* Animation baseline now matches the new positioning — keep the
+   downward float visible. */
+@keyframes bp-logo-glow-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        filter:
+            drop-shadow(0 0 22px rgba(255, 255, 255, 0.85))
+            drop-shadow(0 0 38px rgba(178, 240, 220, 0.55))
+            drop-shadow(0 8px 18px rgba(0, 0, 0, 0.40))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+    50% {
+        transform: translateY(2px) scale(1.02);
+        filter:
+            drop-shadow(0 0 32px rgba(255, 255, 255, 1))
+            drop-shadow(0 0 54px rgba(178, 240, 220, 0.85))
+            drop-shadow(0 14px 26px rgba(0, 0, 0, 0.50))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+}
+.hero-page .topbar-logo--pro:hover img {
+    transform: translateY(-2px) scale(1.05) rotate(-3deg) !important;
+}
+
+/* Push hero content down a little more — bar is taller now */
+.hero-page .hero-content--pro {
+    padding-top: 7.5rem !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .hero-page .topbar {
+        height: 64px !important;
+        min-height: 64px !important;
+    }
+    .hero-page .topbar-logo--pro img {
+        height: 72px !important;
+        width: 72px !important;
+        margin-top: 3px !important;
+        margin-bottom: -11px !important;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 116px !important;
+        height: 116px !important;
+        left: -22px !important;
+    }
+    .hero-page .hero-content--pro {
+        padding-top: 5.5rem !important;
+    }
+}
+@media (max-width: 480px) {
+    .hero-page .topbar-logo--pro img {
+        height: 60px !important;
+        width: 60px !important;
+        margin-top: 2px !important;
+        margin-bottom: -10px !important;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 96px !important;
+        height: 96px !important;
+        left: -18px !important;
+    }
+}
