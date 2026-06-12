@@ -447,3 +447,67 @@
 @media (max-width: 768px) {
     .hero-page .topbar { min-height: 64px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 5 — Compact card height + remove Customize button
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Hide the Customize CTA in the homepage grid view (user wants only Book Now) */
+.hero-page .mmt-results.view-grid .mmt-card-cta-secondary {
+    display: none !important;
+}
+
+/* Less tall cards: tighter image, smaller body padding, smaller title */
+.hero-page .mmt-card-img {
+    aspect-ratio: 16 / 9 !important;   /* was 16/10 → shorter image */
+}
+.hero-page .mmt-card-body {
+    padding: 0.85rem 1.2rem 0.7rem !important;
+    gap: 0.45rem;
+}
+.hero-page .mmt-results.view-grid .mmt-card-title {
+    font-size: 1.15rem !important;
+    line-height: 1.2 !important;
+}
+.hero-page .mmt-card-title-row { gap: 0.35rem !important; }
+.hero-page .mmt-card-duration {
+    padding: 0.18rem 0.55rem !important;
+    font-size: 0.68rem !important;
+}
+
+/* Tighten the route line + hide the amenity icons row entirely
+   (it was adding a lot of vertical space; the title/route already
+   tells the story). */
+.hero-page .mmt-results.view-grid .mmt-route {
+    font-size: 0.82rem !important;
+    line-height: 1.4 !important;
+    margin: 0.15rem 0 0 !important;
+}
+.hero-page .mmt-results.view-grid .mmt-card-amenities {
+    display: none !important;
+}
+
+/* Hide the bullet-list "5-star Hotels / Breakfast & Dinner" inclusions
+   in grid view — those are great for the detail page but make cards
+   tall on the homepage. */
+.hero-page .mmt-results.view-grid .mmt-incl-list,
+.hero-page .mmt-results.view-grid .mmt-perks {
+    display: none !important;
+}
+
+/* Compact the price strip */
+.hero-page .mmt-card-price {
+    padding: 0.7rem 1.2rem 0.95rem !important;
+    gap: 0.55rem !important;
+}
+.hero-page .mmt-card-price strong,
+.hero-page .mmt-card-price .price-now,
+.hero-page .mmt-card-price .mmt-price-now {
+    font-size: 1.25rem !important;
+}
+
+/* Slightly smaller Book Now button so the card overall feels lighter */
+.hero-page .mmt-results.view-grid .mmt-card-cta {
+    padding: 0.7rem 1.2rem !important;
+    font-size: 0.85rem !important;
+}
