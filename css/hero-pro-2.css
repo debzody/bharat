@@ -1029,3 +1029,89 @@ body.hero-page {
         padding-top: 5rem !important;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 12 — Logo size + vertical position fine-tune
+   ──────────────────────────────────────────────────────────────────── */
+
+/* The earlier !important rules were getting overridden by the 88px
+   declaration in PART 8 + animation re-running with no margin tuning,
+   so the logo was sitting flush at the top of the slim glass bar.
+   Lock it down here at 80px and lift it slightly so it has breathing
+   room above and below inside the 60px header (a true "floating coin"
+   that protrudes both up and down equally). */
+.hero-page .topbar { overflow: visible !important; }
+
+.hero-page .topbar-logo--pro {
+    align-self: center !important;     /* vertically centered in the bar */
+}
+
+.hero-page .topbar-logo--pro img {
+    height: 80px !important;
+    width: 80px !important;
+    /* Center vertically in the slim bar, then nudge down slightly so the
+       float reads as 'sitting on' the bar rather than poking out the top. */
+    margin: 0 0 0 0 !important;
+    transform: translateY(2px);        /* gentle downward nudge */
+    /* Re-assert the circular crop & 3D look (CSS specificity guard) */
+    border-radius: 50% !important;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.22) !important;
+}
+
+/* Halo scales with the new logo size */
+.hero-page .topbar-logo--pro::before {
+    width: 130px !important;
+    height: 130px !important;
+    left: -25px !important;
+    top: 50% !important;
+}
+
+/* Animation keyframes already use the right glow palette; just keep the
+   downward nudge in the resting position so it doesn't bounce back to 0. */
+@keyframes bp-logo-glow-float {
+    0%, 100% {
+        transform: translateY(2px) scale(1);
+        filter:
+            drop-shadow(0 0 22px rgba(255, 255, 255, 0.80))
+            drop-shadow(0 0 38px rgba(178, 240, 220, 0.50))
+            drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+    50% {
+        transform: translateY(-1px) scale(1.02);
+        filter:
+            drop-shadow(0 0 32px rgba(255, 255, 255, 1))
+            drop-shadow(0 0 54px rgba(178, 240, 220, 0.80))
+            drop-shadow(0 12px 24px rgba(0, 0, 0, 0.42))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+}
+.hero-page .topbar-logo--pro:hover img {
+    transform: translateY(-2px) scale(1.06) rotate(-3deg);
+}
+
+/* Mobile sizes — also nudged down */
+@media (max-width: 768px) {
+    .hero-page .topbar-logo--pro img {
+        height: 60px !important;
+        width: 60px !important;
+        transform: translateY(2px);
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 90px !important;
+        height: 90px !important;
+        left: -15px !important;
+    }
+}
+@media (max-width: 480px) {
+    .hero-page .topbar-logo--pro img {
+        height: 50px !important;
+        width: 50px !important;
+    }
+    .hero-page .topbar-logo--pro::before {
+        width: 76px !important;
+        height: 76px !important;
+        left: -13px !important;
+    }
+}
