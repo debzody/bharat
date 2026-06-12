@@ -257,7 +257,7 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
 .hero-heading{max-width:820px}
 .hero-eyebrow{display:inline-block;margin-bottom:.65rem;padding:.45rem .95rem;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
 .hero-heading h1{font-size:clamp(2.6rem,5.8vw,4.8rem);font-weight:800;margin:0;line-height:1.02;letter-spacing:-.04em;text-shadow:0 2px 20px rgba(0,0,0,.35)}
-.hero-heading h1 em{font-style:normal;color:#f7c948;white-space:nowrap}
+.hero-heading h1 em{font-style:italic;color:#fff;white-space:nowrap}
 .hero-subtext{max-width:640px}
 .hero-subtext p{font-size:1.02rem;margin:0;opacity:.95;line-height:1.65;text-shadow:0 1px 4px rgba(0,0,0,.35)}
 
