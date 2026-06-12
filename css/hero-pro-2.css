@@ -1309,3 +1309,57 @@ body.hero-page {
     background: transparent !important;
     /* keep the perfect circle crop on the PNG itself */
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PART 16 — Remove ALL tint from carousel slides (truly clear photos)
+   ──────────────────────────────────────────────────────────────────── */
+
+/* style.css line 246 adds .carousel-slide::before with a heavy
+   rgba(8,30,42,.4 → .85) gradient. Kill it on the homepage hero. */
+.hero-page .carousel-slide::before {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+}
+.hero-page .carousel-slide::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+}
+
+/* Belt + braces: also wipe any backgrounds/filters on the slide
+   container and its track. */
+.hero-page .carousel-slide,
+.hero-page .carousel-track,
+.hero-page .hero-carousel {
+    background-color: transparent !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    opacity: 1 !important;
+}
+.hero-page .carousel-slide:not(.active) {
+    opacity: 0 !important;     /* keep the inactive ones hidden */
+}
+.hero-page .carousel-slide.active {
+    opacity: 1 !important;
+}
+
+/* The hero-content overlays text on the photo; without the tint, the
+   white text needs a stronger shadow to stay legible. */
+.hero-page .hero-heading h1 {
+    text-shadow:
+        0 2px 22px rgba(0, 0, 0, 0.72),
+        0 1px 4px rgba(0, 0, 0, 0.55) !important;
+}
+.hero-page .hero-subtext p {
+    text-shadow:
+        0 2px 14px rgba(0, 0, 0, 0.72),
+        0 1px 4px rgba(0, 0, 0, 0.55) !important;
+}
+.hero-page .hero-eyebrow,
+.hero-page .hero-price--pro {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.65) !important;
+}
+.hero-page .hero-cta-secondary--ghost {
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.60);
+}
