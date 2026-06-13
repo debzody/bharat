@@ -411,3 +411,22 @@
         build();
     }};
 })();
+
+// ── Topbar glass → solid scroll transition (runs on every page) ──
+(function () {
+    function applyScrollState() {
+        const tb = document.querySelector('.topbar');
+        if (!tb) return;
+        if (window.scrollY > 40) tb.classList.add('scrolled');
+        else tb.classList.remove('scrolled');
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            applyScrollState();
+            window.addEventListener('scroll', applyScrollState, { passive: true });
+        });
+    } else {
+        applyScrollState();
+        window.addEventListener('scroll', applyScrollState, { passive: true });
+    }
+})();
