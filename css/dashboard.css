@@ -2952,3 +2952,57 @@ body.theme-cyberpunk .il-act-body {
     color: #fff;
     border-color: #1e8449;
 }
+
+/* ─── Package image editor ────────────────────────────────────────
+   Replaces the legacy preset-only <select> with a thumbnail preview,
+   editable URL input, file-picker upload (Cloudinary), and a preset
+   dropdown for backwards-compatibility. */
+.pkg-img-edit {
+    display: flex;
+    gap: 0.7rem;
+    align-items: stretch;
+}
+.pkg-img-thumb {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #f4f6f8;
+    flex-shrink: 0;
+    display: block;
+}
+.pkg-img-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    flex: 1;
+    min-width: 0;
+}
+.pkg-img-btn-row {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+}
+.pkg-img-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid #0d7a8a;
+    background: #0d7a8a;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.pkg-img-btn:hover { background: #0a6471; }
+.pkg-img-btn:disabled { opacity: 0.65; cursor: progress; }
+.pkg-img-preset {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.82rem;
+}
