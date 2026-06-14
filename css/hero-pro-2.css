@@ -966,12 +966,12 @@ body.hero-page {
     left: 0 !important;
     right: 0 !important;
     border-radius: 0 !important;
-    /* Glass effect: very subtle dark veil + heavy blur of what's behind */
-    background: linear-gradient(180deg,
-        rgba(8, 30, 46, 0.42) 0%,
-        rgba(8, 30, 46, 0.28) 100%) !important;
-    backdrop-filter: blur(18px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+    /* Glass effect — 50% transparent so the hero image clearly shows
+       through. Lighter blur so it doesn't over-saturate dark hero
+       skies into a flat-looking navy. */
+    background: rgba(8, 30, 46, 0.5) !important;
+    backdrop-filter: blur(8px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
     border: none !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     box-shadow:
@@ -980,13 +980,11 @@ body.hero-page {
     padding: 0 1.25rem !important;
 }
 
-/* When user scrolls, deepen the glass slightly for legibility */
+/* When user scrolls, switch to a near-solid colour for legibility */
 .hero-page .topbar.scrolled {
-    background: linear-gradient(180deg,
-        rgba(8, 30, 46, 0.78) 0%,
-        rgba(8, 30, 46, 0.65) 100%) !important;
-    backdrop-filter: blur(22px) saturate(170%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(170%) !important;
+    background: rgba(8, 24, 32, 0.97) !important;
+    backdrop-filter: blur(12px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(170%) !important;
 }
 
 /* Smaller logo to match the slimmer header */
