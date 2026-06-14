@@ -94,11 +94,9 @@ button,input,select,textarea{font:inherit}
    2. The gradient shimmers across the text
    3. Letter-spacing widens slightly for an exhale effect
    4. Logo image spins and gets an amber glow                              */
-.topbar-logo:hover .brand-line1,.topbar-logo:hover .brand-line2{
-    animation:brandShimmer 1.6s ease-in-out infinite;
-    letter-spacing:1.5px;
-    filter:drop-shadow(0 3px 8px rgba(243,156,18,.55)) drop-shadow(0 1px 0 rgba(255,255,255,.6));
-}
+/* Hover-on-brand effects intentionally removed — brand text must stay
+   fixed. The empty .topbar-logo:hover rule was deleted (linter warned
+   on empty rulesets). */
 .topbar-logo:hover .bl{animation:letterPop .9s cubic-bezier(.34,1.56,.64,1) both;}
 .topbar-logo:hover .brand-line1 .bl:nth-child(1){animation-delay:0s}
 .topbar-logo:hover .brand-line1 .bl:nth-child(2){animation-delay:.04s}
@@ -2441,7 +2439,6 @@ body.dashboard-body .dashboard-main {
 .topbar-logo--pro:hover .brand-line1,
 .topbar-logo--pro:hover .brand-line2 {
     animation: none !important;
-    letter-spacing: inherit !important;
     filter: none !important;
     transform: none !important;
 }
