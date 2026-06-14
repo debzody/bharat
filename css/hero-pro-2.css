@@ -1379,7 +1379,10 @@ body.hero-page {
 .hero-page .topbar-logo--pro:hover .brand-line1,
 .hero-page .topbar-logo--pro:hover .brand-line2 {
     animation: none !important;
-    letter-spacing: 0 !important;
+    /* letter-spacing intentionally NOT set so the resting values
+       (-0.01em on brand-line1, 0.14em uppercase tracking on
+       brand-line2) persist through hover. Setting it here was
+       snapping the spacing to 0 — visible as a 'spacing change'. */
     filter: none !important;
     transform: none !important;
 }
