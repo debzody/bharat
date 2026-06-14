@@ -2322,14 +2322,20 @@ body.dashboard-page.theme-cyberpunk footer{
     border-radius: 0 !important;
     border: 0 !important;
     border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-    background: rgba(20,20,20,0.96) !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.18) !important;
+    /* Resting state — 50% transparent glass with a saturated blur so the
+       hero/page colour shows through. Solid colour kicks in only after
+       the user scrolls past 40px (handled by .scrolled below). */
+    background: rgba(20,20,20,0.5) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12) !important;
     padding: 0 1.25rem !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    backdrop-filter: saturate(180%) blur(20px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
 }
 .topbar.scrolled {
     background: rgba(15,15,15,0.98) !important;
+    backdrop-filter: saturate(180%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(12px) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25) !important;
 }
 
 /* Brand logo + text — slimmer, no gradient, no Pacifico script */
