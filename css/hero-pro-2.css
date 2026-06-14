@@ -637,10 +637,13 @@
    PART 8 — Floating + glowing logo (bigger, lifted above the topbar)
    ──────────────────────────────────────────────────────────────────── */
 
-/* Topbar needs to allow the logo to overflow upward/downward */
+/* Topbar needs to allow the logo to overflow upward/downward.
+   Keep position:fixed (inherited from style.css) so the bar overlays
+   the carousel image — earlier this set position:relative which pushed
+   the hero below the bar and killed the see-through glass effect. */
 .hero-page .topbar {
     overflow: visible !important;
-    position: relative;
+    position: fixed !important;
     z-index: 90;
 }
 
