@@ -56,7 +56,7 @@ button,input,select,textarea{font:inherit}
   left:.65rem;
   right:.65rem;
   height:calc(var(--tb-h) - 1.3rem);
-  background:rgba(8,30,42,.35);
+  background:rgba(8,30,42,.5);
   border:1px solid rgba(255,255,255,.22);
   border-radius:20px;
   box-shadow:0 8px 32px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.12);
