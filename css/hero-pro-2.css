@@ -1364,3 +1364,42 @@ body.hero-page {
 .hero-page .hero-cta-secondary--ghost {
     text-shadow: 0 1px 6px rgba(0, 0, 0, 0.60);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   FINAL — Lock the topbar brand fixed: no hover animation, no letter
+   pop, no logo transform. Per-letter and gradient effects were causing
+   the brand text to shift visibly on hover; users want it static.
+   ──────────────────────────────────────────────────────────────────── */
+.topbar-logo:hover .brand-line1,
+.topbar-logo:hover .brand-line2,
+.topbar-logo--pro:hover .brand-line1,
+.topbar-logo--pro:hover .brand-line2,
+.hero-page .topbar-logo:hover .brand-line1,
+.hero-page .topbar-logo:hover .brand-line2,
+.hero-page .topbar-logo--pro:hover .brand-line1,
+.hero-page .topbar-logo--pro:hover .brand-line2 {
+    animation: none !important;
+    letter-spacing: 0 !important;
+    filter: none !important;
+    transform: none !important;
+}
+.topbar-logo:hover .bl,
+.topbar-logo--pro:hover .bl,
+.hero-page .topbar-logo:hover .bl,
+.hero-page .topbar-logo--pro:hover .bl {
+    animation: none !important;
+    transform: none !important;
+}
+.topbar-logo:hover,
+.topbar-logo--pro:hover,
+.hero-page .topbar-logo:hover,
+.hero-page .topbar-logo--pro:hover {
+    transform: none !important;
+}
+.topbar-logo:hover img,
+.topbar-logo--pro:hover img,
+.hero-page .topbar-logo:hover img,
+.hero-page .topbar-logo--pro:hover img {
+    transform: none !important;
+    filter: none !important;
+}
