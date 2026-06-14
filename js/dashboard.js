@@ -2694,6 +2694,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                             onclick="window._pkgImgUpload(${idx})">
                                             <i class="fas fa-cloud-arrow-up"></i> Upload
                                         </button>
+                                        <button type="button" class="pkg-img-btn pkg-img-btn-gallery"
+                                            onclick="window._pkgImgPickFromGallery(${idx})">
+                                            <i class="fas fa-images"></i> From Gallery
+                                        </button>
                                         <select class="pkg-input pkg-img-preset"
                                             onchange="if(this.value){window._pkgImgUrlInput(${idx},this.value);this.selectedIndex=0;}">
                                             <option value="">Choose preset…</option>
@@ -2783,6 +2787,96 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         };
         fileInput.click();
+    };
+
+    // Cached gallery list — fetched once per dashboard session, reused
+    // across all "Pick from Gallery" opens. Bust by reloading the page.
+    let _pkgGalleryCache = null;
+    let _pkgGalleryTargetIdx = null;
+
+    window._pkgImgPickFromGallery = async function(idx) {
+        _pkgGalleryTargetIdx = idx;
+        let modal = document.getElementById('pkgGalleryPicker');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'pkgGalleryPicker';
+            modal.className = 'pkg-gp-modal';
+            modal.innerHTML =
+                '<div class="pkg-gp-card">' +
+                  '<div class="pkg-gp-head">' +
+                    '<h3><i class="fas fa-images"></i> Pick from Gallery</h3>' +
+                    '<input type="search" id="pkgGpSearch" placeholder="Filter by title, place or category…">' +
+                    '<button type="button" class="pkg-gp-close" onclick="window._pkgImgGalleryClose()" aria-label="Close">&times;</button>' +
+                  '</div>' +
+                  '<div class="pkg-gp-body" id="pkgGpBody"><div class="pkg-gp-loading"><i class="fas fa-spinner fa-spin"></i> Loading gallery…</div></div>' +
+                '</div>';
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) window._pkgImgGalleryClose();
+            });
+        }
+        modal.style.display = 'flex';
+        const body = document.getElementById('pkgGpBody');
+        const search = document.getElementById('pkgGpSearch');
+
+        function render(list) {
+            if (!list || !list.length) {
+                body.innerHTML = '<div class="pkg-gp-empty"><i class="fas fa-image"></i><p>No gallery items match.</p></div>';
+                return;
+            }
+            body.innerHTML = list.map(item => {
+                const url = String(item.url || '').replace(/"/g, '&quot;');
+                const thumb = String(item.thumbUrl || item.url || '').replace(/"/g, '&quot;');
+                const label = escHtml(item.title || item.place || item.category || '');
+                return '<button type="button" class="pkg-gp-thumb" data-url="' + url + '" title="' + label + '">' +
+                       '<img src="' + thumb + '" alt="' + label + '" loading="lazy">' +
+                       (label ? '<span class="pkg-gp-thumb-label">' + label + '</span>' : '') +
+                       '</button>';
+            }).join('');
+            body.querySelectorAll('.pkg-gp-thumb').forEach(el => {
+                el.addEventListener('click', () => {
+                    const url = el.getAttribute('data-url');
+                    if (url && _pkgGalleryTargetIdx != null) {
+                        window._pkgImgUrlInput(_pkgGalleryTargetIdx, url);
+                    }
+                    window._pkgImgGalleryClose();
+                });
+            });
+        }
+
+        function applyFilter() {
+            const q = (search.value || '').trim().toLowerCase();
+            if (!_pkgGalleryCache) return;
+            if (!q) { render(_pkgGalleryCache); return; }
+            render(_pkgGalleryCache.filter(it =>
+                (it.title || '').toLowerCase().includes(q) ||
+                (it.place || '').toLowerCase().includes(q) ||
+                (it.category || '').toLowerCase().includes(q) ||
+                (it.caption || '').toLowerCase().includes(q)
+            ));
+        }
+        search.oninput = applyFilter;
+
+        if (!_pkgGalleryCache) {
+            try {
+                if (!window.GalleryStore || !window.GalleryStore.loadGalleryItems) {
+                    body.innerHTML = '<div class="pkg-gp-empty"><i class="fas fa-triangle-exclamation"></i><p>GalleryStore not loaded — refresh the page.</p></div>';
+                    return;
+                }
+                const items = await window.GalleryStore.loadGalleryItems();
+                _pkgGalleryCache = (items || []).filter(i => i && i.url);
+            } catch (err) {
+                body.innerHTML = '<div class="pkg-gp-empty"><i class="fas fa-triangle-exclamation"></i><p>Could not load gallery: ' + escHtml(err.message || String(err)) + '</p></div>';
+                return;
+            }
+        }
+        applyFilter();
+    };
+
+    window._pkgImgGalleryClose = function() {
+        const modal = document.getElementById('pkgGalleryPicker');
+        if (modal) modal.style.display = 'none';
+        _pkgGalleryTargetIdx = null;
     };
 
     window._pkgDelete = function(idx) {
