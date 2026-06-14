@@ -966,13 +966,10 @@ body.hero-page {
     left: 0 !important;
     right: 0 !important;
     border-radius: 0 !important;
-    /* True see-through glass — let the carousel image read clearly.
-       A soft top-to-bottom gradient (slight darkening at the very top
-       fading to clear) gives text just enough contrast without painting
-       over the photo. No backdrop-filter so the image stays sharp. */
-    background: linear-gradient(180deg,
-        rgba(0, 0, 0, 0.25) 0%,
-        rgba(0, 0, 0, 0.10) 100%) !important;
+    /* Fully transparent — the carousel image sits behind the bar with
+       its own dark gradient kicking in below the bar. Just a faint
+       1px bottom hairline so the bar edge is discernible. */
+    background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
