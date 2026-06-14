@@ -389,8 +389,12 @@
             }
             const docRef = firestore.doc(db, 'packages', id);
             // Strip the id field from the patch so we don't overwrite it
-            // (and to keep the payload minimal).
-            const { id: _ignored, ...rest } = pkg;
+            // (and to keep the payload minimal). Also strip price-related
+            // fields — pricing is admin-only; firestore.rules enforce this
+            // server-side, but we drop them client-side too so the staff
+            // batch doesn't get rejected wholesale just because one stale
+            // value happened to be in memory.
+            const { id: _ignored, price: _p, pricePerHead: _pph, pricing: _pp, ...rest } = pkg;
             const payload = {
                 ...rest,
                 order: idx,
