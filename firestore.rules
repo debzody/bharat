@@ -44,12 +44,15 @@ service cloud.firestore {
 
     // Public packages collection
     //   • Anyone can READ.
-    //   • Staff can UPDATE existing packages (price tweaks, itinerary
-    //     edits) but cannot CREATE new ones or DELETE existing ones.
+    //   • Staff can UPDATE existing packages (itinerary, descriptions,
+    //     visibility) but CANNOT touch any pricing field — those are
+    //     admin-only.
     //   • Admin can do anything.
     match /packages/{pkgId} {
       allow read:           if true;
-      allow update:         if isAdminOrStaff();
+      allow update:         if isAdmin() || (isStaff()
+        && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['price', 'pricePerHead', 'pricing']));
       allow create, delete: if isAdmin();
     }
 

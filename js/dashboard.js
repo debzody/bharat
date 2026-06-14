@@ -2619,6 +2619,13 @@ document.addEventListener('DOMContentLoaded', function () {
         // as "Standard" by the public renderer for back-compat).
         const PKG_CATEGORIES = ['Budget','Standard','Deluxe','Luxury','Royal','Honeymoon'];
 
+        // Staff users can edit existing packages but NOT the price.
+        // Pricing is admin-only. We lock the price input visually here
+        // and the publish payload strips it server-side as defence-in-depth.
+        const isAdminUser = !!(window.UsersStore && window.UsersStore.isAdmin && window.UsersStore.isAdmin());
+        const isStaffOnly = !isAdminUser && !!(window.UsersStore && window.UsersStore.isStaff && window.UsersStore.isStaff());
+        const priceLocked = isStaffOnly;
+
         container.innerHTML = packagesData.map((pkg, idx) => `
             <div class="pkg-edit-card" data-idx="${idx}">
                 <div class="pkg-edit-header">
@@ -2652,8 +2659,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="pkg-edit-row pkg-edit-row-2col">
                         <div>
-                            <label>Price (₹)</label>
+                            <label>Price (₹)${priceLocked ? ' <small style="color:#888;font-weight:400;">(admin only)</small>' : ''}</label>
                             <input type="number" class="pkg-input" value="${pkg.price}" min="1"
+                                ${priceLocked ? 'disabled title="Only an admin can change the price."' : ''}
                                 oninput="window._pkgUpdate(${idx},'price',parseInt(this.value)||1)">
                         </div>
                         <div>
