@@ -149,6 +149,23 @@
     var state = { cart: null, coupon: null, customerDiscount: 0, customerName: '', activeLock: null };
     var R = '\u20B9';
 
+    // Minimum booking lead-time. The first MIN_BOOKING_LEAD_DAYS days
+    // (starting tomorrow at 00:00) are treated as sold out \u2014 the date
+    // input's `min` is set to today + this value, the default value is
+    // also that day, and submit-side validation rejects anything before.
+    var MIN_BOOKING_LEAD_DAYS = 10;
+    function earliestBookableISO() {
+        var d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + MIN_BOOKING_LEAD_DAYS);
+        // Format YYYY-MM-DD in local time (toISOString would shift to UTC
+        // and roll the date back a day for callers east of UTC).
+        var y  = d.getFullYear();
+        var m  = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + dd;
+    }
+
     // ── Price-Lock constants ────────────────────────────────────────
     // ₹500 per head, 10-day validity. The fee is non-refundable; if the
     // customer converts the lock to a booking within the window, the
@@ -410,11 +427,15 @@
 
         return '<div class="co-card"><h2><i class="fas fa-sliders-h"></i> Customize Your Trip</h2>' +
             '<div class="co-form-row">' +
-                '<div class="co-field"><label>Duration Preference</label><select id="durationPref">' +
-                    '<option value="">Standard (as per package)</option>' +
-                    '<option>4 Nights / 5 Days</option><option>5 Nights / 6 Days</option>' +
-                    '<option>6 Nights / 7 Days</option><option>7 Nights / 8 Days</option>' +
-                '</select></div>' +
+                '<div class="co-field">' +
+                    '<label>Duration <small style="color:#7a8b96;font-weight:500;">(as per package)</small></label>' +
+                    '<div class="meal-plan-locked" title="Duration is fixed for this package — contact us to customise.">' +
+                        '<i class="fas fa-clock"></i> ' +
+                        '<strong>Standard (as per package)</strong>' +
+                        '<i class="fas fa-lock" style="margin-left:auto;font-size:.78rem;opacity:.55;" aria-hidden="true"></i>' +
+                    '</div>' +
+                    '<input type="hidden" id="durationPref" value="">' +
+                '</div>' +
                 '<div class="co-field">' +
                     '<label>Meal Plan <small style="color:#7a8b96;font-weight:500;">(included with package)</small></label>' +
                     '<div class="meal-plan-locked" title="' + esc(meal.note) + '">' +
@@ -440,7 +461,7 @@
             '</div>' +
             '<div class="co-form-row">' +
                 '<div class="co-field"><label>Email <span class="req">*</span></label><input type="email" id="travelerEmail" required placeholder="you@example.com"></div>' +
-                '<div class="co-field"><label>Travel Date <span class="req">*</span></label><input type="date" id="travelerDate" required value="' + esc(c.travelDate || '') + '" min="' + new Date().toISOString().slice(0,10) + '"></div>' +
+                '<div class="co-field"><label>Travel Date <span class="req">*</span></label><input type="date" id="travelerDate" required value="' + esc(c.travelDate || earliestBookableISO()) + '" min="' + earliestBookableISO() + '"><small style="display:block;color:#7a8b96;font-size:.78rem;margin-top:.3rem;line-height:1.45;">Earliest available date is ' + earliestBookableISO() + ' — the next ' + MIN_BOOKING_LEAD_DAYS + ' days are sold out.</small></div>' +
             '</div>' +
             '<div class="co-form-row full"><div class="co-field"><label>Special Requests (optional)</label><textarea id="travelerNotes" rows="2" placeholder="Anniversary, dietary preferences..."></textarea></div></div>' +
             '</div>';
@@ -913,16 +934,18 @@
         if (n.trim().length < 2) errs.push('Please enter your full name.');
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) errs.push('Please enter a valid email.');
         if ((p.match(/\d/g) || []).length < 8) errs.push('Please enter a valid phone (at least 8 digits).');
-        // Travel date — required, must not be in the past.
+        // Travel date — required, must be at least MIN_BOOKING_LEAD_DAYS
+        // out (the next N days are blocked / sold out).
         if (!dt) {
             errs.push('Please select a Travel Date.');
         } else {
             var today = new Date(); today.setHours(0, 0, 0, 0);
+            var earliest = new Date(today.getTime() + MIN_BOOKING_LEAD_DAYS * 86400000);
             var picked = new Date(dt + 'T00:00:00');
             if (isNaN(picked.getTime())) {
                 errs.push('Travel Date is invalid.');
-            } else if (picked < today) {
-                errs.push('Travel Date cannot be in the past.');
+            } else if (picked < earliest) {
+                errs.push('The next ' + MIN_BOOKING_LEAD_DAYS + ' days are sold out — please pick a date on or after ' + earliestBookableISO() + '.');
             }
         }
         return errs;

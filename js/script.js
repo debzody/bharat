@@ -1306,14 +1306,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // string (?from=…&date=…&adults=…&children=…&category=…) so a search
     // result URL can be shared / bookmarked.
     (function initMmtSearchDefaults() {
+        // The next 10 days are blocked at checkout (sold out). Mirror
+        // that on the homepage search bar so the user can't pick an
+        // unbookable date here either.
+        const MIN_LEAD_DAYS = 10;
+        function earliestISO() {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() + MIN_LEAD_DAYS);
+            return d.getFullYear() + '-' +
+                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getDate()).padStart(2, '0');
+        }
         const dateEl = document.getElementById('mmtDate');
         if (dateEl && !dateEl.value) {
-            const d = new Date();
-            d.setDate(d.getDate() + 30);
-            dateEl.value = d.toISOString().slice(0, 10);
+            // Default — day 11 from today (matches checkout default).
+            dateEl.value = earliestISO();
         }
-        // Min date = today (no past trips)
-        if (dateEl) dateEl.min = new Date().toISOString().slice(0, 10);
+        if (dateEl) dateEl.min = earliestISO();
 
         // Read query params and hydrate fields. Honoured: from, date, adults,
         // children, category. Unknown values are quietly ignored.

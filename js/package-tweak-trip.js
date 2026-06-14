@@ -86,10 +86,11 @@
             });
         }
 
-        // Date min = today; default = today + 30 days when empty.
+        // The next 10 days are sold out (matches checkout). Min = day 10
+        // from today; default = same (the user's first valid choice).
         if (dateEl) {
-            dateEl.min = todayPlus(0);
-            if (!dateEl.value) dateEl.value = todayPlus(30);
+            dateEl.min = todayPlus(10);
+            if (!dateEl.value) dateEl.value = todayPlus(10);
         }
 
         // Pre-fill from sessionStorage.searchContext (set by the homepage
