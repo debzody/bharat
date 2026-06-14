@@ -2680,9 +2680,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                         <div>
                             <label>Image</label>
-                            <select class="pkg-input" onchange="window._pkgUpdate(${idx},'image',this.value)">
-                                ${SITE_IMAGES.map(img => `<option value="${img}" ${pkg.image===img?'selected':''}>${img.split('/').pop()}</option>`).join('')}
-                            </select>
+                            <div class="pkg-img-edit">
+                                <img class="pkg-img-thumb" id="pkgImgThumb${idx}"
+                                    src="${escHtml(pkg.image || 'images/beach1.jpg')}"
+                                    alt="" onerror="this.style.opacity=.25;this.title='Image failed to load';">
+                                <div class="pkg-img-controls">
+                                    <input type="text" class="pkg-input pkg-img-url"
+                                        id="pkgImgUrl${idx}" value="${escHtml(pkg.image || '')}"
+                                        placeholder="https://… or images/beach1.jpg"
+                                        oninput="window._pkgImgUrlInput(${idx},this.value)">
+                                    <div class="pkg-img-btn-row">
+                                        <button type="button" class="pkg-img-btn pkg-img-btn-upload"
+                                            onclick="window._pkgImgUpload(${idx})">
+                                            <i class="fas fa-cloud-arrow-up"></i> Upload
+                                        </button>
+                                        <select class="pkg-input pkg-img-preset"
+                                            onchange="if(this.value){window._pkgImgUrlInput(${idx},this.value);this.selectedIndex=0;}">
+                                            <option value="">Choose preset…</option>
+                                            ${SITE_IMAGES.map(img => `<option value="${img}">${img.split('/').pop()}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="pkg-edit-row">
@@ -2709,6 +2728,62 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Global helpers called by inline onchange/oninput
     window._pkgUpdate = function(idx, field, value) { packagesData[idx][field] = value; };
+
+    // Update package image URL + refresh thumbnail + sync the text input.
+    window._pkgImgUrlInput = function(idx, url) {
+        packagesData[idx].image = url;
+        const thumb = document.getElementById('pkgImgThumb' + idx);
+        const input = document.getElementById('pkgImgUrl' + idx);
+        if (thumb) { thumb.src = url || 'images/beach1.jpg'; thumb.style.opacity = ''; thumb.title = ''; }
+        if (input && input.value !== url) input.value = url;
+    };
+
+    // Cloudinary unsigned upload for a package's hero image. Mirrors the
+    // gallery uploader (same preset, different tag) so the file ends up
+    // in the same Cloudinary account but is easy to identify and clean up.
+    window._pkgImgUpload = function(idx) {
+        const cfg = window.CLOUDINARY_CONFIG || {};
+        if (!cfg.cloudName || !cfg.uploadPreset) {
+            alert('Cloudinary is not configured. Ask the developer to set window.CLOUDINARY_CONFIG in js/firebase-config.js.');
+            return;
+        }
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = async () => {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Image too large (max 10 MB).');
+                return;
+            }
+            const card = document.querySelector(`[data-idx="${idx}"]`);
+            const btn = card && card.querySelector('.pkg-img-btn-upload');
+            const origLabel = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading…'; }
+            try {
+                const url = `https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/image/upload`;
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', cfg.uploadPreset);
+                fd.append('tags', 'andaman_package');
+                fd.append('folder', 'package-images');
+                const res = await fetch(url, { method: 'POST', body: fd });
+                const json = await res.json();
+                if (!res.ok || !json.secure_url) {
+                    throw new Error((json && json.error && json.error.message) || ('HTTP ' + res.status));
+                }
+                window._pkgImgUrlInput(idx, json.secure_url);
+                if (window.Toast) window.Toast.success('Image uploaded — remember to Save & Publish.');
+            } catch (err) {
+                console.error('package image upload failed:', err);
+                alert('Upload failed: ' + (err && err.message || err));
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = origLabel; }
+            }
+        };
+        fileInput.click();
+    };
 
     window._pkgDelete = function(idx) {
         if (!confirm(`Delete "${packagesData[idx].name}"?`)) return;
