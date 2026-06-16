@@ -2453,3 +2453,200 @@ body.dashboard-body .dashboard-main {
     transform: none !important;
     filter: drop-shadow(0 4px 12px rgba(0,0,0,.18)) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   HERO REDESIGN (mockup match) — split headline, icon-chip price meta,
+   floating stat cards, trust strip beneath the search bar, text-only
+   topbar nav with active pill on hero pages.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* A. Split-colour headline.
+   Specificity must beat:
+     .hero-heading h1 em             (0,1,2) in style.css line 261
+     .hero-page .hero-heading h1 em  (0,2,2) in hero-pro.css line 35
+   Scope = body.hero-page + .hero-heading + .hero-h1-line2 + em → (0,3,2). */
+.hero-h1-line1 { display: block; color: #fff; }
+.hero-h1-line2 { display: block; }
+body.hero-page .hero-heading .hero-h1-line2 em,
+.hero-heading .hero-h1-line2 em {
+    font-style: italic;
+    color: #7ee2c0 !important;
+    -webkit-text-fill-color: #7ee2c0 !important;
+    background: none !important;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, .35);
+}
+
+/* B. Price chips with circular icon badges */
+.hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem .65rem;
+    margin-top: .75rem;
+}
+.hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .3rem .9rem .3rem .3rem;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 999px;
+    font-size: .82rem;
+    font-weight: 500;
+    color: #fff;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    line-height: 1;
+}
+.hero-chip i {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8, 30, 42, .55);
+    border-radius: 50%;
+    color: #7ee2c0;
+    font-size: .78rem;
+}
+
+/* C. Floating stat cards (right column on desktop) */
+.hero-content--pro { position: relative; }
+.hero-stat-cards {
+    position: absolute;
+    right: 1.5rem;
+    top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+    z-index: 4;
+    pointer-events: auto;
+}
+.hero-stat-card {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    padding: .65rem 1.05rem .65rem .65rem;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    min-width: 200px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+.hero-stat-icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+}
+.hero-stat-icon--gold  { background: linear-gradient(135deg, #f7c948, #e0a922); }
+.hero-stat-icon--green { background: linear-gradient(135deg, #1abc9c, #0d7a8a); }
+.hero-stat-text strong {
+    display: block;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.05rem;
+    line-height: 1.1;
+}
+.hero-stat-text small {
+    display: block;
+    color: rgba(255, 255, 255, .78);
+    font-size: .78rem;
+    margin-top: 1px;
+}
+
+@media (max-width: 980px) {
+    .hero-stat-cards {
+        position: static;
+        right: auto;
+        top: auto;
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+    .hero-stat-card { min-width: 0; flex: 0 1 220px; }
+}
+
+/* D. Trust strip beneath the search bar */
+.hero-trust-strip {
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+    margin-top: 1.4rem;
+    padding: .85rem 1.2rem;
+    background: rgba(8, 24, 32, .45);
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, .92);
+    font-size: .88rem;
+    font-weight: 500;
+}
+.hero-trust-strip .trust-item {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+.hero-trust-strip .trust-item i { color: #7ee2c0; font-size: .92rem; }
+.hero-trust-strip .trust-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, .18);
+}
+.hero-trust-strip .trust-cta {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    background: rgba(255, 255, 255, .94);
+    color: #0d7a8a;
+    padding: .55rem 1rem;
+    border-radius: 999px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background .15s, transform .15s;
+}
+.hero-trust-strip .trust-cta:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    color: #0d7a8a;
+}
+
+@media (max-width: 760px) {
+    .hero-trust-strip { gap: .75rem 1rem; }
+    .hero-trust-strip .trust-sep { display: none; }
+    .hero-trust-strip .trust-cta { margin-left: 0; }
+}
+
+/* E. Topbar — text-only nav with active pill (hero pages only) */
+body.hero-page .topnav-item i { display: none; }
+body.hero-page .topnav-item {
+    height: auto;
+    padding: .55rem 1.05rem;
+    min-width: 0;
+    font-size: .92rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, .88);
+    flex-direction: row;
+    border-radius: 999px;
+}
+body.hero-page .topnav-item:hover {
+    background: rgba(126, 226, 192, .15);
+    color: #fff;
+}
+body.hero-page .topnav-item.active {
+    background: rgba(126, 226, 192, .22);
+    color: #7ee2c0;
+}
+body.hero-page .topnav-item.active::after { display: none; }
