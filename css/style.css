@@ -3631,3 +3631,30 @@ body.hero-page .topnav-item.active::after { display: none; }
 
 /* ── Topbar logo: glass-pill experiment removed (didn't match the
    intended look). Original .topbar-logo styles in lines ~78 stand. */
+
+/* ── Topbar logo: translucent teal-tint pill (matches the active
+   'Home' nav state). Gives the left side a clear pill shape so it
+   visually balances the right-side phone + user pills, and ties
+   into the teal accent used across the rest of the UI. */
+.topbar-logo {
+    padding: 0.25rem 0.95rem 0.25rem 0.35rem !important;
+    border-radius: 999px;
+    background: rgba(126, 226, 192, 0.14);
+    border: 1px solid rgba(126, 226, 192, 0.30);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s, border-color 0.2s;
+}
+.topbar-logo:hover {
+    background: rgba(126, 226, 192, 0.22);
+    border-color: rgba(126, 226, 192, 0.45);
+}
+.topbar.scrolled .topbar-logo {
+    background: rgba(126, 226, 192, 0.10);
+    border-color: rgba(126, 226, 192, 0.20);
+}
+@media (max-width: 720px) {
+    .topbar-logo {
+        padding: 0.2rem 0.65rem 0.2rem 0.25rem !important;
+    }
+}
