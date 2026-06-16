@@ -3629,28 +3629,5 @@ body.hero-page .topnav-item.active::after { display: none; }
     display: block;
 }
 
-/* ── Topbar logo: glass-pill background to match the right-side
-   phone-call button + 'Hi, <Name>' user pill, so both sides of the
-   topbar feel visually balanced. */
-.topbar-logo {
-    padding: 0.3rem 0.85rem 0.3rem 0.4rem !important;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background 0.2s, border-color 0.2s;
-}
-.topbar-logo:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.24);
-}
-.topbar.scrolled .topbar-logo {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.10);
-}
-@media (max-width: 720px) {
-    .topbar-logo {
-        padding: 0.25rem 0.6rem 0.25rem 0.3rem !important;
-    }
-}
+/* ── Topbar logo: glass-pill experiment removed (didn't match the
+   intended look). Original .topbar-logo styles in lines ~78 stand. */
