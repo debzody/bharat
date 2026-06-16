@@ -92,7 +92,7 @@
     <link rel="stylesheet" href="css/style.css?v=69">
     <link rel="stylesheet" href="css/hero-pro-2.css?v=23">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
-    <link rel="stylesheet" href="css/gallery.css?v=5">
+    <link rel="stylesheet" href="css/gallery.css?v=6">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -129,7 +129,12 @@
 
     <main class="main-content">
 
-        <section class="gallery-wrap">
+        <section class="gallery-wrap gallery-wrap--v2">
+            <header class="gp-head">
+                <div class="gp-eyebrow">Gallery</div>
+                <h1 class="gp-title">Andaman through <em>our&nbsp;lens</em></h1>
+                <p class="gp-sub">Breathtaking views, hidden gems and unforgettable moments from the islands.</p>
+            </header>
             <!-- Filter chips + tiny icon-buttons row -->
             <div class="gallery-toolbar">
                 <div class="gallery-filters" id="galleryFilters">
@@ -221,6 +226,28 @@
             </div>
 
             <div id="galleryGrid" class="gallery-grid"></div>
+
+            <!-- "Captured with love, shared with you" CTA strip -->
+            <div class="gp-share-strip">
+                <div class="gp-share-icon"><i class="fa-solid fa-camera-retro"></i></div>
+                <div class="gp-share-text">
+                    <strong>Captured with love, shared with you</strong>
+                    <span>These real photos were clicked by our team and travellers during their journey across Andaman.</span>
+                </div>
+                <div class="gp-share-stats">
+                    <div class="gp-share-avatars">
+                        <span class="gp-avatar" style="background-image:url('images/avatars/avatar-1.png');"></span>
+                        <span class="gp-avatar" style="background-image:url('images/avatars/avatar-2.png');"></span>
+                        <span class="gp-avatar" style="background-image:url('images/avatars/avatar-3.png');"></span>
+                        <span class="gp-avatar" style="background-image:url('images/avatars/avatar-4.png');"></span>
+                    </div>
+                    <div class="gp-share-stat">
+                        <strong>50K+</strong>
+                        <small>Photos shared<br>by travellers</small>
+                    </div>
+                </div>
+                <a href="#galleryFilters" class="gp-share-cta" id="gpShareCta"><i class="fa-solid fa-cloud-arrow-up"></i> Share Your Photos</a>
+            </div>
         </section>
     
     <!-- ── Ezoic ad placement #107 — see js/ezoic-placements.js ── -->
@@ -239,7 +266,7 @@
     <script src="js/dataStore.js?v=40"></script>
     <script src="js/gallery.js?v=3"></script>
     <script src="js/script.js?v=49"></script>
-    <script src="js/gallery-page.js?v=3"></script>
+    <script src="js/gallery-page.js?v=4"></script>
     <script src="js/user-menu.js?v=15"></script>
     <script src="js/conversion-kit.js?v=1"></script>
     <script src="js/brevo.js?v=3" async></script>
