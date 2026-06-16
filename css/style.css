@@ -2650,3 +2650,260 @@ body.hero-page .topnav-item.active {
     color: #7ee2c0;
 }
 body.hero-page .topnav-item.active::after { display: none; }
+
+/* ════════════════════════════════════════════════════════════════════
+   DESTINATIONS REDESIGN (v2) — 4 tiles in a 2×2 grid with bottom-right
+   arrow circles, dark navy section, and a "Can't decide?" CTA card.
+   Mounts on the same #destinations section using .dest-section--v2.
+   ──────────────────────────────────────────────────────────────────── */
+.dest-section--v2 {
+    background: linear-gradient(180deg, #07182a 0%, #0a2a3d 60%, #07182a 100%);
+    color: #fff;
+    padding: 5rem 1.5rem 5.5rem;
+    max-width: none;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+}
+.dest-section--v2::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 50% at 80% 30%, rgba(126, 226, 192, 0.10), transparent 70%);
+    pointer-events: none;
+}
+.dest-section--v2 .dest-head,
+.dest-section--v2 .dest-grid,
+.dest-section--v2 .dest-help-card {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.dest-section--v2 .dest-head { margin-bottom: 2.5rem; }
+.dest-section--v2 .dest-eyebrow {
+    color: #7ee2c0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+}
+.dest-section--v2 .dest-title {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 0.7rem 0;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+}
+.dest-section--v2 .dest-title em {
+    font-style: italic;
+    color: #7ee2c0;
+    background: none;
+    -webkit-text-fill-color: #7ee2c0;
+}
+.dest-section--v2 .dest-sub {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    max-width: 540px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* 2×2 tile grid */
+.dest-section--v2 .dest-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.4rem;
+    margin-top: 2rem;
+}
+.dest-tile {
+    position: relative;
+    isolation: isolate;
+    border-radius: 22px;
+    overflow: hidden;
+    text-decoration: none;
+    color: #fff;
+    aspect-ratio: 16 / 10;
+    display: block;
+    background: #0a4f5c;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+.dest-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.7s ease;
+    z-index: 0;
+}
+.dest-tile::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.78));
+    z-index: 1;
+}
+.dest-tile:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.dest-tile:hover::before { transform: scale(1.06); }
+
+.dest-tile-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(15, 30, 45, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.dest-tile-badge i { color: #7ee2c0; font-size: 0.8rem; }
+
+.dest-tile-overlay {
+    position: absolute;
+    left: 1.5rem;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 3;
+    pointer-events: none;
+}
+.dest-tile-title {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+    font-weight: 600;
+    margin: 0 0 0.7rem 0;
+    color: #fff;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+.dest-tile-meta {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.88rem;
+}
+.dest-tile-meta li { display: inline-flex; align-items: center; gap: 0.45rem; }
+.dest-tile-meta i { color: rgba(255, 255, 255, 0.55); font-size: 0.85rem; }
+
+.dest-tile-arrow {
+    position: absolute;
+    bottom: 1.4rem;
+    right: 1.4rem;
+    z-index: 3;
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.95rem;
+    box-shadow: 0 6px 18px rgba(26, 188, 156, 0.45);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.dest-tile:hover .dest-tile-arrow {
+    transform: translateX(3px);
+    box-shadow: 0 8px 22px rgba(26, 188, 156, 0.55);
+}
+
+/* Image bindings — same paths as before, scoped to .dest-tile */
+.dest-tile[data-dest="havelock"]::before  { background-image: url('../images/havelock/havelock-1.jpg'); }
+.dest-tile[data-dest="neil"]::before      { background-image: url('../images/neil/neil-1.jpg'); }
+.dest-tile[data-dest="portblair"]::before { background-image: url('../images/port-blair/port-blair-1.jpg'); }
+.dest-tile[data-dest="baratang"]::before  { background-image: url('../images/baratang/baratang-5.jpg'); }
+
+@media (max-width: 760px) {
+    .dest-section--v2 .dest-grid { grid-template-columns: 1fr; }
+    .dest-tile { aspect-ratio: 4 / 3; }
+}
+
+/* "Can't decide?" CTA card */
+.dest-help-card {
+    margin-top: 2.2rem;
+    padding: 1.4rem 1.6rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+.dest-help-icon {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 1.4rem;
+}
+.dest-help-text {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.dest-help-text strong {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #fff;
+}
+.dest-help-text span {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    max-width: 520px;
+}
+.dest-help-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.85rem 1.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(126, 226, 192, 0.5);
+    background: rgba(126, 226, 192, 0.1);
+    color: #7ee2c0;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.2s, transform 0.15s, color 0.2s;
+}
+.dest-help-cta:hover {
+    background: rgba(126, 226, 192, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+}
+@media (max-width: 600px) {
+    .dest-help-card { flex-direction: column; align-items: flex-start; text-align: left; }
+    .dest-help-cta { align-self: stretch; justify-content: center; }
+}
