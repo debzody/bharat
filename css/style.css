@@ -231,11 +231,11 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
 .hero{
   position:relative;
   color:#fff;
-  text-align:center;
+  text-align:left;
   min-height:760px;
   display:flex;
   align-items:flex-start;
-  justify-content:center;
+  justify-content:flex-start;
   padding:6.25rem 0 2.5rem;
   overflow:hidden;
   isolation:isolate;
@@ -2515,10 +2515,10 @@ body.hero-page .hero-heading .hero-h1-line2 em,
 .hero-stat-cards {
     position: absolute;
     right: 1.5rem;
-    top: 1rem;
+    top: 5.5rem;
     display: flex;
     flex-direction: column;
-    gap: .9rem;
+    gap: 0.9rem;
     z-index: 4;
     pointer-events: auto;
 }
