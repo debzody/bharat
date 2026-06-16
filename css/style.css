@@ -3726,3 +3726,22 @@ body.hero-page .topnav-item.active::after { display: none; }
     .topbar-call-btn { width: 38px; height: 38px; }
     .user-menu-btn { height: 38px !important; }
 }
+
+/* Timeline endpoints use plane glyphs instead of dots — fa-plane-departure
+   on Day 1, fa-plane-arrival on the final 'Departure' step. */
+.v2-tl-plane {
+    position: absolute;
+    top: -3px;
+    left: -1px;
+    color: #1abc9c;
+    font-size: 0.95rem;
+    line-height: 1;
+    background: #fff;
+    padding: 2px;
+    border-radius: 50%;
+    /* Tilt slightly upward for a 'taking off' feel */
+    transform: rotate(-12deg);
+}
+.v2-tl-plane--end {
+    transform: rotate(8deg);
+}
