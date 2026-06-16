@@ -1028,7 +1028,9 @@ body:has(.gallery-wrap--v2) {
 .gallery-wrap--v2 {
     background: transparent;
     color: #fff;
-    padding: 1.5rem 1.5rem 4rem;
+    /* Clear the fixed topbar — body.hero-page zeroes .main-content padding,
+       so we add it here. var(--tb-h) defaults to 56px from style.css. */
+    padding: calc(var(--tb-h, 56px) + 1.5rem) 1.5rem 4rem;
     max-width: 1280px;
     margin: 0 auto;
     position: relative;
