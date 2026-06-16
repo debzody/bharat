@@ -265,12 +265,12 @@
         ]
     }
     </script>
-    <link rel="stylesheet" href="css/style.css?v=65">
+    <link rel="stylesheet" href="css/style.css?v=66">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
     <link rel="stylesheet" href="css/mmt.css?v=34">
     <link rel="stylesheet" href="css/flights.css?v=3">
     <link rel="stylesheet" href="css/hero-pro.css?v=2">
-    <link rel="stylesheet" href="css/hero-pro-2.css?v=20">
+    <link rel="stylesheet" href="css/hero-pro-2.css?v=21">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ── Razorpay — lazy-loaded on demand ──────────────────────────────
@@ -407,7 +407,10 @@
           <div class="hero-main">
             <span class="hero-eyebrow"><i class="fas fa-medal" aria-hidden="true"></i> Andaman &amp; Nicobar · Trusted Since 2013</span>
             <div class="hero-heading">
-                <h1>Your Andaman, <em>just&nbsp;the&nbsp;way&nbsp;you&nbsp;dream&nbsp;it</em>.</h1>
+                <h1>
+                  <span class="hero-h1-line1">Your Andaman,</span>
+                  <span class="hero-h1-line2"><em>just&nbsp;the&nbsp;way&nbsp;you&nbsp;dream&nbsp;it</em>.</span>
+                </h1>
             </div>
 
             <div class="hero-subtext">
@@ -418,8 +421,12 @@
             <div class="hero-price hero-price--pro">
                 <span class="hero-price-from">From</span>
                 <span class="hero-price-now">₹15,999<small>/ person</small></span>
-                <span class="hero-price-meta">All-inclusive · 4N&nbsp;5D · Free cancellation*</span>
                 <span class="hero-price-tag" title="Compared to ₹22,999"><i class="fas fa-tag"></i> Save ₹7,000</span>
+            </div>
+            <div class="hero-chips">
+                <span class="hero-chip"><i class="fa-solid fa-shield-halved"></i> All-inclusive*</span>
+                <span class="hero-chip"><i class="fa-solid fa-calendar-days"></i> 4N&nbsp;5D</span>
+                <span class="hero-chip"><i class="fa-solid fa-arrows-rotate"></i> Free cancellation*</span>
             </div>
 
             <div class="mmt-searchbar mmt-searchbar-hero mmt-searchbar--pro">
@@ -498,13 +505,27 @@
                 <button class="mmt-search-btn" id="mmtSearchBtn">SEARCH</button>
             </div>
 
-            <!-- Secondary CTA: outline button for visual weight -->
-            <a href="#packages" class="hero-cta-secondary hero-cta-secondary--ghost">
-                <i class="fas fa-compass"></i>
-                Browse all curated packages
-                <i class="fas fa-arrow-right"></i>
-            </a>
+            <!-- Trust strip — three reassurance items + a packages-browse CTA -->
+            <div class="hero-trust-strip">
+                <span class="trust-item"><i class="fa-solid fa-wand-magic-sparkles"></i> Best Price Guarantee</span>
+                <span class="trust-sep" aria-hidden="true"></span>
+                <span class="trust-item"><i class="fa-solid fa-headset"></i> 24/7 Travel Support</span>
+                <span class="trust-sep" aria-hidden="true"></span>
+                <span class="trust-item"><i class="fa-solid fa-lock"></i> Secure Payments</span>
+                <a href="#packages" class="trust-cta">Browse all packages <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
           </div><!-- /.hero-main -->
+
+          <aside class="hero-stat-cards" aria-label="Trust signals">
+            <div class="hero-stat-card">
+                <span class="hero-stat-icon hero-stat-icon--gold"><i class="fa-solid fa-star"></i></span>
+                <div class="hero-stat-text"><strong>11+ Years</strong><small>Local Expertise</small></div>
+            </div>
+            <div class="hero-stat-card">
+                <span class="hero-stat-icon hero-stat-icon--green"><i class="fa-solid fa-users"></i></span>
+                <div class="hero-stat-text"><strong>25K+</strong><small>Happy Travellers</small></div>
+            </div>
+          </aside>
         </div>
 
     </section>
