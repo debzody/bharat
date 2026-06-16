@@ -140,15 +140,29 @@
         wrap.innerHTML =
             '<button type="button" class="user-menu-btn" id="userMenuBtn" '+
                 'aria-haspopup="true" aria-expanded="false" title="Account">' +
-                '<span class="um-initials">?</span>' +
+                '<span class="um-avatar um-initials">?</span>' +
+                '<span class="um-greet">Login</span>' +
+                '<i class="um-chev fa-solid fa-chevron-down" aria-hidden="true"></i>' +
                 '<span class="um-dot"></span>' +
             '</button>';
+
+        // Build a circular phone-icon button (matches the mockup) and
+        // insert it just before the user pill.
+        const callBtn = document.createElement('a');
+        callBtn.className = 'topbar-call-btn';
+        callBtn.href = 'tel:+918880195191';
+        callBtn.setAttribute('aria-label', 'Call us');
+        callBtn.title = '+91 88801 95191';
+        callBtn.innerHTML = '<i class="fa-solid fa-phone-volume"></i>';
+
         // Insert the avatar just before the hamburger if there is one,
         // otherwise as the last child of the topbar.
         const hamburger = topbar.querySelector('.hamburger');
         if (hamburger) {
+            topbar.insertBefore(callBtn, hamburger);
             topbar.insertBefore(wrap, hamburger);
         } else {
+            topbar.appendChild(callBtn);
             topbar.appendChild(wrap);
         }
 
@@ -284,10 +298,17 @@
             // inside the dropdown which now lives on <body>, NOT inside wrap.
             const nameEl  = drop.querySelector('.um-name');
             const emailEl = drop.querySelector('.um-email');
+            const greetEl = btn.querySelector('.um-greet');
             if (u) {
                 btn.classList.add('um-online');
                 if (nameEl)  nameEl.textContent  = u.fullName || u.username || 'Account';
                 if (emailEl) emailEl.textContent = u.email || '';
+                if (greetEl) {
+                    // Short greeting in the topbar pill — first name only
+                    // so it doesn't bloat the bar on long full names.
+                    var first = (u.fullName || u.username || 'there').split(/\s+/)[0];
+                    greetEl.textContent = 'Hi, ' + first;
+                }
                 drop.querySelectorAll('.um-login-only').forEach(e => e.style.display = 'none');
                 drop.querySelectorAll('.um-logout-only').forEach(e => e.style.display = '');
                 if (isAdmin(u)) {
@@ -299,6 +320,7 @@
                 btn.classList.remove('um-online');
                 if (nameEl)  nameEl.textContent  = 'Guest';
                 if (emailEl) emailEl.textContent = 'Not signed in';
+                if (greetEl) greetEl.textContent = 'Login';
                 drop.querySelectorAll('.um-login-only').forEach(e => e.style.display = '');
                 drop.querySelectorAll('.um-logout-only').forEach(e => e.style.display = 'none');
                 drop.querySelectorAll('.um-admin-only').forEach(e => e.style.display = 'none');
