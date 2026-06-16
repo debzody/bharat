@@ -3501,3 +3501,104 @@ body.hero-page .topnav-item.active::after { display: none; }
     .v2-tl-step::before { right: -0.25rem; }
     .v2-tl-step--last::before { right: 50%; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   TOPBAR v2 — round phone-icon button + wider 'Hi, <Name>' user pill
+   with a chevron, matching the new mockup.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Round phone-call button sits just before the user pill */
+.topbar-call-btn {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #7ee2c0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 1rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.15s, transform 0.15s, border-color 0.15s, color 0.15s;
+}
+.topbar-call-btn:hover {
+    background: rgba(126, 226, 192, 0.22);
+    border-color: rgba(126, 226, 192, 0.55);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Override the old round-only avatar button with a wider pill that
+   reads "[avatar] Hi, <Name> ⌄" */
+.user-menu-btn {
+    width: auto !important;
+    height: 42px !important;
+    padding: 0.25rem 0.85rem 0.25rem 0.3rem !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: #2c3e50 !important;
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+    gap: 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    overflow: visible !important;       /* let dot poke out of the avatar circle */
+}
+.user-menu-btn:hover {
+    background: #fff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22) !important;
+}
+.user-menu-btn .um-avatar,
+.user-menu-btn .um-initials {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+}
+.user-menu-btn .um-greet {
+    color: #2c3e50;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-menu-btn .um-chev {
+    color: #5a6b76;
+    font-size: 0.74rem;
+    margin-left: 0.1rem;
+    transition: transform 0.2s;
+}
+.user-menu-wrap.open .user-menu-btn .um-chev {
+    transform: rotate(180deg);
+}
+.user-menu-btn .um-dot {
+    top: 2px !important;
+    right: 2px !important;
+    /* Position relative to the avatar — its parent is the button, so
+       use explicit inset values that line up with the 32px circle. */
+    left: auto;
+    bottom: auto;
+}
+
+/* On narrow viewports, hide the greeting text so the pill collapses
+   back to just avatar + chevron. */
+@media (max-width: 720px) {
+    .user-menu-btn .um-greet { display: none; }
+    .user-menu-btn { padding: 0.25rem 0.55rem 0.25rem 0.3rem !important; }
+    .topbar-call-btn { display: none; }
+}
