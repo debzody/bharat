@@ -257,7 +257,7 @@ body.hero-page .hero,body.hero-page .gallery-hero,body.hero-page .about-hero{pad
 .hero-heading{max-width:820px}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:.45rem;margin-bottom:.85rem;padding:.5rem 1.05rem;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(247,201,72,.12));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:.84rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .hero-eyebrow i{color:#f7c948;font-size:.92rem}
-.hero-heading h1{font-size:clamp(2.6rem,5.8vw,4.8rem);font-weight:800;margin:0;line-height:1.02;letter-spacing:-.04em;text-shadow:0 2px 20px rgba(0,0,0,.45),0 4px 36px rgba(0,0,0,.25)}
+.hero-heading h1{font-size:clamp(2rem,4.4vw,3.6rem);font-weight:800;margin:0;line-height:1.05;letter-spacing:-.04em;text-shadow:0 2px 20px rgba(0,0,0,.45),0 4px 36px rgba(0,0,0,.25)}
 .hero-heading h1 em{font-style:italic;color:#fff !important;-webkit-text-fill-color:#fff !important;background:none !important;white-space:nowrap}
 .hero-subtext{max-width:680px}
 .hero-subtext p{font-size:1.12rem;margin:0;opacity:1;line-height:1.6;text-shadow:0 1px 6px rgba(0,0,0,.55),0 2px 14px rgba(0,0,0,.35);font-weight:400}
