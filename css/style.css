@@ -3602,3 +3602,29 @@ body.hero-page .topnav-item.active::after { display: none; }
     .user-menu-btn { padding: 0.25rem 0.55rem 0.25rem 0.3rem !important; }
     .topbar-call-btn { display: none; }
 }
+
+/* Override the legacy .um-has-photo absolute-fill behaviour. The old
+   rule (line ~570) made the avatar fill the entire button — that was
+   correct when the button was a 44px circle, but the new wide pill
+   has text + chevron next to the avatar, so we need the avatar to
+   stay at its 32×32 box. */
+.user-menu-btn .um-avatar.um-has-photo,
+.user-menu-btn .um-initials.um-has-photo {
+    position: relative !important;
+    inset: auto !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0;
+    overflow: hidden;
+    /* Restore tiny font sizes for text fallback */
+    font-size: 0.78rem !important;
+    line-height: 1 !important;
+}
+.user-menu-btn .um-has-photo img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
