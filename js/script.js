@@ -443,95 +443,133 @@ function renderSitePackages() {
         const days = dur + 1;
         const route = pkgRoute(pkg);
         const perks = pkgPerks(pkg);
-        // Always-visible meal plan + any package inclusions (deduped).
-        // pkgCardInclusions() prepends the resolved meal plan so every
-        // card consistently shows what meals are included on the trip.
         const incl = pkgCardInclusions(pkg).slice(0, 6);
         const totalPrice = isTest ? pkg.price : pkg.price * 2;
-        const emi = Math.round(pkg.price / 6);
-        // Sold-out always wins as the headline tag.
-        const tag = isSoldOut
-            ? 'Sold Out'
-            : (pkg.id === 'standard' ? 'Deal of the day' : (pkg.id === 'luxury' ? 'AD Premium' : ''));
-        const tagClass = isSoldOut ? 'mmt-card-tag mmt-card-tag-soldout' : 'mmt-card-tag';
+        const emi = Math.round(pkg.price / 12);
 
         // Phase 1.3 — category pill on every card
         const catSlug  = pkgCategory(pkg);
         const catLabel = pkgCategoryLabel(catSlug);
         const catColor = pkgCategoryColor(catSlug);
 
-        // Split inclusions into two columns. Pad the meal-plan row to the
-        // bottom so transfers/hotels/activities sit in the top rows like
-        // the MMT-style design. We also derive a clean "X Activities"
-        // line when the package has an activities count we can compute.
-        const inclTwo = incl.slice(0, 5);
-        // Public title (cleaned up) and total price for the bottom strip
+        // Title clean-up
         const cleanTitle = pkg.name
             .replace(/\s*\(\s*[0-9]+\s*[a-zA-Z]\s*\)\s*/g, ' ')
             .replace(/\s+—/g, ' —')
             .replace(/\s+/g, ' ')
             .trim();
-        const totalTwo = (!isTest && pkg.price > 0) ? pkg.price * 2 : 0;
+
+        // ── Mockup-driven derived fields ───────────────────────
+        // Rating — use pkg.rating; fall back to 4.5 so cards never look broken.
+        const rating = (typeof pkg.rating === 'number' && pkg.rating > 0)
+            ? pkg.rating.toFixed(1) : '4.5';
+        // Was-price = +18% (rounded to nearest 100). Save = was - now.
+        const wasPrice = Math.round((pkg.price * 1.18) / 100) * 100;
+        const savings  = Math.max(0, wasPrice - pkg.price);
+        const pctOff   = wasPrice > pkg.price
+            ? Math.round((savings / wasPrice) * 100) : 0;
+        // Slot urgency — deterministic per package id so it stays stable
+        // across reloads but varies between cards. Range 2–6.
+        const idHash = String(pkg.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+        const slotsLeft = 2 + (idHash % 5);
+        // Insight callout — pick a one-liner per category.
+        const insightByCat = {
+            budget:    'Best for travellers who want to explore all 3 islands comfortably within a budget.',
+            standard:  'Ideal for first-time Andaman travellers looking for maximum sightseeing.',
+            deluxe:    'Step up to better hotels and curated experiences across every island.',
+            luxury:    'Stay at premium beachfront resorts with private cabs and concierge support.',
+            royal:     'Top-tier suites, private yachts and a dedicated trip manager throughout.',
+            honeymoon: 'Romantic stays, candlelight dinners and couple experiences across the islands.'
+        };
+        const insightLine = insightByCat[catSlug] || 'A handpicked Andaman itinerary with hotels, ferries and transfers included.';
+        // Day timeline — 4 milestone columns. Build from the route + days.
+        const stops = (route && route.length) ? route : ['Port Blair'];
+        const timeline = (function () {
+            // Always 4 stops: Day 1 / mid1 / mid2 / final (Departure).
+            const segs = [];
+            const first = stops[0] || 'Port Blair';
+            const last = stops[stops.length - 1] || 'Port Blair';
+            segs.push({ label: 'Day 1', loc: first });
+            if (days >= 4) {
+                segs.push({ label: 'Day 2-' + Math.ceil(days / 2), loc: stops[1] || stops[0] });
+                segs.push({ label: 'Day ' + Math.ceil(days / 2 + 1) + '-' + (days - 1), loc: stops[2] || stops[1] || stops[0] });
+            } else {
+                segs.push({ label: 'Day 2', loc: stops[1] || stops[0] });
+                segs.push({ label: 'Day 3', loc: stops[2] || stops[1] || stops[0] });
+            }
+            segs.push({ label: 'Day ' + days, loc: 'Departure' });
+            return segs;
+        })();
+        // Inclusion chips for the card — use first three meaningful inclusions.
+        const inclChips = incl.slice(0, 4);
+        const inclMore  = Math.max(0, incl.length - inclChips.length);
 
         return `
-        <div class="mmt-card${isSoldOut ? ' mmt-card-soldout' : ''}" data-pkgid="${pkg.id}" data-name="${pkg.id}" data-category="${catSlug}">
-            <div class="mmt-card-img" data-nav="${pkg.id}" style="background-image:url('${pkg.image}');">
-                ${tag ? `<span class="${tagClass}">${tag}</span>` : ''}
-                <span class="mmt-cat-pill" style="background:${catColor};">${catLabel}</span>
-                ${perks.length ? `<span class="mmt-more-options">${perks.length} More Options Available</span>` : ''}
+        <div class="mmt-card v2-card${isSoldOut ? ' mmt-card-soldout' : ''}" data-pkgid="${pkg.id}" data-name="${pkg.id}" data-category="${catSlug}">
+            <div class="v2-card-img" data-nav="${pkg.id}" style="background-image:url('${pkg.image}');">
+                <span class="v2-cat-pill" style="background:${catColor};">${catLabel.toUpperCase()}</span>
+                <span class="v2-rating-pill"><i class="fas fa-star"></i> ${rating}</span>
+                <button type="button" class="v2-heart-btn" aria-label="Save to wishlist" onclick="event.stopPropagation();this.classList.toggle('is-on');"><i class="fa-regular fa-heart"></i></button>
+                ${savings > 0 && !isTest ? `<span class="v2-save-pill">SAVE ₹${savings.toLocaleString()}</span>` : ''}
+                ${isSoldOut ? `<span class="v2-soldout-stamp">Sold Out</span>` : ''}
             </div>
-            <div class="mmt-card-body">
-                <div class="mmt-card-title-row">
-                    <h3 class="mmt-card-title" data-nav="${pkg.id}">${cleanTitle}</h3>
-                    <span class="mmt-card-duration">${dur}N/${days}D</span>
+            <div class="v2-card-body">
+                <h3 class="v2-card-title" data-nav="${pkg.id}">${cleanTitle}</h3>
+                <div class="v2-card-meta">
+                    <span class="v2-meta-strong">${days} Days · ${dur} Nights</span>
+                    <span class="v2-meta-route">${stops.join(' → ')}</span>
                 </div>
-                <div class="mmt-route">
-                    ${route.map((r, i) => `<span>${r}</span>${i < route.length - 1 ? '<span class="dot"></span>' : ''}`).join('')}
+                <div class="v2-insight">
+                    <i class="fa-solid fa-binoculars"></i>
+                    <span>${insightLine}</span>
                 </div>
-                <div class="mmt-card-amenities" aria-label="Inclusions at a glance">
-                    <span class="mmt-amen" title="Hotels"><i class="fas fa-hotel"></i></span>
-                    <span class="mmt-amen" title="Sightseeing"><i class="fas fa-binoculars"></i></span>
-                    <span class="mmt-amen" title="Transfers"><i class="fas fa-car-side"></i></span>
-                    <span class="mmt-amen" title="Meals"><i class="fas fa-utensils"></i></span>
-                </div>
-                ${inclTwo.length ? `
-                <ul class="mmt-incl-list">
-                    ${inclTwo.map(i => `<li><span>${i}</span></li>`).join('')}
-                </ul>` : ''}
-                ${perks.length ? `
-                <div class="mmt-perks">
-                    ${perks.map(p => `<div class="mmt-perk"><i class="fas fa-check"></i> ${p}</div>`).join('')}
+                ${inclChips.length ? `
+                <div class="v2-incl-chips">
+                    ${inclChips.map(i => `<span class="v2-incl-chip">${i}</span>`).join('')}
+                    ${inclMore ? `<span class="v2-incl-chip v2-incl-chip--more">+${inclMore} more</span>` : ''}
                 </div>` : ''}
+                <ol class="v2-timeline">
+                    ${timeline.map((t, i) => `
+                        <li class="v2-tl-step${i === 0 ? ' v2-tl-step--first' : ''}${i === timeline.length - 1 ? ' v2-tl-step--last' : ''}">
+                            <span class="v2-tl-dot"></span>
+                            <span class="v2-tl-label">${t.label}</span>
+                            <span class="v2-tl-loc">${t.loc}</span>
+                        </li>`).join('')}
+                </ol>
             </div>
-            <div class="mmt-card-price">
-                ${tag === 'Deal of the day'
-                    ? `<div class="mmt-price-offer-row">
-                         <span class="mmt-price-offer-label">Limited Time Offer</span>
-                         <span class="mmt-price-offer-amt">
-                            <strong>₹${Number(pkg.price).toLocaleString()}</strong><span>${isTest ? '/test' : '/person'}</span>
-                            ${totalTwo ? `<small>Total Price ₹${totalTwo.toLocaleString()}</small>` : ''}
-                         </span>
-                       </div>`
-                    : `${pkg.price >= 20000 ? `<div class="mmt-price-emi">No Cost EMI at <strong>₹${emi.toLocaleString()}</strong>/month</div>` : ''}
-                       ${!isTest ? `<div class="mmt-price-from">Starting From</div>` : ''}
-                       ${!isTest ? `<div class="mmt-price-strike">₹${(Math.round((pkg.price * 1.18) / 100) * 100).toLocaleString()}</div>` : ''}
-                       <div class="mmt-price-row">
-                           <span class="mmt-price-amt">₹${Number(pkg.price).toLocaleString()}</span>
-                           <span class="mmt-price-per">${isTest ? '/test' : '/person'}</span>
-                       </div>
-                       ${!isTest ? `<div class="mmt-price-fineprint">Per Person on twin sharing</div>` : ''}`
-                }
-                ${isSoldOut
-                    ? `<button class="mmt-card-cta mmt-card-cta-soldout" data-action="enquire" data-pkg="${pkg.id}">
-                         <i class="fas fa-times-circle"></i> Sold Out — Notify Me
-                       </button>`
-                    : `<button class="mmt-card-cta" data-action="book" data-pkg="${pkg.id}">
-                         ${isTest ? 'Pay ₹1 Now' : 'Book Now'}
-                       </button>`}
-                ${(!isTest && !isSoldOut) ? `<button class="mmt-card-cta-secondary" data-action="customize" data-pkg="${pkg.id}">Customize</button>` : ''}
+            <div class="v2-card-foot">
+                <div class="v2-foot-price">
+                    <div class="v2-foot-from">Starting from</div>
+                    <div class="v2-foot-now-row">
+                        <span class="v2-foot-now">₹${Number(pkg.price).toLocaleString()}</span>
+                        <span class="v2-foot-per">/person</span>
+                        ${!isTest && wasPrice > pkg.price ? `<span class="v2-foot-was">₹${wasPrice.toLocaleString()}</span>` : ''}
+                        ${pctOff > 0 && !isTest ? `<span class="v2-foot-pct">${pctOff}% OFF</span>` : ''}
+                    </div>
+                    ${pkg.price >= 12000 && !isTest ? `<div class="v2-foot-emi">EMI from <strong>₹${emi.toLocaleString()}</strong>/month <i class="fa-solid fa-circle-info" title="No-cost EMI on cards"></i></div>` : ''}
+                </div>
+                ${!isSoldOut && !isTest ? `
+                <div class="v2-foot-urgency">
+                    <i class="fa-solid fa-fire"></i> Only ${slotsLeft} slots left this week!
+                </div>` : ''}
+                <div class="v2-foot-actions">
+                    <label class="v2-compare">
+                        <input type="checkbox" class="v2-compare-cb" data-pkgid="${pkg.id}" data-pkgname="${cleanTitle.replace(/"/g, '&quot;')}">
+                        <span>Compare</span>
+                    </label>
+                    <button type="button" class="v2-btn v2-btn-outline" data-action="details" data-pkg="${pkg.id}">View Details</button>
+                    ${isSoldOut
+                        ? `<button class="v2-btn v2-btn-outline v2-btn-soldout" data-action="enquire" data-pkg="${pkg.id}"><i class="fas fa-bell"></i> Notify Me</button>`
+                        : `<button class="v2-btn v2-btn-primary" data-action="book" data-pkg="${pkg.id}">${isTest ? 'Pay ₹1 Now' : 'Book Now'}</button>`}
+                </div>
             </div>
         </div>`;
     }).join('');
+
+    // Update result count + reset compare-bar after each render
+    const countEl = document.getElementById('mmtResultCount');
+    if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' Package' + (filtered.length === 1 ? '' : 's');
+    if (typeof window._refreshCompareBar === 'function') window._refreshCompareBar();
 }
 
 function getPkgPrice(pkgId) {
@@ -1271,8 +1309,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // ── Filters: 'Clear All' + sticky Compare bar wiring ─────────
+    const clearBtn = document.getElementById('mmtFiltersClear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            document.querySelectorAll('#mmtFilters input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            mmtState.dur = []; mmtState.budget = []; mmtState.hotel = []; mmtState.theme = [];
+            renderSitePackages();
+        });
+    }
 
-
+    // Compare bar — collects checked packages and shows a sticky bar at
+    // the bottom. The "Compare" button links to a basic comparison view
+    // (alert with package names for now — full compare modal can come
+    // later if asked for).
+    window._compareIds = window._compareIds || new Set();
+    window._refreshCompareBar = function () {
+        const bar = document.getElementById('v2CompareBar');
+        const count = document.getElementById('v2CompareCount');
+        if (!bar || !count) return;
+        // Sync our Set with what's currently checked in the DOM (cards
+        // get re-rendered on filter/sort changes).
+        document.querySelectorAll('.v2-compare-cb').forEach(cb => {
+            cb.checked = window._compareIds.has(cb.dataset.pkgid);
+        });
+        const n = window._compareIds.size;
+        count.textContent = n;
+        if (n >= 2) bar.classList.add('is-on'); else bar.classList.remove('is-on');
+    };
+    document.addEventListener('change', (e) => {
+        const cb = e.target.closest('.v2-compare-cb');
+        if (!cb) return;
+        const id = cb.dataset.pkgid;
+        if (cb.checked) window._compareIds.add(id); else window._compareIds.delete(id);
+        // Cap at 3 — un-check any older selection so we don't accumulate forever.
+        if (window._compareIds.size > 3) {
+            const first = window._compareIds.values().next().value;
+            window._compareIds.delete(first);
+        }
+        window._refreshCompareBar();
+    });
+    const compareBtn = document.getElementById('v2CompareGo');
+    if (compareBtn) {
+        compareBtn.addEventListener('click', () => {
+            const ids = Array.from(window._compareIds);
+            const list = ids.map(id => {
+                const pkg = (window._packages || []).find(p => p.id === id);
+                return pkg ? `• ${pkg.name} — ₹${Number(pkg.price).toLocaleString()}/person` : id;
+            }).join('\n');
+            alert('Comparing ' + ids.length + ' packages:\n\n' + list +
+                '\n\nUse the package detail pages to compare in depth — full side-by-side comparison view is coming soon.');
+        });
+    }
     // View toggle (Grid / List)
     (function () {
         const grid = document.getElementById('packagesGrid');
@@ -1542,6 +1632,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const custBtn = e.target.closest('[data-action="customize"]');
             if (custBtn) { e.stopPropagation(); window.openCustomize(custBtn.dataset.pkg); return; }
+            const detailsBtn = e.target.closest('[data-action="details"]');
+            if (detailsBtn) { e.stopPropagation(); window.location.href = '/package?id=' + detailsBtn.dataset.pkg; return; }
             const navEl = e.target.closest('[data-nav]');
             if (navEl) { window.location.href = '/package?id=' + navEl.dataset.nav; return; }
         });

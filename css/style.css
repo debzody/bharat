@@ -2907,3 +2907,597 @@ body.hero-page .topnav-item.active::after { display: none; }
     .dest-help-card { flex-direction: column; align-items: flex-start; text-align: left; }
     .dest-help-cta { align-self: stretch; justify-content: center; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PACKAGES REDESIGN (v2) — banner header, sidebar additions, sort row,
+   redesigned cards with timeline / urgency / EMI / compare, floating
+   compare bar.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* A. "Explore Andaman" banner header */
+.explore-banner {
+    background: linear-gradient(135deg, #0a2a3d 0%, #0d4350 60%, #0a2a3d 100%);
+    color: #fff;
+    padding: 2.4rem 1.5rem 4.5rem;
+    margin-bottom: -3rem;
+    position: relative;
+}
+.explore-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url('../images/havelock/havelock-1.jpg') center/cover no-repeat;
+    opacity: 0.18;
+    pointer-events: none;
+}
+.explore-banner-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+.explore-banner-title {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: clamp(2rem, 4.4vw, 3rem);
+    font-weight: 600;
+    margin: 0 0 0.4rem 0;
+    letter-spacing: -0.02em;
+    color: #fff;
+}
+.explore-banner-sub {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 1rem;
+}
+.explore-style-label {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+}
+
+/* Travel-style chip overrides — to match the mockup's pill row */
+.mmt-tabs-card {
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    max-width: 1280px;
+    margin: 0 auto 1.5rem auto;
+    position: relative;
+    z-index: 2;
+}
+#mmtTabs .mmt-tab {
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.86rem;
+    background: transparent;
+    border: 0;
+    color: #2c3e50;
+    text-transform: none;
+    letter-spacing: 0;
+    transition: background 0.15s, color 0.15s;
+}
+#mmtTabs .mmt-tab.active {
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    color: #fff;
+}
+#mmtTabs .mmt-tab .mmt-tab-count {
+    margin-left: 0.35rem;
+    background: rgba(0, 0, 0, 0.06);
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+#mmtTabs .mmt-tab.active .mmt-tab-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* B. Filters sidebar — title row + Clear All + Why-book card */
+.mmt-filters-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+.mmt-filters-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2c3e50;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.mmt-filters-title i { color: #0d7a8a; }
+.mmt-filters-clear {
+    background: transparent;
+    border: 0;
+    color: #0d7a8a;
+    font-weight: 600;
+    font-size: 0.86rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.mmt-filters-clear:hover { color: #1abc9c; }
+
+.mmt-why-card {
+    margin-top: 1.4rem;
+    padding: 1.2rem;
+    background: linear-gradient(180deg, #f5fbfb, #ffffff);
+    border: 1px solid rgba(13, 122, 138, 0.12);
+    border-radius: 14px;
+}
+.mmt-why-title {
+    margin: 0 0 0.85rem 0;
+    font-size: 0.96rem;
+    color: #2c3e50;
+    font-weight: 700;
+}
+.mmt-why-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.mmt-why-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+.mmt-why-list i {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(26, 188, 156, 0.10);
+    color: #0d7a8a;
+    font-size: 0.85rem;
+}
+.mmt-why-list strong {
+    display: block;
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 0.86rem;
+    line-height: 1.2;
+}
+.mmt-why-list small {
+    display: block;
+    color: #7a8b96;
+    font-size: 0.76rem;
+    margin-top: 1px;
+}
+
+/* C. Sort row v2 — Showing N · Sort by · grid/list toggle */
+.mmt-sort-row--v2 {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.mmt-sort-count {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+.mmt-sort-row--v2 .mmt-sort-spacer { flex: 1; }
+.mmt-sort-row--v2 label {
+    color: #7a8b96;
+    font-size: 0.86rem;
+    font-weight: 500;
+}
+.mmt-sort-row--v2 #mmtSort {
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    background: #fff;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #2c3e50;
+    min-width: 180px;
+}
+.mmt-view-toggle {
+    display: inline-flex;
+    background: #f4f6f8;
+    border-radius: 10px;
+    padding: 0.2rem;
+    gap: 0.15rem;
+}
+.mmt-view-toggle .view-btn {
+    background: transparent;
+    border: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    color: #7a8b96;
+    cursor: pointer;
+}
+.mmt-view-toggle .view-btn.active {
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    color: #fff;
+}
+
+/* D. Package card v2.
+   .mmt-card from mmt.css uses display:grid + 3-column template; we
+   force flex-column with !important since mmt.css loads AFTER this
+   file. .v2-card-img also needs min-height/border-right resets. */
+.v2-card {
+    background: #fff !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.v2-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.10) !important;
+}
+.v2-card-img {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    min-height: 0 !important;
+    border-right: 0 !important;
+}
+/* The grid uses 2-column on desktop. mmt.css's flex-column on
+   .mmt-results would force one column otherwise. */
+.mmt-results.view-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
+    gap: 1.4rem !important;
+}
+.mmt-results.view-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+}
+.v2-cat-pill {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.v2-rating-pill {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 8px;
+    background: rgba(15, 30, 45, 0.78);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.v2-rating-pill i { color: #f7c948; font-size: 0.78rem; }
+.v2-heart-btn {
+    position: absolute;
+    top: 0.85rem;
+    right: 4.2rem;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    border: 0;
+    color: #7a8b96;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+    transition: color 0.15s, transform 0.15s;
+}
+.v2-heart-btn:hover { color: #e74c3c; transform: scale(1.1); }
+.v2-heart-btn.is-on { color: #e74c3c; }
+.v2-heart-btn.is-on i { font-weight: 900; }
+.v2-save-pill {
+    position: absolute;
+    bottom: 0.85rem;
+    right: 0.85rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.45);
+}
+.v2-soldout-stamp {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 30, 45, 0.55);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.v2-card-body { padding: 1.1rem 1.2rem 0.5rem; }
+.v2-card-title {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 0.55rem 0;
+    cursor: pointer;
+    line-height: 1.25;
+}
+.v2-card-title:hover { color: #0d7a8a; }
+.v2-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: 0.86rem;
+    color: #5a6b76;
+    margin-bottom: 0.85rem;
+}
+.v2-meta-strong {
+    color: #1abc9c;
+    font-weight: 700;
+}
+.v2-meta-route { color: #5a6b76; }
+
+.v2-insight {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    background: rgba(26, 188, 156, 0.08);
+    border-radius: 10px;
+    color: #2c3e50;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin-bottom: 0.85rem;
+}
+.v2-insight i {
+    color: #0d7a8a;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 0.95rem;
+}
+
+.v2-incl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+}
+.v2-incl-chip {
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    background: #f4f6f8;
+    color: #5a6b76;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+.v2-incl-chip--more { color: #0d7a8a; font-weight: 600; }
+
+.v2-timeline {
+    list-style: none;
+    margin: 0 0 0.9rem 0;
+    padding: 1rem 0 0 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    position: relative;
+}
+.v2-tl-step {
+    position: relative;
+    padding-top: 1.4rem;
+    text-align: left;
+}
+.v2-tl-step::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 0;
+    right: -0.5rem;
+    height: 2px;
+    background: linear-gradient(90deg, #1abc9c, #1abc9c);
+}
+.v2-tl-step--first::before { left: 6px; }
+.v2-tl-step--last::before  { right: 50%; }
+.v2-tl-dot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #1abc9c;
+    box-sizing: border-box;
+}
+.v2-tl-label {
+    display: block;
+    color: #1abc9c;
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+.v2-tl-loc {
+    display: block;
+    color: #5a6b76;
+    font-size: 0.78rem;
+    margin-top: 1px;
+}
+
+/* Footer area: price + urgency + actions */
+.v2-card-foot {
+    padding: 0.9rem 1.2rem 1.2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: #fcfcfc;
+    margin-top: auto;
+}
+.v2-foot-from {
+    color: #7a8b96;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+.v2-foot-now-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.2rem;
+}
+.v2-foot-now {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0d7a8a;
+}
+.v2-foot-per { color: #7a8b96; font-size: 0.85rem; }
+.v2-foot-was {
+    color: #b6c1c8;
+    font-size: 0.95rem;
+    text-decoration: line-through;
+}
+.v2-foot-pct {
+    color: #1abc9c;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.v2-foot-emi {
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: #7a8b96;
+}
+.v2-foot-emi strong { color: #2c3e50; }
+.v2-foot-emi i { color: #b6c1c8; margin-left: 0.25rem; }
+
+.v2-foot-urgency {
+    margin-top: 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #ff6b3d;
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+.v2-foot-urgency i { color: #ff6b3d; }
+
+.v2-foot-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.95rem;
+    flex-wrap: wrap;
+}
+.v2-compare {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #5a6b76;
+    font-size: 0.86rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.v2-compare input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #0d7a8a;
+}
+.v2-btn {
+    padding: 0.65rem 1.1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s, transform 0.1s, color 0.15s;
+}
+.v2-btn-outline {
+    background: #fff;
+    border-color: #0d7a8a;
+    color: #0d7a8a;
+}
+.v2-btn-outline:hover { background: rgba(13, 122, 138, 0.08); }
+.v2-btn-primary {
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    color: #fff;
+    flex: 1;
+}
+.v2-btn-primary:hover { transform: translateY(-1px); }
+.v2-btn-soldout { opacity: 0.7; }
+
+/* E. Floating Compare bar */
+.v2-compare-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 1.6rem;
+    transform: translateX(-50%) translateY(120%);
+    z-index: 80;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.v2-compare-bar.is-on { transform: translateX(-50%) translateY(0); }
+.v2-compare-bar-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1rem 0.7rem 1.2rem;
+    background: linear-gradient(135deg, #1a1a2e, #0a2a3d);
+    color: #fff;
+    border-radius: 999px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.v2-compare-bar-inner i { color: #7ee2c0; }
+.v2-compare-bar-label {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+.v2-compare-bar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    color: #fff;
+    border: 0;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26, 188, 156, 0.5);
+}
+.v2-compare-bar-btn:hover { transform: scale(1.05); }
+
+/* Mobile fallback for the card timeline */
+@media (max-width: 540px) {
+    .v2-timeline { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+    .v2-tl-step::before { right: -0.25rem; }
+    .v2-tl-step--last::before { right: 50%; }
+}
