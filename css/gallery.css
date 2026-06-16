@@ -1014,3 +1014,299 @@
 @media (max-width: 720px) {
     .agf-grid { grid-template-columns: 1fr; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   GALLERY REDESIGN (v2) — dark navy theme with hero header, pill chips,
+   tiles with location pin + bottom info bar, and a 'Share Your Photos'
+   strip at the bottom.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Apply dark theme only when the new wrap is present */
+body:has(.gallery-wrap--v2) {
+    background: linear-gradient(180deg, #07182a 0%, #0a2a3d 60%, #07182a 100%);
+}
+.gallery-wrap--v2 {
+    background: transparent;
+    color: #fff;
+    padding: 1.5rem 1.5rem 4rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    position: relative;
+}
+.gallery-wrap--v2::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 320px;
+    background: radial-gradient(60% 50% at 80% 30%, rgba(126, 226, 192, 0.12), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+.gallery-wrap--v2 > * { position: relative; z-index: 1; }
+
+/* Header block */
+.gp-head {
+    margin-bottom: 1.6rem;
+    padding-top: 0.5rem;
+}
+.gp-eyebrow {
+    color: #7ee2c0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+}
+.gp-title {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 0.55rem 0;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+}
+.gp-title em {
+    font-style: italic;
+    color: #7ee2c0;
+}
+.gp-sub {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    max-width: 560px;
+    margin: 0;
+    line-height: 1.55;
+}
+
+/* Toolbar (chips + actions) on the dark theme */
+.gallery-wrap--v2 .gallery-toolbar {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 0 1.6rem 0 !important;
+    align-items: center;
+    gap: 1rem;
+}
+.gallery-wrap--v2 .gallery-filters {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+.gallery-wrap--v2 .gallery-chip {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.86) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    font-size: 0.84rem !important;
+    backdrop-filter: blur(8px);
+}
+.gallery-wrap--v2 .gallery-chip .gallery-chip-count {
+    margin-left: 0.4rem;
+    background: rgba(255, 255, 255, 0.10);
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.gallery-wrap--v2 .gallery-chip:hover {
+    background: rgba(126, 226, 192, 0.15) !important;
+    color: #fff !important;
+    border-color: rgba(126, 226, 192, 0.35) !important;
+}
+.gallery-wrap--v2 .gallery-chip.active {
+    background: linear-gradient(135deg, #1abc9c, #0d7a8a) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+.gallery-wrap--v2 .gallery-chip.active .gallery-chip-count {
+    background: rgba(255, 255, 255, 0.25);
+}
+.gallery-wrap--v2 .gal-icon-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.86) !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+}
+.gallery-wrap--v2 .gal-icon-btn:hover {
+    background: rgba(126, 226, 192, 0.15) !important;
+    color: #fff !important;
+}
+
+/* Tiles — keep existing 3D tilt + lazy-load entrance, just restyle the
+   chrome to match the mockup. */
+.gallery-wrap--v2 .gallery-grid {
+    gap: 1.1rem;
+}
+.gallery-wrap--v2 .gallery-tile {
+    border-radius: 16px !important;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.gallery-wrap--v2 .gallery-tile::after {
+    background: linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85)) !important;
+}
+.gallery-wrap--v2 .gallery-tile .gallery-tile-view,
+.gallery-wrap--v2 .gallery-tile .gallery-tile-caption { display: none; }
+
+.gp-tile-place {
+    position: absolute;
+    top: 0.7rem;
+    left: 0.7rem;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(15, 30, 45, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.gp-tile-place i { color: #7ee2c0; font-size: 0.72rem; }
+
+.gp-tile-foot {
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.85rem;
+    z-index: 3;
+    pointer-events: none;
+}
+.gp-tile-title {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.gp-tile-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+}
+.gp-tile-stats i { margin-right: 0.3rem; }
+
+/* Bottom CTA strip */
+.gp-share-strip {
+    margin-top: 2.4rem;
+    padding: 1.4rem 1.6rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+}
+.gp-share-icon {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(26, 188, 156, 0.18);
+    color: #7ee2c0;
+    font-size: 1.4rem;
+}
+.gp-share-text {
+    flex: 1;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.gp-share-text strong {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+}
+.gp-share-text span {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    max-width: 480px;
+}
+.gp-share-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-shrink: 0;
+}
+.gp-share-avatars {
+    display: inline-flex;
+}
+.gp-share-avatars .gp-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid #0a2a3d;
+    margin-left: -8px;
+    background-color: #4a5568;
+}
+.gp-share-avatars .gp-avatar:first-child { margin-left: 0; }
+.gp-share-stat {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0.5rem 0.95rem;
+    border-radius: 12px;
+    text-align: center;
+}
+.gp-share-stat strong {
+    display: block;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1;
+}
+.gp-share-stat small {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    display: block;
+    margin-top: 3px;
+}
+.gp-share-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.85rem 1.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(126, 226, 192, 0.5);
+    background: rgba(126, 226, 192, 0.1);
+    color: #7ee2c0;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.2s, transform 0.15s, color 0.2s;
+}
+.gp-share-cta:hover {
+    background: rgba(126, 226, 192, 0.22);
+    color: #fff;
+    transform: translateY(-1px);
+}
+@media (max-width: 720px) {
+    .gp-share-strip { flex-direction: column; align-items: flex-start; }
+    .gp-share-cta { align-self: stretch; justify-content: center; }
+}
