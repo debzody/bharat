@@ -265,7 +265,7 @@
         ]
     }
     </script>
-    <link rel="stylesheet" href="css/style.css?v=67">
+    <link rel="stylesheet" href="css/style.css?v=68">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
     <link rel="stylesheet" href="css/mmt.css?v=34">
     <link rel="stylesheet" href="css/flights.css?v=3">
@@ -532,6 +532,18 @@
 
     <!-- ── Packages Listing ──────────────────────── -->
     <section id="packages" class="mmt-listing-wrap">
+        <!-- Explore Andaman header banner -->
+        <div class="explore-banner">
+            <div class="explore-banner-inner">
+                <div class="explore-banner-text">
+                    <h2 class="explore-banner-title">Explore Andaman</h2>
+                    <p class="explore-banner-sub">Find the perfect package for your dream getaway</p>
+                </div>
+                <div class="explore-banner-style">
+                    <div class="explore-style-label">Explore by Travel Style</div>
+                </div>
+            </div>
+        </div>
         <!-- Listing Container -->
         <div class="mmt-listing-container">
             <!-- Tabs -->
@@ -558,7 +570,10 @@
             <div class="mmt-body">
                 <!-- Filters Sidebar -->
                 <aside class="mmt-filters" id="mmtFilters">
-                    <div class="mmt-filters-title">Filters</div>
+                    <div class="mmt-filters-title-row">
+                        <div class="mmt-filters-title"><i class="fas fa-sliders"></i> Filters</div>
+                        <button type="button" class="mmt-filters-clear" id="mmtFiltersClear">Clear All</button>
+                    </div>
 
                     <div class="mmt-filter-group open">
                         <div class="mmt-filter-head">Duration (in Nights) <i class="fas fa-chevron-up chev"></i></div>
@@ -598,11 +613,32 @@
                             <label><input type="checkbox" name="theme" value="family"> Family</label>
                         </div>
                     </div>
+
+                    <div class="mmt-why-card">
+                        <h4 class="mmt-why-title">Why Book With Us?</h4>
+                        <ul class="mmt-why-list">
+                            <li><i class="fa-solid fa-shield-halved"></i><div><strong>Since 2013</strong><small>11+ Years of Expertise</small></div></li>
+                            <li><i class="fa-solid fa-people-group"></i><div><strong>Local Andaman Team</strong><small>On-ground support</small></div></li>
+                            <li><i class="fa-solid fa-lock"></i><div><strong>Secure Payments</strong><small>100% Safe &amp; Trusted</small></div></li>
+                            <li><i class="fa-solid fa-rotate-left"></i><div><strong>Free Cancellation*</strong><small>T&amp;C Apply</small></div></li>
+                            <li><i class="fa-solid fa-users"></i><div><strong>25,000+ Travellers</strong><small>Happy Explorers</small></div></li>
+                        </ul>
+                    </div>
                 </aside>
 
                 <!-- Results -->
                 <div>
-                    <div class="mmt-sort-row">
+                    <div class="mmt-sort-row mmt-sort-row--v2">
+                        <div class="mmt-sort-count" id="mmtResultCount">Showing 0 Packages</div>
+                        <span class="mmt-sort-spacer"></span>
+                        <label for="mmtSort">Sort by:</label>
+                        <select id="mmtSort">
+                            <option value="popular">Popular</option>
+                            <option value="price-asc" selected>Price: Low to High</option>
+                            <option value="price-desc">Price: High to Low</option>
+                            <option value="rating">Top Rated</option>
+                            <option value="duration">Duration</option>
+                        </select>
                         <div class="mmt-view-toggle" role="group" aria-label="View mode">
                             <button type="button" class="view-btn active" data-view="grid" title="Grid / card view" aria-label="Grid view">
                                 <i class="fas fa-th-large"></i>
@@ -611,15 +647,6 @@
                                 <i class="fas fa-list"></i>
                             </button>
                         </div>
-                        <span class="mmt-sort-spacer"></span>
-                        <label for="mmtSort">Sorted By:</label>
-                        <select id="mmtSort">
-                            <option value="popular">Popular</option>
-                            <option value="price-asc" selected>Price: Low to High</option>
-                            <option value="price-desc">Price: High to Low</option>
-                            <option value="rating">Top Rated</option>
-                            <option value="duration">Duration</option>
-                        </select>
                     </div>
 
                     <div id="packagesGrid" class="mmt-results view-grid">
@@ -630,6 +657,17 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Floating Compare bar — shows up when 2+ packages are checked -->
+        <div class="v2-compare-bar" id="v2CompareBar" aria-hidden="true">
+            <div class="v2-compare-bar-inner">
+                <i class="fa-solid fa-scale-balanced"></i>
+                <span class="v2-compare-bar-label">Compare Packages (<span id="v2CompareCount">0</span>)</span>
+                <button type="button" class="v2-compare-bar-btn" id="v2CompareGo">
+                    <i class="fa-solid fa-chevron-up"></i>
+                </button>
             </div>
         </div>
     </section>
