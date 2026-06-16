@@ -265,7 +265,7 @@
         ]
     }
     </script>
-    <link rel="stylesheet" href="css/style.css?v=66">
+    <link rel="stylesheet" href="css/style.css?v=67">
     <link rel="stylesheet" href="css/conversion-kit.css?v=3">
     <link rel="stylesheet" href="css/mmt.css?v=34">
     <link rel="stylesheet" href="css/flights.css?v=3">
@@ -641,122 +641,69 @@
          ?place, matches a chip case-insensitively, scrolls into view).
          Categories must exactly match the values written by
          tools/bulk-gallery-upload.html. ─────────────────────────────── -->
-    <section id="destinations" class="dest-section">
-        <header class="m-section-head">
-            <div>
-                <div class="m-eyebrow">Destinations</div>
-                <h2 class="m-title">Where do you want to <em>wake up</em>?</h2>
-                <p class="m-sub">Ten destinations, ten personalities. Click any island to see its photo collection.</p>
-            </div>
+    <section id="destinations" class="dest-section dest-section--v2">
+        <header class="dest-head">
+            <div class="dest-eyebrow">Destinations</div>
+            <h2 class="dest-title">Where do you want to <em>wake&nbsp;up</em>?</h2>
+            <p class="dest-sub">Ten destinations, ten personalities. Click any island to see its photo collection.</p>
         </header>
         <div class="dest-grid">
-            <!-- Row 1: hero card + two medium -->
-            <a href="/gallery?category=Havelock%20Island" class="dest-card dest-card--lg" data-dest="havelock">
-                <div>
-                    <h3 class="dest-card__title">Havelock Island</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Most Popular</span>
-                        <span><i class="fas fa-water"></i> Radhanagar Beach (Asia's #7)</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+            <a href="/gallery?category=Havelock%20Island" class="dest-tile" data-dest="havelock">
+                <span class="dest-tile-badge"><i class="fas fa-star"></i> Most Popular</span>
+                <div class="dest-tile-overlay">
+                    <h3 class="dest-tile-title">Havelock Island</h3>
+                    <ul class="dest-tile-meta">
+                        <li><i class="fas fa-umbrella-beach"></i> Radhanagar Beach (Asia's #7)</li>
+                        <li><i class="fas fa-water"></i> Turquoise Waters</li>
+                    </ul>
                 </div>
-            </a>
-            <a href="/gallery?category=Neil%20Island" class="dest-card dest-card--md" data-dest="neil">
-                <div>
-                    <h3 class="dest-card__title">Neil Island</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Quiet &amp; Slow</span>
-                        <span><i class="fas fa-leaf"></i> Natural bridge &amp; coral</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
-                </div>
-            </a>
-            <a href="/gallery?category=Port%20Blair" class="dest-card dest-card--md" data-dest="portblair">
-                <div>
-                    <h3 class="dest-card__title">Port Blair</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">History</span>
-                        <span><i class="fas fa-monument"></i> Cellular Jail capital</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
-                </div>
+                <span class="dest-tile-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
-            <!-- Row 2: three small -->
-            <a href="/gallery?category=Baratang" class="dest-card dest-card--sm" data-dest="baratang">
-                <div>
-                    <h3 class="dest-card__title">Baratang</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Day Trip</span>
-                        <span><i class="fas fa-tree"></i> Mangrove creek</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+            <a href="/gallery?category=Neil%20Island" class="dest-tile" data-dest="neil">
+                <span class="dest-tile-badge"><i class="fas fa-moon"></i> Quiet &amp; Slow</span>
+                <div class="dest-tile-overlay">
+                    <h3 class="dest-tile-title">Neil Island</h3>
+                    <ul class="dest-tile-meta">
+                        <li><i class="fas fa-leaf"></i> Natural bridge &amp; coral</li>
+                        <li><i class="fas fa-spa"></i> Peaceful Beaches</li>
+                    </ul>
                 </div>
-            </a>
-            <a href="/gallery?category=Limestone%20Cave" class="dest-card dest-card--sm" data-dest="limestone">
-                <div>
-                    <h3 class="dest-card__title">Limestone Cave</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Wonder</span>
-                        <span><i class="fas fa-mountain"></i> Stalactite formations</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
-                </div>
-            </a>
-            <a href="/gallery?category=Jarawa%20Reserve" class="dest-card dest-card--sm" data-dest="jarawa">
-                <div>
-                    <h3 class="dest-card__title">Jarawa Reserve</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Forest Drive</span>
-                        <span><i class="fas fa-leaf"></i> Tribal reserve</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
-                </div>
+                <span class="dest-tile-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
-            <!-- Row 3: two medium -->
-            <a href="/gallery?category=Diglipur" class="dest-card dest-card--md" data-dest="diglipur">
-                <div>
-                    <h3 class="dest-card__title">Diglipur</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Off-beat</span>
-                        <span><i class="fas fa-mountain"></i> Saddle Peak</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+            <a href="/gallery?category=Port%20Blair" class="dest-tile" data-dest="portblair">
+                <span class="dest-tile-badge"><i class="fas fa-landmark"></i> History</span>
+                <div class="dest-tile-overlay">
+                    <h3 class="dest-tile-title">Port Blair</h3>
+                    <ul class="dest-tile-meta">
+                        <li><i class="fas fa-monument"></i> Cellular Jail</li>
+                        <li><i class="fas fa-city"></i> Capital City</li>
+                    </ul>
                 </div>
-            </a>
-            <a href="/gallery?category=Little%20Andaman" class="dest-card dest-card--md" data-dest="little">
-                <div>
-                    <h3 class="dest-card__title">Little Andaman</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Surfer's Paradise</span>
-                        <span><i class="fas fa-water"></i> White Surf Falls</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
-                </div>
+                <span class="dest-tile-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
-            <!-- Row 4: two small -->
-            <a href="/gallery?category=Ross%20Island" class="dest-card dest-card--sm" data-dest="ross">
-                <div>
-                    <h3 class="dest-card__title">Ross Island</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">British-Era Ruins</span>
-                        <span><i class="fas fa-landmark"></i> Heritage</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
+            <a href="/gallery?category=Baratang" class="dest-tile" data-dest="baratang">
+                <span class="dest-tile-badge"><i class="fas fa-mountain-sun"></i> Day Trip</span>
+                <div class="dest-tile-overlay">
+                    <h3 class="dest-tile-title">Baratang</h3>
+                    <ul class="dest-tile-meta">
+                        <li><i class="fas fa-mountain"></i> Limestone Caves</li>
+                        <li><i class="fas fa-tree"></i> Mangrove Creek</li>
+                    </ul>
                 </div>
+                <span class="dest-tile-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
             </a>
-            <a href="/gallery?category=Smith%20Island" class="dest-card dest-card--sm" data-dest="smith">
-                <div>
-                    <h3 class="dest-card__title">Smith Island</h3>
-                    <div class="dest-card__meta">
-                        <span class="pill">Twin Islands</span>
-                        <span><i class="fas fa-link"></i> Natural sandbar</span>
-                    </div>
-                    <span class="dest-card__cta"><i class="fas fa-images"></i> View photos &rarr;</span>
-                </div>
-            </a>
+        </div>
+
+        <div class="dest-help-card">
+            <div class="dest-help-icon"><i class="fa-solid fa-image"></i></div>
+            <div class="dest-help-text">
+                <strong>Can't decide?</strong>
+                <span>Let our travel experts help you choose the perfect island based on your travel style and budget.</span>
+            </div>
+            <a href="/customize" class="dest-help-cta"><i class="fa-solid fa-headset"></i> Get Expert Recommendation</a>
         </div>
     </section>
 
