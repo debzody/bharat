@@ -3727,42 +3727,6 @@ body.hero-page .topnav-item.active::after { display: none; }
     .user-menu-btn { height: 38px !important; }
 }
 
-/* Timeline endpoints — separate plane markers sit BEFORE the first day
-   and AFTER the last day. The day-step dots stay in place on every day. */
-.v2-timeline {
-    grid-template-columns: 28px repeat(4, 1fr) 28px !important;
-}
-.v2-tl-end {
-    position: relative;
-    padding-top: 1.1rem;
-}
-.v2-tl-end::before {
-    content: "";
-    position: absolute;
-    top: 5px;
-    height: 2px;
-    background: #1abc9c;
-}
-.v2-tl-end--start::before  { left: 14px; right: -0.4rem; }
-.v2-tl-end--finish::before { left: -0.4rem; right: 14px; }
-.v2-tl-end i {
-    position: absolute;
-    top: -3px;
-    left: 0;
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #1abc9c;
-    font-size: 0.78rem;
-    background: #fff;
-    border: 2px solid #1abc9c;
-    border-radius: 50%;
-    box-sizing: border-box;
-}
-.v2-tl-end--start i  { transform: rotate(-12deg); }
-.v2-tl-end--finish i { transform: rotate(8deg); right: 0; left: auto; }
-
-/* Old combined-plane rule retired */
-.v2-tl-plane { display: none; }
+/* Timeline plane experiment reverted — back to plain day-step dots. */
+.v2-tl-plane,
+.v2-tl-end { display: none; }

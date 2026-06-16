@@ -529,23 +529,12 @@ function renderSitePackages() {
                     ${inclMore ? `<span class="v2-incl-chip v2-incl-chip--more">+${inclMore} more</span>` : ''}
                 </div>` : ''}
                 <ol class="v2-timeline">
-                    <li class="v2-tl-end v2-tl-end--start" aria-hidden="true">
-                        <i class="fa-solid fa-plane-departure"></i>
-                    </li>
-                    ${timeline.map((t, i) => {
-                        const first = i === 0;
-                        const last  = i === timeline.length - 1;
-                        const cls   = 'v2-tl-step' + (first ? ' v2-tl-step--first' : '') + (last ? ' v2-tl-step--last' : '');
-                        return `
-                        <li class="${cls}">
+                    ${timeline.map((t, i) => `
+                        <li class="v2-tl-step${i === 0 ? ' v2-tl-step--first' : ''}${i === timeline.length - 1 ? ' v2-tl-step--last' : ''}">
                             <span class="v2-tl-dot"></span>
                             <span class="v2-tl-label">${t.label}</span>
                             <span class="v2-tl-loc">${t.loc}</span>
-                        </li>`;
-                    }).join('')}
-                    <li class="v2-tl-end v2-tl-end--finish" aria-hidden="true">
-                        <i class="fa-solid fa-plane-arrival"></i>
-                    </li>
+                        </li>`).join('')}
                 </ol>
             </div>
             <div class="v2-card-foot">
