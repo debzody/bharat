@@ -3682,3 +3682,47 @@ body.hero-page .topnav-item.active::after { display: none; }
 @media (prefers-reduced-motion: reduce) {
     .hero-h1-plane--start, .hero-h1-plane--end { animation: none !important; }
 }
+
+/* ── Topbar: fully transparent bar + size-match all three pill
+   elements (logo, phone, user) so they share the same 42px height.
+   Overrides earlier !important rules in style.css and hero-pro-2.css. */
+.topbar,
+.topbar.scrolled {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Logo pill height parity with the right-side pills. Image shrinks to
+   32px so the whole pill clocks in at ~42px including padding. */
+.topbar-logo {
+    height: 42px;
+}
+.topbar-logo--pro img,
+.hero-page .topbar-logo--pro img {
+    height: 32px !important;
+    width: 32px !important;
+    border-radius: 50% !important;
+    margin: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    border: 0 !important;
+}
+.topbar-logo--pro::before,
+.hero-page .topbar-logo--pro::before {
+    display: none !important;     /* drop the glow halo so the pill stays clean */
+}
+
+/* On mobile keep the pills compact but still aligned at 38px */
+@media (max-width: 720px) {
+    .topbar-logo { height: 38px; }
+    .topbar-logo--pro img,
+    .hero-page .topbar-logo--pro img {
+        height: 28px !important;
+        width: 28px !important;
+    }
+    .topbar-call-btn { width: 38px; height: 38px; }
+    .user-menu-btn { height: 38px !important; }
+}
