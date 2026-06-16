@@ -30,10 +30,16 @@
 .hero-content--pro .hero-main > .hero-heading,
 .hero-content--pro .hero-main > .hero-subtext,
 .hero-content--pro .hero-main > .hero-price--pro,
-.hero-content--pro .hero-main > .hero-chips,
-.hero-content--pro .hero-main > .mmt-searchbar--pro,
-.hero-content--pro .hero-main > .hero-trust-strip {
+.hero-content--pro .hero-main > .hero-chips {
     align-self: flex-start;
+}
+/* Search bar + trust strip live OUTSIDE .hero-main now so they can span
+   the full hero-content width (the mockup shows a full-width search). */
+.hero-content--pro > .mmt-searchbar--pro,
+.hero-content--pro > .hero-trust-strip {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
 }
 .hero-content--pro .hero-main > .hero-heading h1 { text-align: left; }
 .hero-content--pro .hero-main > .hero-subtext p {
