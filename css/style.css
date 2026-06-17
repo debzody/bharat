@@ -3747,15 +3747,16 @@ body.hero-page .topnav-item.active::after { display: none; }
     box-shadow: none !important;
 }
 
-/* Logo pill height parity with the right-side pills. Image shrinks to
-   32px so the whole pill clocks in at ~42px including padding. */
+/* Logo pill height parity with the right-side pills. Image is 44px so
+   the whole pill clocks in at ~54px including padding; phone + user
+   pills bump to match below. */
 .topbar-logo {
-    height: 42px;
+    height: 54px;
 }
 .topbar-logo--pro img,
 .hero-page .topbar-logo--pro img {
-    height: 32px !important;
-    width: 32px !important;
+    height: 44px !important;
+    width: 44px !important;
     border-radius: 50% !important;
     margin: 0 !important;
     transform: none !important;
@@ -3766,17 +3767,33 @@ body.hero-page .topnav-item.active::after { display: none; }
 .hero-page .topbar-logo--pro::before {
     display: none !important;     /* drop the glow halo so the pill stays clean */
 }
+.topbar-call-btn { width: 54px !important; height: 54px !important; font-size: 1.1rem; }
+.user-menu-btn   { height: 54px !important; }
+.user-menu-btn .um-avatar,
+.user-menu-btn .um-initials,
+.user-menu-btn .um-avatar.um-has-photo,
+.user-menu-btn .um-initials.um-has-photo {
+    width: 42px !important;
+    height: 42px !important;
+}
 
-/* On mobile keep the pills compact but still aligned at 38px */
+/* On mobile keep the pills compact but aligned at 46px */
 @media (max-width: 720px) {
-    .topbar-logo { height: 38px; }
+    .topbar-logo { height: 46px; }
     .topbar-logo--pro img,
     .hero-page .topbar-logo--pro img {
-        height: 28px !important;
-        width: 28px !important;
+        height: 36px !important;
+        width: 36px !important;
     }
-    .topbar-call-btn { width: 38px; height: 38px; }
-    .user-menu-btn { height: 38px !important; }
+    .topbar-call-btn { width: 46px !important; height: 46px !important; }
+    .user-menu-btn   { height: 46px !important; }
+    .user-menu-btn .um-avatar,
+    .user-menu-btn .um-initials,
+    .user-menu-btn .um-avatar.um-has-photo,
+    .user-menu-btn .um-initials.um-has-photo {
+        width: 36px !important;
+        height: 36px !important;
+    }
 }
 
 /* Timeline plane experiment reverted — back to plain day-step dots. */
