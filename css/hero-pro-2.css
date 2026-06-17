@@ -1445,3 +1445,43 @@ body.hero-page {
     transform: none !important;
     filter: none !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   FINAL — 42px topbar pill parity (must override the earlier
+   floating-coin rules in this file that force an 88px logo + 92px
+   topbar height). The teal pill design lives in style.css; here we
+   just neutralize the heavyweight overrides so it can render. */
+.hero-page .topbar { min-height: 0 !important; overflow: visible !important; }
+
+.hero-page .topbar-logo--pro img,
+.topbar-logo--pro img {
+    height: 32px !important;
+    width: 32px !important;
+    border-radius: 50% !important;
+    object-fit: cover;
+    margin: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    filter: none !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+.hero-page .topbar-logo--pro::before,
+.topbar-logo--pro::before {
+    display: none !important;
+}
+@media (max-width: 768px) {
+    .hero-page .topbar-logo--pro img,
+    .topbar-logo--pro img {
+        height: 28px !important;
+        width: 28px !important;
+    }
+}
+@media (max-width: 480px) {
+    .hero-page .topbar-logo--pro img,
+    .topbar-logo--pro img {
+        height: 28px !important;
+        width: 28px !important;
+    }
+}
+
