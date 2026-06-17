@@ -3227,11 +3227,11 @@ body.hero-page .topnav-item.active::after { display: none; }
     right: 0.85rem;
     padding: 0.35rem 0.85rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, #0d7a8a, #0a5b67);
+    background: linear-gradient(135deg, #074550, #052a30);
     color: #fff;
     font-size: 0.76rem;
     font-weight: 700;
-    box-shadow: 0 4px 12px rgba(13, 122, 138, 0.45);
+    box-shadow: 0 4px 12px rgba(7, 69, 80, 0.45);
 }
 .v2-soldout-stamp {
     position: absolute;
@@ -3257,7 +3257,7 @@ body.hero-page .topnav-item.active::after { display: none; }
     cursor: pointer;
     line-height: 1.25;
 }
-.v2-card-title:hover { color: #0a5b67; }
+.v2-card-title:hover { color: #052a30; }
 .v2-card-meta {
     display: flex;
     align-items: center;
@@ -3267,7 +3267,7 @@ body.hero-page .topnav-item.active::after { display: none; }
     margin-bottom: 0.2rem;
 }
 .v2-meta-strong {
-    color: #0d7a8a;
+    color: #074550;
     font-weight: 700;
 }
 .v2-card-route {
@@ -3280,7 +3280,7 @@ body.hero-page .topnav-item.active::after { display: none; }
     flex-wrap: wrap;
 }
 .v2-card-route i {
-    color: #0d7a8a;
+    color: #074550;
     font-size: 0.7rem;
     opacity: 0.85;
 }
@@ -3304,14 +3304,14 @@ body.hero-page .topnav-item.active::after { display: none; }
     border: 1px solid rgba(0, 0, 0, 0.04);
 }
 .v2-incl-chip i {
-    color: #0a5b67;
+    color: #052a30;
     font-size: 0.78rem;
 }
 .v2-incl-chip--more {
-    color: #0a5b67;
+    color: #052a30;
     font-weight: 600;
-    background: rgba(13, 122, 138, 0.10);
-    border-color: rgba(13, 122, 138, 0.22);
+    background: rgba(7, 69, 80, 0.10);
+    border-color: rgba(7, 69, 80, 0.22);
 }
 
 /* Timeline row — plane bookends flank the 4-step grid */
@@ -3330,13 +3330,13 @@ body.hero-page .topnav-item.active::after { display: none; }
     border-radius: 50%;
     background: #fff;
     border: 1.5px solid #d8e3e6;
-    color: #0d7a8a;
+    color: #074550;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.82rem;
     margin-top: -2px;
-    box-shadow: 0 2px 6px rgba(13, 122, 138, 0.10);
+    box-shadow: 0 2px 6px rgba(7, 69, 80, 0.10);
 }
 .v2-tl-bookend--start i { transform: rotate(-12deg); }
 .v2-tl-bookend--end i   { transform: rotate(8deg); }
@@ -3363,7 +3363,7 @@ body.hero-page .topnav-item.active::after { display: none; }
     left: 0;
     right: -0.4rem;
     height: 2px;
-    background: #0d7a8a;
+    background: #074550;
 }
 .v2-tl-step--first::before { left: 0; }
 .v2-tl-step--last::before  { right: calc(50% - 6px); }
@@ -3375,12 +3375,12 @@ body.hero-page .topnav-item.active::after { display: none; }
     height: 12px;
     border-radius: 50%;
     background: #fff;
-    border: 2.5px solid #0d7a8a;
+    border: 2.5px solid #074550;
     box-sizing: border-box;
 }
 .v2-tl-label {
     display: block;
-    color: #0d7a8a;
+    color: #074550;
     font-weight: 700;
     font-size: 0.7rem;
 }
@@ -3422,7 +3422,7 @@ body.hero-page .topnav-item.active::after { display: none; }
 .v2-foot-now {
     font-size: 1.35rem;
     font-weight: 800;
-    color: #0a5b67;
+    color: #052a30;
 }
 .v2-foot-per { color: #7a8b96; font-size: 0.78rem; }
 .v2-foot-was {
@@ -3431,7 +3431,7 @@ body.hero-page .topnav-item.active::after { display: none; }
     text-decoration: line-through;
 }
 .v2-foot-pct {
-    color: #0d7a8a;
+    color: #074550;
     font-weight: 700;
     font-size: 0.78rem;
 }
@@ -3477,7 +3477,7 @@ body.hero-page .topnav-item.active::after { display: none; }
 .v2-compare input[type="checkbox"] {
     width: 14px;
     height: 14px;
-    accent-color: #0a5b67;
+    accent-color: #052a30;
 }
 .v2-btn {
     padding: 0.5rem 0.9rem;
@@ -3490,12 +3490,12 @@ body.hero-page .topnav-item.active::after { display: none; }
 }
 .v2-btn-outline {
     background: #fff;
-    border-color: #0a5b67;
-    color: #0a5b67;
+    border-color: #052a30;
+    color: #052a30;
 }
-.v2-btn-outline:hover { background: rgba(10, 91, 103, 0.08); }
+.v2-btn-outline:hover { background: rgba(5, 42, 48, 0.08); }
 .v2-btn-primary {
-    background: linear-gradient(135deg, #0d7a8a, #0a5b67);
+    background: linear-gradient(135deg, #074550, #052a30);
     color: #fff;
     flex: 1;
 }
@@ -3531,7 +3531,7 @@ body.hero-page .topnav-item.active::after { display: none; }
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #1abc9c, #0d7a8a);
+    background: linear-gradient(135deg, #1abc9c, #074550);
     color: #fff;
     border: 0;
     cursor: pointer;
