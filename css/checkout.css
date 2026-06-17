@@ -1,7 +1,7 @@
 /* Checkout / Cart Page Styles */
 :root { --teal:#0d7a8a; --teal-d:#0a5a68; --ink:#2c3e50; --muted:#7f8c8d; --line:#e0e6ed; }
 
-body { font-family:'Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; background:#f5f7fa; color:var(--ink); }
+body { font-family:'Lato','Poppins',system-ui,Segoe UI,Roboto,sans-serif; margin:0; background:#f5f7fa; color:var(--ink); }
 * { box-sizing:border-box; }
 
 .co-header {
