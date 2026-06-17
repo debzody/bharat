@@ -1455,8 +1455,8 @@ body.hero-page {
 
 .hero-page .topbar-logo--pro img,
 .topbar-logo--pro img {
-    height: 32px !important;
-    width: 32px !important;
+    height: 44px !important;
+    width: 44px !important;
     border-radius: 50% !important;
     object-fit: cover;
     margin: 0 !important;
@@ -1473,15 +1473,753 @@ body.hero-page {
 @media (max-width: 768px) {
     .hero-page .topbar-logo--pro img,
     .topbar-logo--pro img {
-        height: 28px !important;
-        width: 28px !important;
+        height: 36px !important;
+        width: 36px !important;
     }
 }
 @media (max-width: 480px) {
     .hero-page .topbar-logo--pro img,
     .topbar-logo--pro img {
-        height: 28px !important;
-        width: 28px !important;
+        height: 36px !important;
+        width: 36px !important;
     }
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   FINAL — Professional compact package cards
+   Target: match the cleaner reference card style — flatter white cards,
+   shorter image, tighter information density, refined pills and buttons.
+   Loaded last so these rules intentionally override style.css/mmt.css. */
+.hero-page .mmt-results.view-grid {
+    grid-template-columns: repeat(2, minmax(360px, 1fr)) !important;
+    gap: 1.35rem !important;
+    align-items: start !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card {
+    border-radius: 12px !important;
+    border: 1px solid #e7edf2 !important;
+    background: #fff !important;
+    box-shadow: 0 8px 24px rgba(15, 35, 55, 0.07) !important;
+    overflow: hidden !important;
+    transform: none !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 14px 34px rgba(15, 35, 55, 0.11) !important;
+    border-color: #dce6ed !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-img {
+    aspect-ratio: 16 / 6.2 !important;
+    min-height: 132px !important;
+    max-height: 156px !important;
+    border-radius: 10px 10px 0 0 !important;
+    background-position: center !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-img::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.02) 45%, rgba(0, 0, 0, 0.28) 100%);
+    pointer-events: none;
+}
+
+.hero-page .mmt-results.view-grid .v2-cat-pill,
+.hero-page .mmt-results.view-grid .v2-rating-pill,
+.hero-page .mmt-results.view-grid .v2-heart-btn,
+.hero-page .mmt-results.view-grid .v2-save-pill {
+    z-index: 1;
+}
+
+.hero-page .mmt-results.view-grid .v2-cat-pill {
+    top: 0.62rem !important;
+    left: 0.62rem !important;
+    padding: 0.27rem 0.62rem !important;
+    border-radius: 6px !important;
+    font-size: 0.62rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-rating-pill {
+    top: 0.62rem !important;
+    right: 0.62rem !important;
+    padding: 0.28rem 0.54rem !important;
+    border-radius: 6px !important;
+    background: rgba(20, 53, 83, 0.86) !important;
+    font-size: 0.68rem !important;
+    font-weight: 800 !important;
+    gap: 0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-rating-pill i {
+    font-size: 0.65rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-heart-btn {
+    top: 2.55rem !important;
+    right: 0.62rem !important;
+    width: 31px !important;
+    height: 31px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: #607383 !important;
+    box-shadow: 0 5px 14px rgba(15, 35, 55, 0.18) !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-save-pill {
+    right: 0.62rem !important;
+    bottom: 0.58rem !important;
+    padding: 0.30rem 0.66rem !important;
+    border-radius: 6px !important;
+    background: linear-gradient(135deg, #0f8f8f, #086d80) !important;
+    font-size: 0.64rem !important;
+    font-weight: 800 !important;
+    box-shadow: 0 5px 14px rgba(8, 109, 128, 0.28) !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-body {
+    padding: 0.78rem 0.95rem 0.48rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-title {
+    margin: 0 0 0.34rem !important;
+    color: #172b4d !important;
+    font-family: 'Fraunces', 'Lato', Georgia, serif !important;
+    font-size: 1.02rem !important;
+    font-weight: 700 !important;
+    line-height: 1.18 !important;
+    letter-spacing: -0.01em !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-meta {
+    margin-bottom: 0.28rem !important;
+    font-size: 0.74rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-meta-strong {
+    color: #008b7a !important;
+    font-weight: 800 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-route {
+    margin-bottom: 0.55rem !important;
+    color: #536878 !important;
+    font-size: 0.72rem !important;
+    line-height: 1.35 !important;
+    gap: 0.25rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-route i {
+    color: #21b99f !important;
+    font-size: 0.58rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-timeline-row {
+    gap: 0.36rem !important;
+    margin: 0.25rem 0 0.08rem !important;
+    padding-top: 0.43rem !important;
+    border-top: 1px solid #edf2f5 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-bookend {
+    width: 25px !important;
+    height: 25px !important;
+    margin-top: -1px !important;
+    border: 1px solid #d7e7eb !important;
+    color: #087c8d !important;
+    background: #fff !important;
+    font-size: 0.68rem !important;
+    box-shadow: 0 2px 7px rgba(15, 35, 55, 0.10) !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-timeline {
+    gap: 0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-step {
+    padding-top: 0.92rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-step::before {
+    top: 4px !important;
+    height: 2px !important;
+    background: #1bb9a5 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-dot {
+    width: 9px !important;
+    height: 9px !important;
+    border-width: 2px !important;
+    border-color: #1bb9a5 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-label {
+    color: #008b7a !important;
+    font-size: 0.60rem !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-loc {
+    color: #536878 !important;
+    font-size: 0.58rem !important;
+    line-height: 1.15 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chips {
+    gap: 0.34rem !important;
+    margin: 0.55rem 0 0.04rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip {
+    min-height: 26px !important;
+    padding: 0.26rem 0.52rem !important;
+    border-radius: 6px !important;
+    background: #f5f7fa !important;
+    border: 1px solid #e6ebf0 !important;
+    color: #536878 !important;
+    font-size: 0.66rem !important;
+    font-weight: 700 !important;
+    gap: 0.28rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip i {
+    color: #087c8d !important;
+    font-size: 0.67rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip--more {
+    background: #eefaf8 !important;
+    border-color: #c7eee8 !important;
+    color: #087c8d !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-card-foot {
+    padding: 0.72rem 0.95rem 0.82rem !important;
+    border-top: 1px solid #eef2f5 !important;
+    background: #fff !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-row {
+    align-items: center !important;
+    gap: 0.65rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-from {
+    color: #7b8d9a !important;
+    font-size: 0.66rem !important;
+    font-weight: 800 !important;
+    text-transform: none !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-now-row {
+    gap: 0.34rem !important;
+    margin-top: 0.12rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-now {
+    color: #087c8d !important;
+    font-size: 1.33rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    letter-spacing: -0.03em !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-per {
+    color: #6d7f8b !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-was {
+    color: #b7c1c8 !important;
+    font-size: 0.74rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-pct {
+    color: #13ad91 !important;
+    font-size: 0.69rem !important;
+    font-weight: 900 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-emi {
+    margin-top: 0.24rem !important;
+    color: #7b8d9a !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-urgency {
+    max-width: 96px !important;
+    padding-top: 0 !important;
+    color: #ff5f32 !important;
+    font-size: 0.66rem !important;
+    font-weight: 800 !important;
+    line-height: 1.12 !important;
+    text-align: right !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-foot-actions {
+    gap: 0.50rem !important;
+    margin-top: 0.72rem !important;
+    flex-wrap: nowrap !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-compare {
+    color: #536878 !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-compare input[type="checkbox"] {
+    width: 13px !important;
+    height: 13px !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-btn {
+    height: 34px !important;
+    padding: 0 0.92rem !important;
+    border-radius: 6px !important;
+    font-size: 0.72rem !important;
+    font-weight: 900 !important;
+    font-family: 'Lato', 'Poppins', sans-serif !important;
+    white-space: nowrap !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-btn-outline {
+    min-width: 106px !important;
+    background: #fff !important;
+    border: 1px solid #087c8d !important;
+    color: #087c8d !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-btn-outline:hover {
+    background: #edfafa !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-btn-primary {
+    flex: 1 1 auto !important;
+    min-width: 118px !important;
+    background: linear-gradient(135deg, #18b89e 0%, #087c8d 100%) !important;
+    color: #fff !important;
+    border: 0 !important;
+    box-shadow: 0 6px 15px rgba(8, 124, 141, 0.16) !important;
+}
+
+@media (max-width: 980px) {
+    .hero-page .mmt-results.view-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .hero-page .mmt-results.view-grid .v2-card-img {
+        aspect-ratio: 16 / 7 !important;
+        max-height: none !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .hero-page .mmt-results.view-grid .v2-card-body,
+    .hero-page .mmt-results.view-grid .v2-card-foot {
+        padding-left: 0.78rem !important;
+        padding-right: 0.78rem !important;
+    }
+
+    .hero-page .mmt-results.view-grid .v2-card-img {
+        aspect-ratio: 16 / 8 !important;
+        min-height: 138px !important;
+    }
+
+    .hero-page .mmt-results.view-grid .v2-foot-actions {
+        flex-wrap: wrap !important;
+    }
+
+    .hero-page .mmt-results.view-grid .v2-compare {
+        flex: 1 0 100% !important;
+    }
+
+    .hero-page .mmt-results.view-grid .v2-btn-outline,
+    .hero-page .mmt-results.view-grid .v2-btn-primary {
+        flex: 1 1 calc(50% - 0.3rem) !important;
+        min-width: 0 !important;
+    }
+}
+
+/* FINAL — remove hero/flight image gaps.
+   The carousel must render as one seamless, full-cover layer. */
+.hero-page #home.hero {
+    width: 100% !important;
+    min-height: 760px !important;
+    overflow: hidden !important;
+    background: #08243a !important;
+}
+
+.hero-page .hero-carousel,
+.hero-page .carousel-track {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    overflow: hidden !important;
+    background: #08243a !important;
+}
+
+.hero-page .carousel-slide {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    transform: translateZ(0) scale(1.001) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: 0 !important;
+}
+
+.hero-page .carousel-slide.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 1 !important;
+}
+
+.hero-page .slide-caption,
+.hero-page .carousel-btn,
+.hero-page .carousel-dots {
+    z-index: 3 !important;
+}
+
+/* Keep listing fully opaque so the carousel never shows through
+   behind/around package cards while scrolling. */
+.hero-page #packages.mmt-listing-wrap {
+    position: relative !important;
+    z-index: 2 !important;
+    background: linear-gradient(180deg, #f6fbfc 0%, #eef6f8 100%) !important;
+}
+
+/* FINAL — clean package banner image.
+   The previous Explore banner background could show awkward image
+   edges/gaps under the fixed header. Use one full-cover beach layer
+   with an integrated dark overlay, and keep hash scrolling below the
+   fixed topbar. */
+.hero-page #packages {
+    scroll-margin-top: 84px !important;
+}
+
+.hero-page .explore-banner {
+    overflow: hidden !important;
+    isolation: isolate !important;
+    background: linear-gradient(135deg, #08243a 0%, #0d4350 62%, #08243a 100%) !important;
+}
+
+.hero-page .explore-banner::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background:
+        linear-gradient(90deg, rgba(8, 30, 46, 0.88) 0%, rgba(8, 30, 46, 0.54) 44%, rgba(8, 30, 46, 0.72) 100%),
+        url('../images/beach1.jpg') center 46% / cover no-repeat !important;
+    opacity: 1 !important;
+    transform: scale(1.02) !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+.hero-page .explore-banner-inner {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* FINAL — package card timeline gap reduction.
+   Extend the last timeline segment toward the departure icon so the
+   right side does not look empty. */
+.hero-page .mmt-results.view-grid .v2-timeline-row {
+    gap: 0.18rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-step--last::before {
+    right: -0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-bookend--end {
+    margin-left: -0.08rem !important;
+}
+
+/* FINAL — show inclusion chips in two compact lines, no "+more". */
+.hero-page .mmt-results.view-grid .v2-incl-chips {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.36rem !important;
+    max-height: 58px !important;
+    overflow: hidden !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip {
+    min-height: 25px !important;
+    padding: 0.24rem 0.48rem !important;
+    font-size: 0.64rem !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip--more {
+    display: none !important;
+}
+
+/* FINAL — bigger two-line inclusions + remove the header divider line. */
+.hero-page .mmt-results.view-grid .v2-timeline-row {
+    border-top: 0 !important;
+    padding-top: 0.28rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chips {
+    gap: 0.46rem !important;
+    max-height: 72px !important;
+    margin-top: 0.65rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip {
+    min-height: 31px !important;
+    padding: 0.34rem 0.66rem !important;
+    border-radius: 7px !important;
+    font-size: 0.74rem !important;
+    line-height: 1.12 !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-incl-chip i {
+    font-size: 0.78rem !important;
+}
+
+/* FINAL — larger header brand pill + remove header divider line. */
+.hero-page .topbar {
+    height: 104px !important;
+    min-height: 104px !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+.hero-page .topbar::before,
+.hero-page .topbar::after,
+.topbar::before,
+.topbar::after {
+    display: none !important;
+    content: none !important;
+}
+
+.hero-page .topbar-logo.topbar-logo--pro {
+    min-height: 72px !important;
+    padding: 0.56rem 1.35rem !important;
+    border-radius: 999px !important;
+    gap: 1rem !important;
+}
+
+.hero-page .topbar-logo--pro img,
+.topbar-logo--pro img {
+    width: 46px !important;
+    height: 46px !important;
+}
+
+.hero-page .topbar-logo--pro .brand-line1,
+.hero-page .topbar .brand-line1 {
+    font-size: 1.45rem !important;
+    line-height: 1.05 !important;
+    font-weight: 900 !important;
+}
+
+.hero-page .topbar-logo--pro .brand-line2,
+.hero-page .topbar .brand-line2 {
+    font-size: 0.92rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0.16em !important;
+    font-weight: 800 !important;
+}
+
+@media (max-width: 768px) {
+    .hero-page .topbar {
+        height: 84px !important;
+        min-height: 84px !important;
+    }
+
+    .hero-page .topbar-logo.topbar-logo--pro {
+        min-height: 60px !important;
+        padding: 0.45rem 0.95rem !important;
+        gap: 0.75rem !important;
+    }
+
+    .hero-page .topbar-logo--pro img,
+    .topbar-logo--pro img {
+        width: 38px !important;
+        height: 38px !important;
+    }
+
+    .hero-page .topbar-logo--pro .brand-line1,
+    .hero-page .topbar .brand-line1 {
+        font-size: 1.12rem !important;
+    }
+
+    .hero-page .topbar-logo--pro .brand-line2,
+    .hero-page .topbar .brand-line2 {
+        font-size: 0.70rem !important;
+    }
+}
+
+/* FINAL — compact transparent hero header like the reference. */
+.hero-page .topbar {
+    height: 72px !important;
+    min-height: 72px !important;
+    padding: 0 1.4rem !important;
+    background: linear-gradient(180deg, rgba(5, 25, 39, 0.74), rgba(5, 25, 39, 0.30)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 0 !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+.hero-page .topbar-logo.topbar-logo--pro {
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 0.22rem 0.72rem !important;
+    border-radius: 999px !important;
+    gap: 0.58rem !important;
+    background: rgba(8, 47, 58, 0.42) !important;
+    border: 1px solid rgba(126, 226, 192, 0.20) !important;
+    box-shadow: none !important;
+}
+
+.hero-page .topbar-logo--pro img,
+.topbar-logo--pro img {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+}
+
+.hero-page .topbar-logo--pro .brand-line1,
+.hero-page .topbar .brand-line1 {
+    font-size: 0.98rem !important;
+    line-height: 1.05 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0 !important;
+}
+
+.hero-page .topbar-logo--pro .brand-line2,
+.hero-page .topbar .brand-line2 {
+    font-size: 0.66rem !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0.14em !important;
+    font-weight: 800 !important;
+    opacity: 0.72 !important;
+}
+
+.hero-page .topnav-item {
+    min-height: 40px !important;
+    padding: 0.45rem 0.85rem !important;
+    border-radius: 999px !important;
+    font-size: 0.86rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.hero-page .topnav-item.active {
+    background: rgba(0, 128, 128, 0.52) !important;
+}
+
+@media (max-width: 768px) {
+    .hero-page .topbar {
+        height: 60px !important;
+        min-height: 60px !important;
+        padding: 0 0.75rem !important;
+    }
+
+    .hero-page .topbar-logo.topbar-logo--pro {
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 0.18rem 0.56rem !important;
+    }
+
+    .hero-page .topbar-logo--pro img,
+    .topbar-logo--pro img {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+    }
+
+    .hero-page .topbar-logo--pro .brand-line1,
+    .hero-page .topbar .brand-line1 {
+        font-size: 0.84rem !important;
+    }
+
+    .hero-page .topbar-logo--pro .brand-line2,
+    .hero-page .topbar .brand-line2 {
+        font-size: 0.54rem !important;
+    }
+}
+
+/* FINAL — brand oval same height as topbar, logo slightly larger. */
+.hero-page .topbar-logo.topbar-logo--pro {
+    height: 72px !important;
+    min-height: 72px !important;
+    padding: 0.32rem 1.05rem !important;
+    align-self: stretch !important;
+    border-radius: 999px !important;
+}
+
+.hero-page .topbar-logo--pro img,
+.topbar-logo--pro img {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+}
+
+@media (max-width: 768px) {
+    .hero-page .topbar-logo.topbar-logo--pro {
+        height: 60px !important;
+        min-height: 60px !important;
+        padding: 0.26rem 0.78rem !important;
+    }
+
+    .hero-page .topbar-logo--pro img,
+    .topbar-logo--pro img {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+    }
+}
+
+/* FINAL — make timeline line-to-flight spacing equal on both sides. */
+.hero-page .mmt-results.view-grid .v2-timeline-row {
+    gap: 0.24rem !important;
+    align-items: flex-start !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-timeline {
+    margin: 0 0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-step::before {
+    right: -0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-step--first::before {
+    left: -0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-step--last::before {
+    right: -0.22rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-bookend--start {
+    margin-right: -0.08rem !important;
+}
+
+.hero-page .mmt-results.view-grid .v2-tl-bookend--end {
+    margin-left: -0.08rem !important;
+}

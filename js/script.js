@@ -490,9 +490,9 @@ function renderSitePackages() {
             segs.push({ label: 'Day ' + days, loc: 'Departure' });
             return segs;
         })();
-        // Inclusion chips for the card — use first four meaningful inclusions.
-        const inclChips = incl.slice(0, 4);
-        const inclMore  = Math.max(0, incl.length - inclChips.length);
+        // Inclusion chips for the card — show all meaningful inclusions.
+        // CSS keeps this compact across two visual rows; no "+1 more" pill.
+        const inclChips = incl;
         // Map a chip label to a FontAwesome icon. Keeps the chip row legible
         // at a glance — hotel / breakfast / ferry / transfer all read in <1s.
         const inclIcon = (text) => {
@@ -541,7 +541,6 @@ function renderSitePackages() {
                 ${inclChips.length ? `
                 <div class="v2-incl-chips">
                     ${inclChips.map(i => `<span class="v2-incl-chip"><i class="fa-solid ${inclIcon(i)}" aria-hidden="true"></i>${i}</span>`).join('')}
-                    ${inclMore ? `<span class="v2-incl-chip v2-incl-chip--more">+${inclMore} more</span>` : ''}
                 </div>` : ''}
             </div>
             <div class="v2-card-foot">
