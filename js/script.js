@@ -472,16 +472,6 @@ function renderSitePackages() {
         // across reloads but varies between cards. Range 2–6.
         const idHash = String(pkg.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
         const slotsLeft = 2 + (idHash % 5);
-        // Insight callout — pick a one-liner per category.
-        const insightByCat = {
-            budget:    'Best for travellers who want to explore all 3 islands comfortably within a budget.',
-            standard:  'Ideal for first-time Andaman travellers looking for maximum sightseeing.',
-            deluxe:    'Step up to better hotels and curated experiences across every island.',
-            luxury:    'Stay at premium beachfront resorts with private cabs and concierge support.',
-            royal:     'Top-tier suites, private yachts and a dedicated trip manager throughout.',
-            honeymoon: 'Romantic stays, candlelight dinners and couple experiences across the islands.'
-        };
-        const insightLine = insightByCat[catSlug] || 'A handpicked Andaman itinerary with hotels, ferries and transfers included.';
         // Day timeline — 4 milestone columns. Build from the route + days.
         const stops = (route && route.length) ? route : ['Port Blair'];
         const timeline = (function () {
@@ -500,9 +490,26 @@ function renderSitePackages() {
             segs.push({ label: 'Day ' + days, loc: 'Departure' });
             return segs;
         })();
-        // Inclusion chips for the card — use first three meaningful inclusions.
+        // Inclusion chips for the card — use first four meaningful inclusions.
         const inclChips = incl.slice(0, 4);
         const inclMore  = Math.max(0, incl.length - inclChips.length);
+        // Map a chip label to a FontAwesome icon. Keeps the chip row legible
+        // at a glance — hotel / breakfast / ferry / transfer all read in <1s.
+        const inclIcon = (text) => {
+            const t = String(text || '').toLowerCase();
+            if (/hotel|resort|stay/.test(t))           return 'fa-hotel';
+            if (/breakfast/.test(t))                   return 'fa-mug-saucer';
+            if (/meal|dinner|lunch|food/.test(t))      return 'fa-utensils';
+            if (/ferry|boat|ship|cruise|catamaran/.test(t)) return 'fa-ship';
+            if (/transfer|cab|taxi|pickup|drop/.test(t))    return 'fa-car';
+            if (/scuba|dive/.test(t))                  return 'fa-person-swimming';
+            if (/snorkel|swim|water/.test(t))          return 'fa-water';
+            if (/photo|camera/.test(t))                return 'fa-camera';
+            if (/candle|romantic|honeymoon/.test(t))   return 'fa-heart';
+            if (/sightseeing|tour|guide/.test(t))      return 'fa-map-location-dot';
+            if (/flight|air/.test(t))                  return 'fa-plane';
+            return 'fa-circle-check';
+        };
 
         return `
         <div class="mmt-card v2-card${isSoldOut ? ' mmt-card-soldout' : ''}" data-pkgid="${pkg.id}" data-name="${pkg.id}" data-category="${catSlug}">
@@ -517,41 +524,43 @@ function renderSitePackages() {
                 <h3 class="v2-card-title" data-nav="${pkg.id}">${cleanTitle}</h3>
                 <div class="v2-card-meta">
                     <span class="v2-meta-strong">${days} Days · ${dur} Nights</span>
-                    <span class="v2-meta-route">${stops.join(' → ')}</span>
                 </div>
-                <div class="v2-insight">
-                    <i class="fa-solid fa-binoculars"></i>
-                    <span>${insightLine}</span>
+                <div class="v2-card-route">${stops.join(' <i class="fa-solid fa-arrow-right-long"></i> ')}</div>
+                <div class="v2-timeline-row">
+                    <span class="v2-tl-bookend v2-tl-bookend--start" aria-hidden="true"><i class="fa-solid fa-plane-departure"></i></span>
+                    <ol class="v2-timeline">
+                        ${timeline.map((t, i) => `
+                            <li class="v2-tl-step${i === 0 ? ' v2-tl-step--first' : ''}${i === timeline.length - 1 ? ' v2-tl-step--last' : ''}">
+                                <span class="v2-tl-dot"></span>
+                                <span class="v2-tl-label">${t.label}</span>
+                                <span class="v2-tl-loc">${t.loc}</span>
+                            </li>`).join('')}
+                    </ol>
+                    <span class="v2-tl-bookend v2-tl-bookend--end" aria-hidden="true"><i class="fa-solid fa-plane-arrival"></i></span>
                 </div>
                 ${inclChips.length ? `
                 <div class="v2-incl-chips">
-                    ${inclChips.map(i => `<span class="v2-incl-chip">${i}</span>`).join('')}
+                    ${inclChips.map(i => `<span class="v2-incl-chip"><i class="fa-solid ${inclIcon(i)}" aria-hidden="true"></i>${i}</span>`).join('')}
                     ${inclMore ? `<span class="v2-incl-chip v2-incl-chip--more">+${inclMore} more</span>` : ''}
                 </div>` : ''}
-                <ol class="v2-timeline">
-                    ${timeline.map((t, i) => `
-                        <li class="v2-tl-step${i === 0 ? ' v2-tl-step--first' : ''}${i === timeline.length - 1 ? ' v2-tl-step--last' : ''}">
-                            <span class="v2-tl-dot"></span>
-                            <span class="v2-tl-label">${t.label}</span>
-                            <span class="v2-tl-loc">${t.loc}</span>
-                        </li>`).join('')}
-                </ol>
             </div>
             <div class="v2-card-foot">
-                <div class="v2-foot-price">
-                    <div class="v2-foot-from">Starting from</div>
-                    <div class="v2-foot-now-row">
-                        <span class="v2-foot-now">₹${Number(pkg.price).toLocaleString()}</span>
-                        <span class="v2-foot-per">/person</span>
-                        ${!isTest && wasPrice > pkg.price ? `<span class="v2-foot-was">₹${wasPrice.toLocaleString()}</span>` : ''}
-                        ${pctOff > 0 && !isTest ? `<span class="v2-foot-pct">${pctOff}% OFF</span>` : ''}
+                <div class="v2-foot-row">
+                    <div class="v2-foot-price">
+                        <div class="v2-foot-from">Starting from</div>
+                        <div class="v2-foot-now-row">
+                            <span class="v2-foot-now">₹${Number(pkg.price).toLocaleString()}</span>
+                            <span class="v2-foot-per">/person</span>
+                            ${!isTest && wasPrice > pkg.price ? `<span class="v2-foot-was">₹${wasPrice.toLocaleString()}</span>` : ''}
+                            ${pctOff > 0 && !isTest ? `<span class="v2-foot-pct">${pctOff}% OFF</span>` : ''}
+                        </div>
+                        ${pkg.price >= 12000 && !isTest ? `<div class="v2-foot-emi">EMI from <strong>₹${emi.toLocaleString()}</strong>/month <i class="fa-solid fa-circle-info" title="No-cost EMI on cards"></i></div>` : ''}
                     </div>
-                    ${pkg.price >= 12000 && !isTest ? `<div class="v2-foot-emi">EMI from <strong>₹${emi.toLocaleString()}</strong>/month <i class="fa-solid fa-circle-info" title="No-cost EMI on cards"></i></div>` : ''}
+                    ${!isSoldOut && !isTest ? `
+                    <div class="v2-foot-urgency">
+                        <i class="fa-solid fa-fire"></i> Only ${slotsLeft} slots left<br>this week!
+                    </div>` : ''}
                 </div>
-                ${!isSoldOut && !isTest ? `
-                <div class="v2-foot-urgency">
-                    <i class="fa-solid fa-fire"></i> Only ${slotsLeft} slots left this week!
-                </div>` : ''}
                 <div class="v2-foot-actions">
                     <label class="v2-compare">
                         <input type="checkbox" class="v2-compare-cb" data-pkgid="${pkg.id}" data-pkgname="${cleanTitle.replace(/"/g, '&quot;')}">
