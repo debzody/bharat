@@ -358,26 +358,18 @@
     <main class="main-content">
 
     <section id="home" class="hero">
-        <!-- Hero Carousel -->
+        <!-- Hero Carousel — only landscape images at ≥1280px wide. Portrait
+             sources (neil1, neil3, ross3) and 800×600 thumbs (beach2, beach3)
+             were dropped because `cover` was zoom-cropping them severely on
+             wide screens, producing the pixelated / cut frames the user
+             flagged. -->
         <div class="hero-carousel">
             <div class="carousel-track" id="carouselTrack">
                 <div class="carousel-slide active" style="background-image: url('images/beach1.jpg')">
                     <div class="slide-caption">Radhanagar Beach — Asia's Best Beach</div>
                 </div>
-                <div class="carousel-slide" style="background-image: url('images/neil1.jpg')">
-                    <div class="slide-caption">Havelock Island — Turquoise Waters</div>
-                </div>
-                <div class="carousel-slide" style="background-image: url('images/beach2.jpg')">
-                    <div class="slide-caption">Neil Island — Serene Paradise</div>
-                </div>
                 <div class="carousel-slide" style="background-image: url('images/neil2.jpg')">
                     <div class="slide-caption">Scuba Diving — Explore the Deep</div>
-                </div>
-                <div class="carousel-slide" style="background-image: url('images/beach3.jpg')">
-                    <div class="slide-caption">Luxury Resorts — World-Class Stays</div>
-                </div>
-                <div class="carousel-slide" style="background-image: url('images/neil3.jpg')">
-                    <div class="slide-caption">Elephant Beach — Crystal Clear Lagoon</div>
                 </div>
                 <div class="carousel-slide" style="background-image: url('images/beach4.jpg')">
                     <div class="slide-caption">Romantic Sunsets — Honeymoon Special</div>
@@ -390,9 +382,6 @@
                 </div>
                 <div class="carousel-slide" style="background-image: url('images/ross2.jpg')">
                     <div class="slide-caption">Ross Island — Colonial Heritage Trail</div>
-                </div>
-                <div class="carousel-slide" style="background-image: url('images/ross3.jpg')">
-                    <div class="slide-caption">Ross Island — Tropical Forest Walks</div>
                 </div>
             </div>
             <!-- Arrows -->
