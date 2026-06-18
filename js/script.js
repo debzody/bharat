@@ -927,6 +927,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ── Apply admin-managed hero slides from settings.heroSlides ──
+    // Probes each slide URL with an Image() before mounting and drops any
+    // that are portrait (height > width) or below 1200px wide. The hero
+    // uses background-size:cover, which scales the image to the wider of
+    // the two container dims — feeding a 800×600 thumb or a 1066×1600
+    // portrait shot in there results in extreme up-scaling + cropping
+    // (the 'pixelated and cut' frames the user flagged).
     function applyHeroSlides(settings) {
         const slides = settings && Array.isArray(settings.heroSlides) && settings.heroSlides.length
             ? settings.heroSlides
@@ -936,19 +942,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const track = document.getElementById('carouselTrack');
         if (!track) return;
 
-        track.innerHTML = slides.map((s, i) => {
-            const url = String(s.url || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            const cap = String(s.caption || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<div class="carousel-slide${i === 0 ? ' active' : ''}" style="background-image: url('${url}')">` +
-                   (cap ? `<div class="slide-caption">${cap}</div>` : '') +
-                   '</div>';
-        }).join('');
+        const probe = (url) => new Promise((resolve) => {
+            if (!url) return resolve(null);
+            const img = new Image();
+            img.onload  = () => resolve({ url, w: img.naturalWidth, h: img.naturalHeight });
+            img.onerror = () => resolve(null);
+            img.src = url;
+        });
 
-        // Rebuild dots and reinit the carousel with the new slide count
-        const dotsContainer = document.getElementById('carouselDots');
-        if (dotsContainer) dotsContainer.innerHTML = '';
-        // Trigger a fresh carousel init by dispatching a custom event
-        document.dispatchEvent(new CustomEvent('heroSlidesUpdated'));
+        Promise.all(slides.map(s => probe(String(s.url || ''))))
+            .then((dims) => {
+                const filtered = slides.filter((s, i) => {
+                    const d = dims[i];
+                    if (!d) return false;                  // failed to load
+                    if (d.w < 1200) return false;          // too small → pixelates on wide screens
+                    if (d.h >= d.w) return false;          // portrait → cover crops it badly
+                    return true;
+                });
+                if (!filtered.length) return;              // nothing usable → keep static HTML
+
+                track.innerHTML = filtered.map((s, i) => {
+                    const url = String(s.url || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    const cap = String(s.caption || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return `<div class="carousel-slide${i === 0 ? ' active' : ''}" style="background-image: url('${url}')">` +
+                           (cap ? `<div class="slide-caption">${cap}</div>` : '') +
+                           '</div>';
+                }).join('');
+
+                const dotsContainer = document.getElementById('carouselDots');
+                if (dotsContainer) dotsContainer.innerHTML = '';
+                document.dispatchEvent(new CustomEvent('heroSlidesUpdated'));
+            });
     }
 
     function applyPaymentsState() {
