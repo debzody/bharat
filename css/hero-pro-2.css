@@ -1879,10 +1879,14 @@ body.hero-page {
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    transform: translateZ(0) scale(1.001) !important;
+    transform: translateZ(0) !important;
     opacity: 0 !important;
     visibility: hidden !important;
     z-index: 0 !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
 }
 
 .hero-page .carousel-slide.active {
