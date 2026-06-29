@@ -472,21 +472,27 @@ function renderSitePackages() {
         // across reloads but varies between cards. Range 2–6.
         const idHash = String(pkg.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
         const slotsLeft = 2 + (idHash % 5);
-        // Day timeline — 4 milestone columns. Build from the route + days.
+        // Day timeline — one column per stop, plus a final 'Departure'
+        // column. Day labels track the actual night count of each segment
+        // (so "2N Port Blair" reads "Day 4-5", not split across two
+        // buckets). Falls back to a single Port Blair stop if the route
+        // is empty.
         const stops = (route && route.length) ? route : ['Port Blair'];
+        const parseStop = (s) => {
+            const m = String(s || '').match(/^(\d+)\s*N\s+(.+)$/i);
+            if (m) return { nights: parseInt(m[1], 10), loc: m[2].trim() };
+            return { nights: 1, loc: String(s || '').trim() };
+        };
         const timeline = (function () {
-            // Always 4 stops: Day 1 / mid1 / mid2 / final (Departure).
             const segs = [];
-            const first = stops[0] || 'Port Blair';
-            const last = stops[stops.length - 1] || 'Port Blair';
-            segs.push({ label: 'Day 1', loc: first });
-            if (days >= 4) {
-                segs.push({ label: 'Day 2-' + Math.ceil(days / 2), loc: stops[1] || stops[0] });
-                segs.push({ label: 'Day ' + Math.ceil(days / 2 + 1) + '-' + (days - 1), loc: stops[2] || stops[1] || stops[0] });
-            } else {
-                segs.push({ label: 'Day 2', loc: stops[1] || stops[0] });
-                segs.push({ label: 'Day 3', loc: stops[2] || stops[1] || stops[0] });
-            }
+            let day = 1;
+            stops.forEach((stop) => {
+                const { nights, loc } = parseStop(stop);
+                const end = day + nights - 1;
+                const label = nights > 1 ? `Day ${day}-${end}` : `Day ${day}`;
+                segs.push({ label, loc: nights > 1 ? `${nights}N ${loc}` : `1N ${loc}` });
+                day += nights;
+            });
             segs.push({ label: 'Day ' + days, loc: 'Departure' });
             return segs;
         })();
@@ -528,7 +534,7 @@ function renderSitePackages() {
                 <div class="v2-card-route">${stops.join(' <i class="fa-solid fa-arrow-right-long"></i> ')}</div>
                 <div class="v2-timeline-row">
                     <span class="v2-tl-bookend v2-tl-bookend--start" aria-hidden="true"><i class="fa-solid fa-plane-departure"></i></span>
-                    <ol class="v2-timeline">
+                    <ol class="v2-timeline" style="grid-template-columns: repeat(${timeline.length}, minmax(0, 1fr));">
                         ${timeline.map((t, i) => `
                             <li class="v2-tl-step${i === 0 ? ' v2-tl-step--first' : ''}${i === timeline.length - 1 ? ' v2-tl-step--last' : ''}">
                                 <span class="v2-tl-dot"></span>

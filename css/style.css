@@ -3541,7 +3541,13 @@ body.hero-page .topnav-item.active::after { display: none; }
 
 /* Mobile fallback for the card timeline */
 @media (max-width: 540px) {
-    .v2-timeline { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+    /* Mobile timeline: cap each cell at ~70px so 5-6 stops fit, else wrap.
+       The inline style on .v2-timeline (set from JS) wins on desktop —
+       on mobile we let auto-fit re-flow into rows for very long routes. */
+    .v2-timeline {
+        grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)) !important;
+        gap: 0.55rem 0.4rem;
+    }
     .v2-tl-step::before { right: -0.25rem; }
     .v2-tl-step--last::before { right: 50%; }
     .v2-tl-bookend { width: 26px; height: 26px; font-size: 0.74rem; }
